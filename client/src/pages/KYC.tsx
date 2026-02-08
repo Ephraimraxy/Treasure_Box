@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, CheckCircle, AlertCircle, RefreshCw, ChevronRight, Shield } from 'lucide-react';
+import { Camera, CheckCircle, AlertCircle, RefreshCw, ChevronRight, Shield, Volume2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { ActionButton } from '../pages/Auth';
 import { Input } from '../components/ui';
@@ -38,6 +38,36 @@ const CHALLENGES = [
     { id: 'right', text: 'Turn head right', icon: '➡️' }
 ];
 
+// Simple SVG Animation Component
+const LivenessDemo = ({ action }: { action: string }) => {
+    return (
+        <div className="w-24 h-24 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-center overflow-hidden relative shadow-lg">
+            {/* Base Face */}
+            <div className={`w-16 h-16 bg-amber-200 rounded-full relative transition-transform duration-500 
+                ${action === 'left' ? '-rotate-12 -translate-x-2' : ''} 
+                ${action === 'right' ? 'rotate-12 translate-x-2' : ''}`}
+            >
+                {/* Eyes */}
+                <div className="flex justify-between px-3 mt-5">
+                    <div className={`w-3 h-3 bg-slate-900 rounded-full transition-all duration-200 ${action === 'blink' ? 'scale-y-[0.1]' : ''}`}></div>
+                    <div className={`w-3 h-3 bg-slate-900 rounded-full transition-all duration-200 ${action === 'blink' ? 'scale-y-[0.1]' : ''}`}></div>
+                </div>
+                {/* Nose */}
+                <div className="w-2 h-4 bg-amber-400/50 mx-auto mt-1 rounded-full"></div>
+                {/* Mouth */}
+                <div className={`w-6 h-3 bg-slate-800 mx-auto mt-2 rounded-b-full transition-all duration-300 
+                    ${action === 'smile' ? 'w-10 h-5 border-t-0' : 'w-4 h-1'}`}
+                ></div>
+            </div>
+
+            {/* Guide Text Overlay */}
+            <div className="absolute bottom-1 text-[10px] text-slate-400 font-mono uppercase tracking-widest bg-slate-900/80 px-2 rounded-full">
+                Demo
+            </div>
+        </div>
+    );
+};
+
 export const KYCPage = () => {
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -54,6 +84,17 @@ export const KYCPage = () => {
     const faceMeshRef = useRef<FaceMesh | null>(null);
     const cameraRef = useRef<cam.Camera | null>(null);
     const lastActionTime = useRef<number>(0);
+
+    // Speak Instruction
+    useEffect(() => {
+        if (step === 2 && challengeStatus !== 'success') {
+            const text = CHALLENGES[challengeIndex].text;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            window.speechSynthesis.cancel(); // Stop previous
+            window.speechSynthesis.speak(utterance);
+        }
+    }, [step, challengeIndex, challengeStatus]);
 
     // Initialize Face Mesh
     useEffect(() => {
@@ -98,6 +139,7 @@ export const KYCPage = () => {
                 cameraRef.current.stop();
                 cameraRef.current = null;
             }
+            window.speechSynthesis.cancel();
         };
     }, [step]);
 
@@ -155,6 +197,12 @@ export const KYCPage = () => {
         if (detected) {
             lastActionTime.current = now;
             setChallengeStatus('success');
+
+            // Success sound
+            const utterance = new SpeechSynthesisUtterance("Good!");
+            utterance.rate = 1.2;
+            window.speechSynthesis.speak(utterance);
+
             addToast('success', 'Perfect!');
 
             setTimeout(() => {
@@ -162,6 +210,8 @@ export const KYCPage = () => {
                     setChallengeIndex(prev => prev + 1);
                     setChallengeStatus('waiting');
                 } else {
+                    const complete = new SpeechSynthesisUtterance("Verification Complete");
+                    window.speechSynthesis.speak(complete);
                     setStep(3);
                 }
             }, 1000);
@@ -275,6 +325,13 @@ export const KYCPage = () => {
                                 {step === 2 && <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />}
                                 <div className="absolute inset-0 border-4 border-amber-500/30 rounded-xl pointer-events-none"></div>
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-dashed border-white/50 rounded-[50%] pointer-events-none"></div>
+
+                                {/* Live Demo Doll Placement */}
+                                {step === 2 && (
+                                    <div className="absolute bottom-4 right-4 animate-in fade-in zoom-in duration-300">
+                                        <LivenessDemo action={CHALLENGES[challengeIndex].id} />
+                                    </div>
+                                )}
                             </div>
 
                             {step === 1 && (
@@ -287,7 +344,10 @@ export const KYCPage = () => {
                             {step === 2 && (
                                 <div className="text-center">
                                     <div className="bg-slate-800 p-4 rounded-xl mb-6 border border-amber-500/20">
-                                        <span className="text-4xl block mb-2">{CHALLENGES[challengeIndex].icon}</span>
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <span className="text-4xl">{CHALLENGES[challengeIndex].icon}</span>
+                                            <Volume2 className="text-slate-500 animate-pulse" size={20} />
+                                        </div>
                                         <h3 className="text-xl font-bold text-white mb-1">{CHALLENGES[challengeIndex].text}</h3>
                                         <p className="text-amber-500 text-sm font-medium uppercase tracking-wider">
                                             {challengeStatus === 'success' ? 'Great Work!' : 'Waiting for action...'}
