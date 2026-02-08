@@ -62,46 +62,47 @@ export const userApi = {
     submitKYC: (data: { photoUrl: string }) => api.post('/users/kyc', data),
     setPin: (pin: string) => api.post('/users/set-pin', { pin }),
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
+};
 
-    // Transaction API
-    export const transactionApi = {
-        getAll: () => api.get('/transactions'),
-        deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
-        withdraw: (amount: number) => api.post('/transactions/withdraw', { amount }),
-        payUtility: (data: any) => api.post('/transactions/utility', data),
-    };
+// Transaction API
+export const transactionApi = {
+    getAll: () => api.get('/transactions'),
+    deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
+    withdraw: (amount: number) => api.post('/transactions/withdraw', { amount }),
+    payUtility: (data: any) => api.post('/transactions/utility', data),
+};
 
-    // Investment API
-    export const investmentApi = {
-        getAll: () => api.get('/investments'),
-        create: (amount: number, durationDays: number, bonusRate?: number) =>
-            api.post('/investments', { amount, durationDays, bonusRate }),
-    };
+// Investment API
+export const investmentApi = {
+    getAll: () => api.get('/investments'),
+    create: (amount: number, durationDays: number, bonusRate?: number) =>
+        api.post('/investments', { amount, durationDays, bonusRate }),
+};
 
-    // Payment API (Paystack)
-    export const paymentApi = {
-        initialize: (amount: number, purpose: 'deposit' | 'investment') =>
-            api.post('/payments/initialize', { amount, purpose }),
-        verify: (reference: string) =>
-            api.get(`/payments/verify/${reference}`),
-        getBanks: () =>
-            api.get('/payments/banks'),
-        verifyAccount: (accountNumber: string, bankCode: string) =>
-            api.post('/payments/verify-account', { accountNumber, bankCode }),
-        createVirtualAccount: () => api.post('/payments/virtual-account', {}),
-    };
+// Payment API (Paystack)
+export const paymentApi = {
+    initialize: (amount: number, purpose: 'deposit' | 'investment') =>
+        api.post('/payments/initialize', { amount, purpose }),
+    verify: (reference: string) =>
+        api.get(`/payments/verify/${reference}`),
+    getBanks: () =>
+        api.get('/payments/banks'),
+    verifyAccount: (accountNumber: string, bankCode: string) =>
+        api.post('/payments/verify-account', { accountNumber, bankCode }),
+    createVirtualAccount: () => api.post('/payments/virtual-account', {}),
+};
 
-    // Admin API
-    export const adminApi = {
-        getStats: () => api.get('/admin/stats'),
-        getUsers: () => api.get('/admin/users'),
-        getPendingWithdrawals: () => api.get('/admin/withdrawals/pending'),
-        approveWithdrawal: (id: string) => api.post(`/admin/withdrawals/${id}/approve`),
-        rejectWithdrawal: (id: string, reason: string) =>
-            api.post(`/admin/withdrawals/${id}/reject`, { reason }),
-        creditUser: (userId: string, amount: number, description?: string) =>
-            api.post(`/admin/users/${userId}/credit`, { amount, description }),
-        getAuditLogs: () => api.get('/admin/audit-logs'),
-    };
+// Admin API
+export const adminApi = {
+    getStats: () => api.get('/admin/stats'),
+    getUsers: () => api.get('/admin/users'),
+    getPendingWithdrawals: () => api.get('/admin/withdrawals/pending'),
+    approveWithdrawal: (id: string) => api.post(`/admin/withdrawals/${id}/approve`),
+    rejectWithdrawal: (id: string, reason: string) =>
+        api.post(`/admin/withdrawals/${id}/reject`, { reason }),
+    creditUser: (userId: string, amount: number, description?: string) =>
+        api.post(`/admin/users/${userId}/credit`, { amount, description }),
+    getAuditLogs: () => api.get('/admin/audit-logs'),
+};
 
-    export default api;
+export default api;
