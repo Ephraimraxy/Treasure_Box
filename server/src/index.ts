@@ -9,6 +9,7 @@ import userRoutes from './routes/user.routes';
 import transactionRoutes from './routes/transaction.routes';
 import investmentRoutes from './routes/investment.routes';
 import adminRoutes from './routes/admin.routes';
+import paymentRoutes from './routes/payment.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

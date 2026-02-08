@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const register = async (email: string, password: string, referralCode?: string) => {
-        const response = await authApi.register(email, password, referralCode);
+        const response = await authApi.register(email, password, undefined, referralCode);
         localStorage.setItem('token', response.data.token);
         setToken(response.data.token);
     };

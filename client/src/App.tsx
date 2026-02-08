@@ -7,7 +7,13 @@ import { ToastContainer, Spinner } from './components/ui';
 import { Layout } from './components/Layout';
 
 // Pages
-import { LoginPage, RegisterPage } from './pages/Auth';
+import {
+    LoginPage,
+    RegisterPage,
+    ForgotPasswordPage,
+    ResetPasswordPage,
+    VerifyEmailPage
+} from './pages/Auth';
 import { DashboardPage } from './pages/Dashboard';
 import { WalletPage } from './pages/Wallet';
 import { HistoryPage } from './pages/History';
@@ -58,6 +64,9 @@ const AppContent = () => {
                 {/* Public Routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
 
                 {/* User Routes */}
                 <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -34,8 +34,20 @@ api.interceptors.response.use(
 export const authApi = {
     login: (email: string, password: string) =>
         api.post('/auth/login', { email, password }),
-    register: (email: string, password: string, referralCode?: string) =>
-        api.post('/auth/register', { email, password, referralCode }),
+    register: (email: string, password: string, name?: string, referralCode?: string) =>
+        api.post('/auth/register', { email, password, name, referralCode }),
+    verifyEmail: (token: string) =>
+        api.get(`/auth/verify-email?token=${token}`),
+    resendVerification: (email: string) =>
+        api.post('/auth/resend-verification', { email }),
+    requestOTP: (email: string) =>
+        api.post('/auth/request-otp', { email }),
+    verifyOTP: (email: string, otp: string) =>
+        api.post('/auth/verify-otp', { email, otp }),
+    forgotPassword: (email: string) =>
+        api.post('/auth/forgot-password', { email }),
+    resetPassword: (token: string, password: string) =>
+        api.post('/auth/reset-password', { token, password }),
 };
 
 // User API
@@ -60,6 +72,18 @@ export const investmentApi = {
     getAll: () => api.get('/investments'),
     create: (amount: number, durationDays: number, bonusRate?: number) =>
         api.post('/investments', { amount, durationDays, bonusRate }),
+};
+
+// Payment API (Paystack)
+export const paymentApi = {
+    initialize: (amount: number, purpose: 'deposit' | 'investment') =>
+        api.post('/payments/initialize', { amount, purpose }),
+    verify: (reference: string) =>
+        api.get(`/payments/verify/${reference}`),
+    getBanks: () =>
+        api.get('/payments/banks'),
+    verifyAccount: (accountNumber: string, bankCode: string) =>
+        api.post('/payments/verify-account', { accountNumber, bankCode }),
 };
 
 // Admin API
