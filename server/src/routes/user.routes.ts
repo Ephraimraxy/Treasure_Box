@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { verifyIdentityNumber } from '../services/identity.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -145,6 +146,17 @@ router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
             if (existing && existing.id !== userId) {
                 return res.status(400).json({ error: 'Username already taken' });
             }
+        }
+
+        // Verify BVN (External/Simulation)
+        const bvnCheck = await verifyIdentityNumber('bvn', bvn);
+        if (!bvnCheck.success) {
+            return res.status(400).json({ error: bvnCheck.message });
+        }
+
+        const ninCheck = await verifyIdentityNumber('nin', nin);
+        if (!ninCheck.success) {
+            return res.status(400).json({ error: ninCheck.message });
         }
 
         await prisma.user.update({
