@@ -25,7 +25,6 @@ import {
     AdminDashboardPage,
     AdminWithdrawalsPage,
     AdminUsersPage,
-    AdminUsersPage,
     AdminAuditPage,
     AdminSettingsPage
 } from './pages/Admin';

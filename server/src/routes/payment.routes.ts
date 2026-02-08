@@ -103,7 +103,7 @@ router.get('/verify/:reference', authenticate, async (req: AuthRequest, res, nex
 });
 
 // Paystack Webhook
-router.post('/webhook', async (req, res, next) => {
+router.post('/webhook', async (req: any, res: any, next: any) => {
     try {
         const signature = req.headers['x-paystack-signature'] as string;
         const payload = JSON.stringify(req.body);
@@ -211,13 +211,32 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
 
         // 1. Create/Get Customer Code
         let customerCode = user.paystackCustomerCode;
-        if (!customerCode) {
-            // Split name for first/last
-            const nameParts = (user.name || 'User').split(' ');
-            const firstName = nameParts[0];
-            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
-            const phone = user.phone || '+2348000000000'; // Fallback phone if missing (should be enforced in profile)
 
+        // Define naming convention based on Role and Username
+        let firstName, lastName, phone;
+
+        if (user.role === 'ADMIN') {
+            firstName = 'TB';
+            lastName = 'admin';
+            phone = user.phone || '+2348000000000';
+        } else {
+            // Strict checks for USER
+            if (!user.kycVerified) {
+                return res.status(400).json({ error: 'KYC must be verified before generating account' });
+            }
+            if (!user.username) {
+                return res.status(400).json({ error: 'Please set a username in your profile first' });
+            }
+            if (!user.phone || !user.bvn || !user.nin) {
+                return res.status(400).json({ error: 'Please complete your profile (Phone, BVN, NIN) first' });
+            }
+
+            firstName = 'TB';
+            lastName = user.username;
+            phone = user.phone;
+        }
+
+        if (!customerCode) {
             const customer = await paystackService.createCustomer(user.email, firstName, lastName, phone);
             customerCode = customer.data.customer_code;
 
@@ -226,6 +245,12 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
                 where: { id: userId },
                 data: { paystackCustomerCode: customerCode }
             });
+        } else {
+            // Optional: Update existing customer if needed to reflect new name? 
+            // Paystack allows updating customer. For now, we assume if code exists, we use it.
+            // But if they changed username, we might want to update it. 
+            // However, Paystack Virtual Account might already be tied to the customer name at creation.
+            // Supporting name update on existing customer might be complex. Sticking to creation logic for now.
         }
 
         // 2. Create Dedicated Account

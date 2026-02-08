@@ -100,6 +100,61 @@ export const WalletPage = () => {
                         <div className="text-4xl font-bold text-white font-mono mb-4">
                             <FormatCurrency amount={user?.balance || 0} />
                         </div>
+
+                        {user?.virtualAccount ? (
+                            <div className="bg-white/5 p-3 rounded-lg border border-white/10 mb-2">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Virtual Account</div>
+                                <div className="text-white font-bold">{user.virtualAccount.bankName}</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="font-mono text-lg">{user.virtualAccount.accountNumber}</div>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(user.virtualAccount?.accountNumber || '');
+                                            addToast('info', 'Account number copied');
+                                        }}
+                                        className="p-1 hover:bg-white/10 rounded"
+                                    >
+                                        <Copy size={14} className="text-slate-400" />
+                                    </button>
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">{user.virtualAccount.accountName}</div>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg mb-2">
+                                <p className="text-xs text-amber-200 mb-2">
+                                    {user?.role === 'ADMIN'
+                                        ? 'Generate Admin Virtual Account'
+                                        : 'Complete KYC & Profile to get your dedicated account number.'}
+                                </p>
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="w-full text-xs"
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            // Call API to create virtual account
+                                            // Assuming paymentApi.createVirtualAccount exists as per step 871
+                                            // We need to import paymentApi from '../api' if not already there, but wait, transactionApi was used here.
+                                            // Let's use the one from api/index.ts
+                                            // Importing paymentApi at the top
+                                            const { paymentApi } = await import('../api');
+                                            await paymentApi.createVirtualAccount();
+                                            addToast('success', 'Virtual Account generated!');
+                                            await refreshUser();
+                                        } catch (error: any) {
+                                            addToast('error', error.response?.data?.error || 'Failed to generate account');
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Generating...' : 'Generate Account No.'}
+                                </Button>
+                            </div>
+                        )}
+
                         <div className="bg-white/5 p-3 rounded-lg border border-white/10">
                             <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Referral Code</div>
                             <div className="flex justify-between items-center">
@@ -158,8 +213,8 @@ export const WalletPage = () => {
                                         key={d.days}
                                         onClick={() => setDuration(d.days)}
                                         className={`p-3 rounded-xl border transition-all text-sm ${duration === d.days
-                                                ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold'
-                                                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+                                            ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold'
+                                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                                             }`}
                                     >
                                         {d.days} Days ({d.baseRate}%)

@@ -5,11 +5,16 @@ interface User {
     id: string;
     email: string;
     name?: string;
+    username?: string;
+    bvn?: string;
+    nin?: string;
     role: 'USER' | 'ADMIN';
     balance: number;
     referralCode: string;
     kycVerified: boolean;
-    transactionPin?: boolean; // Just to check if set, no need to store hash on client
+    kycStatus?: 'PENDING' | 'VERIFIED' | 'FAILED';
+    kycPhotoUrl?: string;
+    transactionPin?: boolean;
     virtualAccount?: {
         bankName: string;
         accountNumber: string;

@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Camera, CheckCircle, AlertCircle, RefreshCw, ChevronRight, Shield } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { ActionButton, AnimatedInput } from '../pages/Auth'; // Reusing components
+import { ActionButton } from '../pages/Auth'; // Reusing components
+import { Input } from '../components/ui';
 import { useNavigate } from 'react-router-dom';
 
 const KYC_STEPS = [
@@ -42,6 +43,7 @@ export const KYCPage = () => {
     const [challengeIndex, setChallengeIndex] = useState(0);
     const [challengeStatus, setChallengeStatus] = useState<'waiting' | 'detecting' | 'success'>('waiting');
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [formData, setFormData] = useState({ bvn: '', nin: '' });
     const webcamRef = useRef<Webcam>(null);
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -89,21 +91,15 @@ export const KYCPage = () => {
     }, [webcamRef]);
 
     const handleSubmit = async () => {
+        if (!formData.bvn || !formData.nin) {
+            addToast('error', 'Please fill in BVN and NIN');
+            return;
+        }
+
         setLoading(true);
         try {
-            // In a real app, we would upload the 'capturedImage' to a storage service (S3/Cloudinary)
-            // and get a URL to send to the backend.
-            // For this demo, we'll send a placeholder or the base64 string if the backend supports it (not recommended for large files)
-            // Let's assume we are sending a mock URL for now as per the plan.
-
+            // In a real app, we would upload the 'capturedImage' to a storage service
             const mockPhotoUrl = "https://placehold.co/600x400/png";
-
-            // We need to add the kyc endpoint to the api client first, but since we can't edit api/index.ts easily without seeing it,
-            // we will use axios directly or assume authApi has a generic request method if we established that pattern.
-            // However, sticking to the existing pattern, we should add it to api/index.ts. 
-            // Since I can't see api/index.ts in this context, I'll rely on the fact that I should create it.
-            // But wait, I can just use the auth token and fetch.
-
             const token = localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/kyc`, {
                 method: 'POST',
@@ -111,18 +107,23 @@ export const KYCPage = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ photoUrl: mockPhotoUrl })
+                body: JSON.stringify({
+                    photoUrl: mockPhotoUrl,
+                    bvn: formData.bvn,
+                    nin: formData.nin
+                })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to submit KYC');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to submit KYC');
             }
 
             addToast('success', 'Verification submitted successfully!');
             navigate('/profile');
-        } catch (error) {
+        } catch (error: any) {
             console.error('KYC Submit Error:', error);
-            addToast('error', 'Failed to submit verification. Please try again.');
+            addToast('error', error.message || 'Failed to submit verification');
         } finally {
             setLoading(false);
         }
@@ -221,8 +222,25 @@ export const KYCPage = () => {
                     )}
 
                     {step === 3 && (
-                        <div className="text-center space-y-6">
-                            <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-amber-500/50 transition-colors cursor-pointer bg-slate-900/50">
+                        <div className="space-y-6">
+                            <div className="space-y-4">
+                                <Input
+                                    label="BVN"
+                                    value={formData.bvn}
+                                    onChange={(e) => setFormData({ ...formData, bvn: e.target.value })}
+                                    placeholder="Enter your 11-digit BVN"
+                                    maxLength={11}
+                                />
+                                <Input
+                                    label="NIN"
+                                    value={formData.nin}
+                                    onChange={(e) => setFormData({ ...formData, nin: e.target.value })}
+                                    placeholder="Enter your 11-digit NIN"
+                                    maxLength={11}
+                                />
+                            </div>
+
+                            <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-amber-500/50 transition-colors cursor-pointer bg-slate-900/50 text-center">
                                 <div className="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4">
                                     <Camera size={32} className="text-slate-400" />
                                 </div>

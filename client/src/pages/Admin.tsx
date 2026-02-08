@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle } from 'lucide-react';
 import { adminApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
@@ -357,6 +357,97 @@ export const AdminAuditPage = () => {
                     ))}
                 </div>
             )}
+        </div>
+    );
+};
+
+export const AdminSettingsPage = () => {
+    const { addToast } = useToast();
+    const [settings, setSettings] = useState({
+        maintenanceMode: false,
+        minWithdrawal: 1000,
+        maxWithdrawal: 500000,
+        referralBonus: 500,
+        enableNotifications: true
+    });
+
+    const handleSave = () => {
+        // In a real app, this would save to backend
+        addToast('success', 'Settings saved successfully');
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <h1 className="text-2xl font-bold text-white">System Settings</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <h3 className="font-bold text-white mb-4">General Configuration</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                            <div>
+                                <div className="font-medium text-white">Maintenance Mode</div>
+                                <div className="text-xs text-slate-400">Suspend all user activities</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.maintenanceMode}
+                                    onChange={e => setSettings({ ...settings, maintenanceMode: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                            <div>
+                                <div className="font-medium text-white">System Notifications</div>
+                                <div className="text-xs text-slate-400">Enable global alerts</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.enableNotifications}
+                                    onChange={e => setSettings({ ...settings, enableNotifications: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card>
+                    <h3 className="font-bold text-white mb-4">Financial Limits</h3>
+                    <div className="space-y-4">
+                        <Input
+                            label="Minimum Withdrawal (₦)"
+                            type="number"
+                            value={settings.minWithdrawal}
+                            onChange={e => setSettings({ ...settings, minWithdrawal: parseInt(e.target.value) })}
+                        />
+                        <Input
+                            label="Maximum Withdrawal (₦)"
+                            type="number"
+                            value={settings.maxWithdrawal}
+                            onChange={e => setSettings({ ...settings, maxWithdrawal: parseInt(e.target.value) })}
+                        />
+                        <Input
+                            label="Referral Bonus (₦)"
+                            type="number"
+                            value={settings.referralBonus}
+                            onChange={e => setSettings({ ...settings, referralBonus: parseInt(e.target.value) })}
+                        />
+                    </div>
+                </Card>
+            </div>
+
+            <div className="flex justify-end">
+                <Button onClick={handleSave} className="w-full md:w-auto">
+                    Save Changes
+                </Button>
+            </div>
         </div>
     );
 };

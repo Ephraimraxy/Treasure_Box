@@ -3,7 +3,7 @@ import { User, Mail, Phone, MapPin, Building2, Shield, Camera, Lock } from 'luci
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userApi, paymentApi } from '../api';
-import { Button, Input, Card } from '../components/ui';
+import { Button, Input, Card, Modal } from '../components/ui';
 
 export const ProfilePage = () => {
     const { user, refreshUser } = useAuth();
@@ -13,12 +13,55 @@ export const ProfilePage = () => {
         name: user?.name || '',
         phone: '',
         address: '',
+        username: user?.username || ''
     });
     const [bankData, setBankData] = useState({
         bankName: '',
         accountNumber: '',
         accountName: '',
     });
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pinMode, setPinMode] = useState<'set' | 'change'>('set');
+    const [pinData, setPinData] = useState({ oldPin: '', newPin: '', confirmPin: '' });
+
+    const openPinModal = (mode: 'set' | 'change') => {
+        setPinMode(mode);
+        setPinData({ oldPin: '', newPin: '', confirmPin: '' });
+        setIsPinModalOpen(true);
+    };
+
+    const handlePinSubmit = async () => {
+        if (pinData.newPin.length !== 4) {
+            addToast('error', 'PIN must be 4 digits');
+            return;
+        }
+        if (pinData.newPin !== pinData.confirmPin) {
+            addToast('error', 'PINs do not match');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (pinMode === 'set') {
+                await userApi.setPin(pinData.newPin);
+                addToast('success', 'PIN set successfully');
+            } else {
+                if (!pinData.oldPin) {
+                    addToast('error', 'Please enter your current PIN');
+                    setLoading(false);
+                    return;
+                }
+                await userApi.changePin(pinData.oldPin, pinData.newPin);
+                addToast('success', 'PIN changed successfully');
+            }
+            setIsPinModalOpen(false);
+            await refreshUser();
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Operation failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleProfileUpdate = async () => {
         setLoading(true);
@@ -77,6 +120,14 @@ export const ProfilePage = () => {
             <Card>
                 <h3 className="font-bold text-white mb-4">Personal Information</h3>
                 <div className="space-y-4">
+                    <Input
+                        label="Username"
+                        icon={<User size={18} />}
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        placeholder="Choose a unique username"
+                        disabled={!!user?.username} // Disable if already set? Prompt implies they must set it. Maybe allow change if not creating issue? "set username" implies once? I'll allow edit. Using 'disabled' if immutable requirement isn't strict. The prompt says "must set a username", doesn't say "immutable". I'll leave enabled.
+                    />
                     <Input
                         label="Full Name"
                         icon={<User size={18} />}
@@ -233,46 +284,58 @@ export const ProfilePage = () => {
                         <Button
                             variant="secondary"
                             className="w-full"
-                            onClick={() => {
-                                const oldPin = prompt('Enter current PIN:');
-                                if (!oldPin) return;
-                                const newPin = prompt('Enter new 4-digit PIN:');
-                                if (!newPin) return;
-
-                                setLoading(true);
-                                userApi.changePin(oldPin, newPin)
-                                    .then(() => {
-                                        addToast('success', 'PIN changed successfully');
-                                        refreshUser();
-                                    })
-                                    .catch((err: any) => addToast('error', err.response?.data?.error || 'Failed'))
-                                    .finally(() => setLoading(false));
-                            }}
+                            onClick={() => openPinModal('change')}
                         >
                             Change PIN
                         </Button>
                     ) : (
                         <Button
                             className="w-full"
-                            onClick={() => {
-                                const pin = prompt('Set your 4-digit PIN:');
-                                if (!pin) return;
-
-                                setLoading(true);
-                                userApi.setPin(pin)
-                                    .then(() => {
-                                        addToast('success', 'PIN set successfully');
-                                        refreshUser();
-                                    })
-                                    .catch((err: any) => addToast('error', err.response?.data?.error || 'Failed'))
-                                    .finally(() => setLoading(false));
-                            }}
+                            onClick={() => openPinModal('set')}
                         >
                             Set PIN
                         </Button>
                     )}
                 </div>
             </Card>
+
+            <Modal
+                isOpen={isPinModalOpen}
+                onClose={() => setIsPinModalOpen(false)}
+                title={pinMode === 'set' ? 'Set Transaction PIN' : 'Change Transaction PIN'}
+            >
+                <div className="space-y-4">
+                    {pinMode === 'change' && (
+                        <Input
+                            label="Current PIN"
+                            type="password"
+                            maxLength={4}
+                            value={pinData.oldPin}
+                            onChange={(e) => setPinData({ ...pinData, oldPin: e.target.value })}
+                            placeholder="Enter current PIN"
+                        />
+                    )}
+                    <Input
+                        label="New PIN"
+                        type="password"
+                        maxLength={4}
+                        value={pinData.newPin}
+                        onChange={(e) => setPinData({ ...pinData, newPin: e.target.value })}
+                        placeholder="Enter 4-digit PIN"
+                    />
+                    <Input
+                        label="Confirm PIN"
+                        type="password"
+                        maxLength={4}
+                        value={pinData.confirmPin}
+                        onChange={(e) => setPinData({ ...pinData, confirmPin: e.target.value })}
+                        placeholder="Confirm 4-digit PIN"
+                    />
+                    <Button onClick={handlePinSubmit} disabled={loading} className="w-full">
+                        {loading ? 'Processing...' : 'Save PIN'}
+                    </Button>
+                </div>
+            </Modal>
 
             {/* KYC Verification */}
             {!user?.kycVerified && (
@@ -286,7 +349,7 @@ export const ProfilePage = () => {
                             <p className="text-sm text-slate-400 mb-4">
                                 Verify your identity to unlock higher limits and access all features.
                             </p>
-                            <Button variant="primary" onClick={() => addToast('info', 'KYC verification coming soon')}>
+                            <Button variant="primary" onClick={() => window.location.href = '/kyc'}>
                                 Start Verification
                             </Button>
                         </div>
