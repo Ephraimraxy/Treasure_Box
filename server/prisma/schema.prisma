@@ -19,8 +19,8 @@ model User {
   transactionPin  String?         // Hashed PIN
   phone           String?
   address         String?
-  bvn             String?
-  nin             String?
+  bvn             String?         @unique
+  nin             String?         @unique
   photoUrl        String?
   paystackCustomerCode String?
   referralCode    String          @unique @default(cuid())

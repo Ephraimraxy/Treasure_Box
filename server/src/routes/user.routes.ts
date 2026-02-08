@@ -160,7 +160,16 @@ router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
         });
 
         res.json({ message: 'KYC submitted and verified successfully' });
-    } catch (error) {
+    } catch (error: any) {
+        if (error.code === 'P2002') {
+            const field = error.meta?.target?.[0];
+            if (field === 'bvn') {
+                return res.status(400).json({ error: 'This BVN is already linked to another account' });
+            }
+            if (field === 'nin') {
+                return res.status(400).json({ error: 'This NIN is already linked to another account' });
+            }
+        }
         next(error);
     }
 });
