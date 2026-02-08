@@ -23,9 +23,9 @@ const KYC_STEPS = [
         description: 'Follow the instructions on the screen to prove you are a real person.'
     },
     {
-        id: 'document',
-        title: 'ID Document',
-        description: 'Upload a clear photo of your National ID, Driver\'s License, or Passport.'
+        id: 'details',
+        title: 'Identity Numbers',
+        description: 'Provide your BVN and NIN for final verification.'
     }
 ];
 
@@ -49,24 +49,33 @@ export const KYCPage = () => {
     const navigate = useNavigate();
 
     // Simulate liveness detection
+    // Simulate liveness detection
     useEffect(() => {
-        if (step === 2 && challengeStatus === 'detecting') {
-            const timer = setTimeout(() => {
-                setChallengeStatus('success');
-                addToast('success', 'Movement detected!');
+        if (step === 2) {
+            // Auto-start detection
+            if (challengeStatus === 'waiting') {
+                const startTimer = setTimeout(() => setChallengeStatus('detecting'), 1000); // 1s delay before starting
+                return () => clearTimeout(startTimer);
+            }
 
-                setTimeout(() => {
-                    if (challengeIndex < CHALLENGES.length - 1) {
-                        setChallengeIndex(prev => prev + 1);
-                        setChallengeStatus('waiting');
-                    } else {
-                        // All challenges done
-                        setStep(3);
-                    }
-                }, 1500);
-            }, 3000); // Simulate 3s detection time
+            if (challengeStatus === 'detecting') {
+                const timer = setTimeout(() => {
+                    setChallengeStatus('success');
+                    addToast('success', 'Movement detected!');
 
-            return () => clearTimeout(timer);
+                    setTimeout(() => {
+                        if (challengeIndex < CHALLENGES.length - 1) {
+                            setChallengeIndex(prev => prev + 1);
+                            setChallengeStatus('waiting'); // Will auto-trigger detecting again due to effect
+                        } else {
+                            // All challenges done
+                            setStep(3);
+                        }
+                    }, 1500);
+                }, 2000); // Reduced to 2s for faster UX
+
+                return () => clearTimeout(timer);
+            }
         }
     }, [step, challengeStatus, challengeIndex, addToast]);
 
@@ -204,55 +213,50 @@ export const KYCPage = () => {
                             )}
 
                             {step === 2 && (
-                                <div className="text-center">
-                                    <div className="bg-slate-800 p-4 rounded-xl mb-6 animate-pulse-glow border border-amber-500/20">
-                                        <span className="text-4xl block mb-2">{CHALLENGES[challengeIndex].icon}</span>
-                                        <h3 className="text-xl font-bold text-white mb-1">{CHALLENGES[challengeIndex].text}</h3>
-                                        <p className="text-amber-500 text-sm font-medium uppercase tracking-wider">
-                                            {challengeStatus === 'waiting' ? 'Get Ready...' : challengeStatus === 'detecting' ? 'Analyzing...' : 'Success!'}
-                                        </p>
-                                    </div>
-
-                                    {challengeStatus === 'waiting' && (
-                                        <ActionButton onClick={startLiveness}>I'm Ready</ActionButton>
-                                    )}
+                                <div className="bg-slate-800 p-4 rounded-xl mb-6 animate-pulse-glow border border-amber-500/20">
+                                    <span className="text-4xl block mb-2">{CHALLENGES[challengeIndex].icon}</span>
+                                    <h3 className="text-xl font-bold text-white mb-1">{CHALLENGES[challengeIndex].text}</h3>
+                                    <p className="text-amber-500 text-sm font-medium uppercase tracking-wider">
+                                        {challengeStatus === 'success' ? 'Great!' : 'Detecting...'}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <Input
-                                    label="BVN"
-                                    value={formData.bvn}
-                                    onChange={(e) => setFormData({ ...formData, bvn: e.target.value })}
-                                    placeholder="Enter your 11-digit BVN"
-                                    maxLength={11}
-                                />
-                                <Input
-                                    label="NIN"
-                                    value={formData.nin}
-                                    onChange={(e) => setFormData({ ...formData, nin: e.target.value })}
-                                    placeholder="Enter your 11-digit NIN"
-                                    maxLength={11}
-                                />
-                            </div>
-
-                            <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-amber-500/50 transition-colors cursor-pointer bg-slate-900/50 text-center">
-                                <div className="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                                    <Camera size={32} className="text-slate-400" />
                                 </div>
-                                <h3 className="font-bold text-white mb-2">Upload ID Document</h3>
-                                <p className="text-sm text-slate-400">Click to select or drag and drop</p>
-                                <input type="file" className="hidden" />
-                            </div>
-                            <ActionButton onClick={handleSubmit} loading={loading}>Submit Verification</ActionButton>
-                        </div>
                     )}
                 </div>
+                    )}
+
+                {step === 3 && (
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <Input
+                                label="BVN"
+                                value={formData.bvn}
+                                onChange={(e) => setFormData({ ...formData, bvn: e.target.value })}
+                                placeholder="Enter your 11-digit BVN"
+                                maxLength={11}
+                            />
+                            <Input
+                                label="NIN"
+                                value={formData.nin}
+                                onChange={(e) => setFormData({ ...formData, nin: e.target.value })}
+                                placeholder="Enter your 11-digit NIN"
+                                maxLength={11}
+                            />
+                        </div>
+
+                        <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-amber-500/50 transition-colors cursor-pointer bg-slate-900/50 text-center">
+                            <div className="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <Camera size={32} className="text-slate-400" />
+                            </div>
+                            <h3 className="font-bold text-white mb-2">Upload ID Document</h3>
+                            <p className="text-sm text-slate-400">Click to select or drag and drop</p>
+                            <input type="file" className="hidden" />
+                        </div>
+                        <ActionButton onClick={handleSubmit} loading={loading}>Submit Verification</ActionButton>
+                    </div>
+                )}
             </div>
         </div>
+        </div >
     );
 };
