@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 // ... (previous code)
 
 // Get User Profile (including KYC status)
-router.get('/profile', authenticate, async (req: Request, res: Response) => {
+router.get('/me', authenticate, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
         const user = await prisma.user.findUnique({

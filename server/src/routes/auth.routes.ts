@@ -128,7 +128,85 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     }
 });
 
-// ... (verify-otp, resend-otp lines 122-206 remain unchanged, will need to be careful with replace) ...
+// Verify OTP
+router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email, otp } = verifyOTPSchema.parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid email or OTP' });
+        }
+
+        if (user.otp !== otp || !user.otpExpires || user.otpExpires < new Date()) {
+            return res.status(400).json({ error: 'Invalid or expired OTP' });
+        }
+
+        // OTP Valid. Clear OTP fields.
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp: null,
+                otpExpires: null,
+                emailVerified: true
+            }
+        });
+
+        const token = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET || 'default-secret',
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            message: 'Verification successful',
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                emailVerified: true
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Resend OTP
+router.post('/resend-otp', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email } = requestOTPSchema.parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.json({ message: 'OTP sent if email exists' });
+        }
+
+        const otp = generateOTP();
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpires: new Date(Date.now() + 10 * 60 * 1000)
+            }
+        });
+
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendOTPEmail } = await import('../services/email.service');
+                await sendOTPEmail(email, otp);
+            } catch (emailError) {
+                console.error('Failed to send OTP email:', emailError);
+            }
+        }
+
+        res.json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Login - Standard Email/Password (OTP removed)
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
