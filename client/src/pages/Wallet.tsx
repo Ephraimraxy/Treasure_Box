@@ -127,7 +127,6 @@ export const WalletPage = () => {
                                         : 'Complete KYC & Profile to get your dedicated account number.'}
                                 </p>
                                 <Button
-                                    size="sm"
                                     variant="secondary"
                                     className="w-full text-xs"
                                     onClick={async () => {
