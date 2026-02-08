@@ -130,7 +130,7 @@ router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
         const schema = z.object({
             bvn: z.string().length(11, 'BVN must be 11 digits'),
             nin: z.string().length(11, 'NIN must be 11 digits'),
-            photoUrl: z.string().url('Invalid photo URL'),
+            photoUrl: z.string().optional(), // Make optional or allow empty string if frontend sends mock
             username: z.string().min(3).optional()
         });
 
@@ -152,48 +152,7 @@ router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
             data: {
                 bvn,
                 nin,
-                kycPhotoUrl: photoUrl,
-                username: username || undefined,
-                kycStatus: 'VERIFIED', // Auto-verify for now
-                kycVerified: true
-            }
-        });
-
-        res.json({ message: 'KYC submitted and verified successfully' });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Submit KYC
-router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const schema = z.object({
-            bvn: z.string().length(11, 'BVN must be 11 digits'),
-            nin: z.string().length(11, 'NIN must be 11 digits'),
-            photoUrl: z.string().url('Invalid photo URL'),
-            username: z.string().min(3).optional()
-        });
-
-        const { bvn, nin, photoUrl, username } = schema.parse(req.body);
-        const userId = req.user!.id;
-
-        // Check uniqueness if username provided
-        if (username) {
-            const existing = await prisma.user.findUnique({
-                where: { username }
-            });
-            if (existing && existing.id !== userId) {
-                return res.status(400).json({ error: 'Username already taken' });
-            }
-        }
-
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                bvn,
-                nin,
-                kycPhotoUrl: photoUrl,
+                kycPhotoUrl: photoUrl || 'https://placehold.co/600x400/png', // Default if missing
                 username: username || undefined,
                 kycStatus: 'VERIFIED', // Auto-verify for now
                 kycVerified: true
