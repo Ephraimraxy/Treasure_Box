@@ -130,12 +130,16 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res, next) =
             return res.status(404).json({ error: 'Investment not found' });
         }
 
-        if (investment.status !== 'MATURED') {
-            return res.status(400).json({ error: 'Investment has not matured yet' });
+        if (investment.status === 'PAYOUT_PENDING') {
+            return res.status(400).json({ error: 'Withdrawal already requested' });
         }
 
-        if (investment.status === 'PAYOUT_PENDING' || investment.payoutProcessed) {
-            return res.status(400).json({ error: 'Withdrawal already requested or processed' });
+        if (investment.status === 'PAYOUT_PROCESSED' || investment.payoutProcessed) {
+            return res.status(400).json({ error: 'Withdrawal already processed' });
+        }
+
+        if (investment.status !== 'MATURED') {
+            return res.status(400).json({ error: 'Investment has not matured yet' });
         }
 
         if (!investment.user.bankDetails) {
