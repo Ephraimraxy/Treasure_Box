@@ -255,6 +255,14 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
             { expiresIn: '7d' }
         );
 
+        // Send Login Alert (Async)
+        safeSendEmail(async () => {
+            const { sendLoginAlertEmail } = await import('../services/email.service');
+            const ip = req.ip || 'Unknown IP';
+            const userAgent = req.headers['user-agent'] || 'Unknown Device';
+            await sendLoginAlertEmail(user.email, new Date().toLocaleString(), ip, userAgent);
+        });
+
         res.json({
             message: 'Login successful',
             token,

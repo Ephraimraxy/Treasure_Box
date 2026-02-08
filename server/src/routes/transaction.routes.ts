@@ -91,6 +91,22 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
             }
         });
 
+        // Send Email Notification
+        if (process.env.RESEND_API_KEY) {
+            const { sendTransactionEmail } = await import('../services/email.service');
+            sendTransactionEmail(user.email, 'withdrawal', amount, 'PENDING').catch(console.error);
+        }
+
+        // Create In-App Notification
+        await prisma.notification.create({
+            data: {
+                userId: req.user!.id,
+                title: 'Withdrawal Initiated',
+                message: `Your withdrawal request of ₦${amount.toLocaleString()} has been submitted.`,
+                type: 'INFO'
+            }
+        });
+
         res.status(201).json({
             message: 'Withdrawal request submitted for approval',
             transaction

@@ -91,6 +91,13 @@ router.get('/verify/:reference', authenticate, async (req: AuthRequest, res, nex
                         }
                     })
                 ]);
+
+                // Send Email Notification (Async)
+                const user = await prisma.user.findUnique({ where: { id: userId } });
+                if (user && process.env.RESEND_API_KEY) {
+                    const { sendTransactionEmail } = await import('../services/email.service');
+                    sendTransactionEmail(user.email, 'deposit', transaction.amount, 'SUCCESS').catch(console.error);
+                }
             }
 
             res.json({ message: 'Payment verified successfully', status: 'success' });
@@ -145,6 +152,13 @@ router.post('/webhook', async (req: any, res: any, next: any) => {
                         }
                     })
                 ]);
+
+                // Send Email Notification (Async)
+                const user = await prisma.user.findUnique({ where: { id: transaction.userId } });
+                if (user && process.env.RESEND_API_KEY) {
+                    const { sendTransactionEmail } = await import('../services/email.service');
+                    sendTransactionEmail(user.email, 'deposit', amountInNaira, 'SUCCESS').catch(console.error);
+                }
             }
         }
 
