@@ -27,6 +27,8 @@ model User {
   referrals       User[]          @relation("Referrals")
   referralEarnings Float          @default(0)
   kycVerified     Boolean         @default(false)
+  kycStatus       KYCStatus       @default(NOT_STARTED)
+  kycPhotoUrl     String?
   balance         Float           @default(0)
   role            Role            @default(USER)
   createdAt       DateTime        @default(now())
@@ -164,4 +166,11 @@ enum NotificationType {
   SUCCESS
   WARNING
   ERROR
+}
+
+enum KYCStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  REJECTED
 }

@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import { authApi } from '../api';
 
 // Animated Input Component
-const AnimatedInput = ({
+export const AnimatedInput = ({
     type = 'text',
     placeholder,
     value,
@@ -57,7 +57,7 @@ const StepIndicator = ({ current, total }: { current: number; total: number }) =
 );
 
 // Button
-const ActionButton = ({
+export const ActionButton = ({
     onClick,
     disabled,
     loading,

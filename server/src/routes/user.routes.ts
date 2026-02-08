@@ -1,18 +1,63 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get current user profile
-router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+// Schema for KYC submission
+const kycSchema = z.object({
+    photoUrl: z.string().optional(), // In a real app, this would be required or handled via file upload
+});
+
+// Submit KYC
+router.post('/kyc', authenticate, async (req: Request, res: Response) => {
     try {
+        const { photoUrl } = kycSchema.parse(req.body);
+        const userId = (req as any).user.userId;
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                kycStatus: 'PENDING', // Or VERIFIED if we trust the "liveness" immediately
+                kycPhotoUrl: photoUrl,
+                kycVerified: false // Admin will verify? Or auto-verify?
+            }
+        });
+
+        res.json({
+            message: 'KYC submitted successfully',
+            user: {
+                id: user.id,
+                kycStatus: user.kycStatus,
+                kycVerified: user.kycVerified
+            }
+        });
+
+    } catch (error) {
+        console.error('KYC submission error:', error);
+        res.status(500).json({ error: 'Failed to submit KYC' });
+    }
+});
+
+// Get User Profile (including KYC status)
+router.get('/profile', authenticate, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.userId;
         const user = await prisma.user.findUnique({
-            where: { id: req.user!.id },
-            include: {
-                bankDetails: true,
-                virtualAccount: true
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                kycStatus: true,
+                kycVerified: true,
+                kycPhotoUrl: true,
+                role: true,
+                referralCode: true,
+                balance: true,
+                referralEarnings: true
             }
         });
 
@@ -20,72 +65,10 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const { password, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
+        res.json(user);
     } catch (error) {
-        next(error);
-    }
-});
-
-// Update profile
-router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const { name, username, phone, address } = req.body;
-
-        const user = await prisma.user.update({
-            where: { id: req.user!.id },
-            data: { name, username, phone, address }
-        });
-
-        const { password, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Update bank details
-router.put('/me/bank', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const { bankName, accountNumber, accountName } = req.body;
-
-        const bankDetails = await prisma.bankDetail.upsert({
-            where: { userId: req.user!.id },
-            update: { bankName, accountNumber, accountName },
-            create: { userId: req.user!.id, bankName, accountNumber, accountName }
-        });
-
-        res.json(bankDetails);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Get user notifications
-router.get('/me/notifications', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const notifications = await prisma.notification.findMany({
-            where: { userId: req.user!.id },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        res.json(notifications);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Mark notifications as read
-router.patch('/me/notifications/read', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        await prisma.notification.updateMany({
-            where: { userId: req.user!.id },
-            data: { read: true }
-        });
-
-        res.json({ message: 'All notifications marked as read' });
-    } catch (error) {
-        next(error);
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
     }
 });
 

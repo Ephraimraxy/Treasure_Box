@@ -27,6 +27,8 @@ import {
     AdminUsersPage,
     AdminAuditPage
 } from './pages/Admin';
+import { KYCPage } from './pages/KYC';
+
 
 // Styles
 import './index.css';
@@ -76,6 +78,7 @@ const AppContent = () => {
                 <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
                 <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>} />
