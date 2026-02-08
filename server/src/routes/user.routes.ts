@@ -118,7 +118,9 @@ router.post('/change-pin', authenticate, async (req: AuthRequest, res, next) => 
             where: { id: req.user!.id },
             data: { transactionPin: hashedPin }
         });
-
+        res.json({ message: 'PIN changed successfully' });
+    } catch (error) {
+        next(error);
     }
 });
 
