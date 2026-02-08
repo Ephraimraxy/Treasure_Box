@@ -126,6 +126,7 @@ model Settings {
   maxDeposit                Float   @default(5000000)
   minWithdrawal             Float   @default(1000)
   maxWithdrawal             Float   @default(1000000)
+  minInvestment             Float   @default(5000)
   dailyTransactionLimit     Float   @default(5000000)
 }
 
@@ -162,6 +163,8 @@ enum TransactionStatus {
 enum InvestmentStatus {
   ACTIVE
   MATURED
+  PAYOUT_PENDING
+  PAYOUT_PROCESSED
 }
 
 enum NotificationType {
