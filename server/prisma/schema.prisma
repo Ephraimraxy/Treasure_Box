@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  password        String
+  name            String?
+  username        String?         @unique
+  phone           String?
+  address         String?
+  bvn             String?
+  nin             String?
+  photoUrl        String?
+  referralCode    String          @unique @default(cuid())
+  referredById    String?
+  referredBy      User?           @relation("Referrals", fields: [referredById], references: [id])
+  referrals       User[]          @relation("Referrals")
+  referralEarnings Float          @default(0)
+  kycVerified     Boolean         @default(false)
+  balance         Float           @default(0)
+  role            Role            @default(USER)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  transactions    Transaction[]
+  investments     Investment[]
+  notifications   Notification[]
+  bankDetails     BankDetail?
+  virtualAccount  VirtualAccount?
+}
+
+model BankDetail {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankName      String
+  accountNumber String
+  accountName   String
+}
+
+model VirtualAccount {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankName      String
+  accountNumber String
+  accountName   String
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  amount          Float
+  status          TransactionStatus @default(PENDING)
+  description     String
+  rejectionReason String?
+  meta            Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Investment {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  principal       Float
+  durationDays    Int
+  baseRate        Float
+  bonusRate       Float            @default(0)
+  startDate       DateTime         @default(now())
+  maturityDate    DateTime
+  status          InvestmentStatus @default(ACTIVE)
+  payoutProcessed Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model Settings {
+  id                        String  @id @default("global")
+  paystackPublicKey         String?
+  isSystemPaused            Boolean @default(false)
+  withdrawalPacingThreshold Int     @default(10)
+  withdrawalPacingDelay     String  @default("24 hours")
+  minDeposit                Float   @default(1000)
+  maxDeposit                Float   @default(5000000)
+  minWithdrawal             Float   @default(1000)
+  maxWithdrawal             Float   @default(1000000)
+  dailyTransactionLimit     Float   @default(5000000)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminEmail String
+  action     String
+  details    String
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  INVESTMENT_PAYOUT
+  INVESTMENT_DEBIT
+  UTILITY_BILL
+  AIRTIME_DEPOSIT
+  REFERRAL_BONUS
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REJECTED
+}
+
+enum InvestmentStatus {
+  ACTIVE
+  MATURED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}

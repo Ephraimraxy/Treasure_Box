@@ -1,0 +1,21 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl"]
+
+[phases.install]
+cmds = [
+  "cd server && npm install",
+  "cd client && npm install"
+]
+
+[phases.build]
+cmds = [
+  "cd client && npm run build",
+  "cd server && npm run build",
+  "cp -r client/dist server/dist/public"
+]
+
+[start]
+cmd = "cd server && npm start"
+
+[variables]
+NODE_ENV = "production"
