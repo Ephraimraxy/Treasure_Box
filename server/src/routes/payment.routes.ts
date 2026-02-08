@@ -134,6 +134,19 @@ router.post('/webhook', async (req: any, res: any, next: any) => {
             });
 
             if (transaction && transaction.status === 'PENDING') {
+                // SECURITY: Double check with Paystack API
+                const verification = await paystackService.verifyTransaction(reference);
+
+                if (verification.data.status !== 'success') {
+                    console.error(`Fraud Attempt? Webhook says success but API says ${verification.data.status} for ref ${reference}`);
+                    return res.sendStatus(200); // Acknowledge but don't process
+                }
+
+                if (verification.data.amount !== amount) {
+                    console.error(`Amount Mismatch: Webhook ${amount} vs API ${verification.data.amount}`);
+                    return res.sendStatus(200);
+                }
+
                 await prisma.$transaction([
                     prisma.transaction.update({
                         where: { id: transaction.id },
