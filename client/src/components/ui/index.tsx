@@ -107,7 +107,7 @@ interface ToastContainerProps {
 }
 
 export const ToastContainer = ({ toasts }: ToastContainerProps) => (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4 md:px-0">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4 md:px-0">
         {toasts.map((t) => (
             <div key={t.id} className="pointer-events-auto bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
                 {t.type === 'error' ? <AlertCircle size={18} className="text-red-400" /> :

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { transactionApi, investmentApi } from '../api';
+import { transactionApi, investmentApi, paymentApi } from '../api';
 import { Button, Input, Card, FormatCurrency } from '../components/ui';
 
 const DURATIONS = [
@@ -30,10 +30,12 @@ export const WalletPage = () => {
         }
         setLoading(true);
         try {
-            await transactionApi.deposit(amt);
-            addToast('success', 'Deposit request submitted');
-            await refreshUser();
-            setAmount('');
+            const response = await paymentApi.initialize(amt, 'deposit');
+            if (response.data.authorization_url) {
+                window.location.href = response.data.authorization_url;
+            } else {
+                addToast('error', 'Failed to initialize payment');
+            }
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Deposit failed');
         } finally {
@@ -133,11 +135,6 @@ export const WalletPage = () => {
                                         setLoading(true);
                                         try {
                                             // Call API to create virtual account
-                                            // Assuming paymentApi.createVirtualAccount exists as per step 871
-                                            // We need to import paymentApi from '../api' if not already there, but wait, transactionApi was used here.
-                                            // Let's use the one from api/index.ts
-                                            // Importing paymentApi at the top
-                                            const { paymentApi } = await import('../api');
                                             await paymentApi.createVirtualAccount();
                                             addToast('success', 'Virtual Account generated!');
                                             await refreshUser();
@@ -229,6 +226,18 @@ export const WalletPage = () => {
                                 </div>
                             )}
                         </>
+                    )}
+
+                    {tab === 'deposit' && (
+                        <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex items-start gap-3">
+                            <Info className="text-blue-400 shrink-0 mt-0.5" size={18} />
+                            <div>
+                                <h4 className="text-sm font-bold text-white mb-1">Instant Card Funding</h4>
+                                <p className="text-xs text-slate-400">
+                                    Fund your wallet instantly using your debit card. No KYC required for card deposits.
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                     <Input
