@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle, Info, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
 
 // Button Component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -98,7 +98,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
 // Toast Container Component
 interface Toast {
     id: number;
-    type: 'info' | 'success' | 'error';
+    type: 'info' | 'success' | 'error' | 'warning';
     message: string;
 }
 
@@ -111,8 +111,9 @@ export const ToastContainer = ({ toasts }: ToastContainerProps) => (
         {toasts.map((t) => (
             <div key={t.id} className="pointer-events-auto bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
                 {t.type === 'error' ? <AlertCircle size={18} className="text-red-400" /> :
-                    t.type === 'info' ? <Info size={18} className="text-blue-400" /> :
-                        <CheckCircle size={18} className="text-emerald-400" />}
+                    t.type === 'warning' ? <AlertTriangle size={18} className="text-amber-400" /> :
+                        t.type === 'info' ? <Info size={18} className="text-blue-400" /> :
+                            <CheckCircle size={18} className="text-emerald-400" />}
                 <span className="text-sm font-medium">{t.message}</span>
             </div>
         ))}

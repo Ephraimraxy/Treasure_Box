@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface Toast {
     id: number;
-    type: 'info' | 'success' | 'error';
+    type: 'info' | 'success' | 'error' | 'warning';
     message: string;
 }
 
