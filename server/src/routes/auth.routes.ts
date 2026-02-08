@@ -69,6 +69,8 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
             return res.status(400).json({ error: 'Email already registered' });
         }
 
+        let referrerId: string | null = null;
+
         if (referralCode) {
             // Case-insensitive referral lookup
             const referrer = await prisma.user.findFirst({
