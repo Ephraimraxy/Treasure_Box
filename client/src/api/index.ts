@@ -62,6 +62,7 @@ export const userApi = {
     submitKYC: (data: { photoUrl: string }) => api.post('/users/kyc', data),
     setPin: (pin: string) => api.post('/users/set-pin', { pin }),
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
+    getReferrals: () => api.get('/users/referrals'),
 };
 
 // Transaction API

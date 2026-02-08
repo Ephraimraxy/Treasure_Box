@@ -1,12 +1,37 @@
-import React from 'react';
-import { Copy, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Copy, Users, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Button, Card, FormatCurrency } from '../components/ui';
+import { Button, Card, FormatCurrency, Spinner } from '../components/ui';
+import { userApi } from '../api';
+
+interface Referral {
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    kycVerified: boolean;
+}
 
 export const ReferralsPage = () => {
     const { user } = useAuth();
     const { addToast } = useToast();
+    const [referrals, setReferrals] = useState<Referral[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReferrals = async () => {
+            try {
+                const response = await userApi.getReferrals();
+                setReferrals(response.data);
+            } catch (error) {
+                console.error('Failed to fetch referrals:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchReferrals();
+    }, []);
 
     const copyReferralCode = () => {
         navigator.clipboard.writeText(user?.referralCode || '');
@@ -63,28 +88,58 @@ export const ReferralsPage = () => {
                 <Card>
                     <div className="text-slate-400 text-sm mb-1">Total Earnings</div>
                     <div className="text-3xl font-bold text-white">
-                        <FormatCurrency amount={0} />
+                        <FormatCurrency amount={0} /> {/* Can update this later if referral earnings are tracked */}
                     </div>
                     <div className="text-xs text-slate-500 mt-2">From referral bonuses</div>
                 </Card>
                 <Card>
                     <div className="text-slate-400 text-sm mb-1">Total Referrals</div>
-                    <div className="text-3xl font-bold text-white">0</div>
+                    <div className="text-3xl font-bold text-white">{user?._count?.referrals || 0}</div>
                     <div className="text-xs text-slate-500 mt-2">Friends joined</div>
                 </Card>
             </div>
 
-            {/* Referral List Placeholder */}
+            {/* Referral List */}
             <Card>
                 <h3 className="font-bold text-white mb-4">Your Referrals</h3>
-                <div className="text-center py-12">
-                    <Users className="mx-auto text-slate-600 mb-4" size={48} />
-                    <p className="text-slate-500">No referrals yet</p>
-                    <p className="text-xs text-slate-600 mt-2">Share your code to start earning!</p>
-                </div>
+                {loading ? (
+                    <div className="flex justify-center py-8">
+                        <Spinner />
+                    </div>
+                ) : referrals.length === 0 ? (
+                    <div className="text-center py-12">
+                        <Users className="mx-auto text-slate-600 mb-4" size={48} />
+                        <p className="text-slate-500">No referrals yet</p>
+                        <p className="text-xs text-slate-600 mt-2">Share your code to start earning!</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {referrals.map((ref) => (
+                            <div key={ref.id} className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-800 rounded-full">
+                                        <UserPlus size={16} className="text-slate-400" />
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-white">{ref.name || 'User'}</div>
+                                        <div className="text-xs text-slate-500">{ref.email}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className={`text-xs px-2 py-0.5 rounded ${ref.kycVerified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                                        {ref.kycVerified ? 'Verified' : 'Pending'}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 mt-1">
+                                        {new Date(ref.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </Card>
 
-            {/* How it Works */}
+            {/* How it Works - kept same */}
             <Card>
                 <h3 className="font-bold text-white mb-4">How It Works</h3>
                 <div className="space-y-4">

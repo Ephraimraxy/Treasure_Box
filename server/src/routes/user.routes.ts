@@ -27,7 +27,10 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 balance: true,
                 referralEarnings: true,
                 virtualAccount: true,
-                transactionPin: true
+                transactionPin: true,
+                _count: {
+                    select: { referrals: true }
+                }
             }
         });
 
@@ -45,6 +48,26 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Profile fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// Get User Referrals
+router.get('/referrals', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const referrals = await prisma.user.findMany({
+            where: { referredById: req.user!.id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true,
+                kycVerified: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(referrals);
+    } catch (error) {
+        next(error);
     }
 });
 

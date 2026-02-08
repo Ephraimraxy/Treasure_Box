@@ -15,6 +15,9 @@ interface User {
         accountNumber: string;
         accountName: string;
     };
+    _count?: {
+        referrals: number;
+    };
 }
 
 interface AuthContextType {
