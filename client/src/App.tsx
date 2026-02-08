@@ -25,7 +25,9 @@ import {
     AdminDashboardPage,
     AdminWithdrawalsPage,
     AdminUsersPage,
-    AdminAuditPage
+    AdminUsersPage,
+    AdminAuditPage,
+    AdminSettingsPage
 } from './pages/Admin';
 import { KYCPage } from './pages/KYC';
 
@@ -85,7 +87,7 @@ const AppContent = () => {
                 <Route path="/admin/withdrawals" element={<ProtectedRoute adminOnly><AdminWithdrawalsPage /></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>} />
                 <Route path="/admin/audit" element={<ProtectedRoute adminOnly><AdminAuditPage /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute adminOnly><div className="text-white">Settings (Coming Soon)</div></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>} />
 
                 {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
