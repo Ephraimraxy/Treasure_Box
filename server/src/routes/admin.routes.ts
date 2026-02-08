@@ -38,7 +38,10 @@ router.get('/users', async (req: AuthRequest, res, next) => {
 router.get('/withdrawals/pending', async (req: AuthRequest, res, next) => {
     try {
         const withdrawals = await prisma.transaction.findMany({
-            where: { type: 'WITHDRAWAL', status: 'PENDING' },
+            where: {
+                type: { in: ['WITHDRAWAL', 'INVESTMENT_PAYOUT'] },
+                status: 'PENDING'
+            },
             include: {
                 user: {
                     select: { email: true, name: true, bankDetails: true }
@@ -62,6 +65,14 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
             where: { id },
             data: { status: 'SUCCESS' }
         });
+
+        // If linked to an investment, mark as processed
+        if (transaction.investmentId) {
+            await prisma.investment.update({
+                where: { id: transaction.investmentId },
+                data: { status: 'PAYOUT_PROCESSED' }
+            });
+        }
 
         // Log audit
         await prisma.auditLog.create({
@@ -205,6 +216,52 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
             activeInvestments,
             pendingWithdrawals
         });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Get System Settings
+router.get('/settings', async (req: AuthRequest, res, next) => {
+    try {
+        const settings = await prisma.settings.findUnique({
+            where: { id: 'global' }
+        });
+
+        // Return default if not exists
+        res.json(settings || {
+            minDeposit: 1000,
+            maxDeposit: 5000000,
+            minWithdrawal: 1000,
+            maxWithdrawal: 1000000,
+            minInvestment: 5000,
+            isSystemPaused: false
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Update System Settings
+router.put('/settings', async (req: AuthRequest, res, next) => {
+    try {
+        const data = req.body;
+
+        const settings = await prisma.settings.upsert({
+            where: { id: 'global' },
+            update: data,
+            create: { id: 'global', ...data }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'UPDATE_SETTINGS',
+                details: `Updated system settings`
+            }
+        });
+
+        res.json(settings);
     } catch (error) {
         next(error);
     }

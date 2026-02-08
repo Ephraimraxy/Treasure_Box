@@ -117,7 +117,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 {/* Mobile Bottom Nav */}
                 <div className="md:hidden fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-800 pb-safe z-30">
                     <div className="flex justify-around items-center p-2">
-                        {navItems.slice(0, 5).map((item) => (
+                        {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}

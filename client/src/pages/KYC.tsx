@@ -98,46 +98,69 @@ export const KYCPage = () => {
 
     // Initialize Face Mesh
     useEffect(() => {
-        if (step === 2 && !faceMeshRef.current) {
-            const mesh = new FaceMesh({
-                locateFile: (file) => {
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-                }
-            });
+        let isMounted = true;
+        let mesh: FaceMesh | null = null;
+        let camera: cam.Camera | null = null;
 
-            mesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
+        const initFaceMesh = async () => {
+            if (step !== 2) return;
 
-            mesh.onResults(onResults);
-            faceMeshRef.current = mesh;
-
-            if (webcamRef.current && webcamRef.current.video) {
-                const camera = new cam.Camera(webcamRef.current.video, {
-                    onFrame: async () => {
-                        if (faceMeshRef.current && webcamRef.current?.video) {
-                            await faceMeshRef.current.send({ image: webcamRef.current.video });
-                        }
-                    },
-                    width: 640,
-                    height: 480
+            try {
+                mesh = new FaceMesh({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    }
                 });
-                camera.start();
-                cameraRef.current = camera;
+
+                mesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                mesh.onResults((results) => {
+                    if (isMounted) onResults(results);
+                });
+
+                faceMeshRef.current = mesh;
+
+                if (webcamRef.current && webcamRef.current.video) {
+                    camera = new cam.Camera(webcamRef.current.video, {
+                        onFrame: async () => {
+                            if (isMounted && mesh && webcamRef.current?.video) {
+                                await mesh.send({ image: webcamRef.current.video });
+                            }
+                        },
+                        width: 640,
+                        height: 480
+                    });
+
+                    if (isMounted) {
+                        await camera.start();
+                        cameraRef.current = camera;
+                    }
+                }
+            } catch (error) {
+                console.error("FaceMesh Init Error:", error);
+                addToast('error', 'Failed to start camera detection. Please refresh.');
             }
+        };
+
+        if (step === 2) {
+            initFaceMesh();
         }
 
         return () => {
-            if (faceMeshRef.current) {
-                faceMeshRef.current.close();
-                faceMeshRef.current = null;
-            }
-            if (cameraRef.current) {
-                cameraRef.current.stop();
+            isMounted = false;
+            // Cleanup strictly
+            if (camera) {
+                camera.stop();
                 cameraRef.current = null;
+            }
+            if (mesh) {
+                mesh.close();
+                faceMeshRef.current = null;
             }
             window.speechSynthesis.cancel();
         };

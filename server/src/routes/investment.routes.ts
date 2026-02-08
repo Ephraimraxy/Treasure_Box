@@ -38,7 +38,22 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 // Create investment
 router.post('/', authenticate, async (req: AuthRequest, res, next) => {
     try {
-        const { amount, durationDays, bonusRate = 0 } = createInvestmentSchema.parse(req.body);
+        // Validation schema (dynamic min handling inside)
+        const schema = z.object({
+            amount: z.number().positive(),
+            durationDays: z.number(),
+            bonusRate: z.number().min(0).max(8).optional()
+        });
+
+        const { amount, durationDays, bonusRate = 0 } = schema.parse(req.body);
+
+        // Check Dynamic Minimum
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+        const minInvestment = settings?.minInvestment || 5000;
+
+        if (amount < minInvestment) {
+            return res.status(400).json({ error: `Minimum investment is ₦${minInvestment.toLocaleString()}` });
+        }
 
         const durationConfig = DURATIONS.find(d => d.days === durationDays);
         if (!durationConfig) {
@@ -100,6 +115,66 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
     }
 });
 
+// Request Investment Withdrawal
+router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.id;
+
+        const investment = await prisma.investment.findUnique({
+            where: { id },
+            include: { user: { include: { bankDetails: true } } }
+        });
+
+        if (!investment || investment.userId !== userId) {
+            return res.status(404).json({ error: 'Investment not found' });
+        }
+
+        if (investment.status !== 'MATURED') {
+            return res.status(400).json({ error: 'Investment has not matured yet' });
+        }
+
+        if (investment.status === 'PAYOUT_PENDING' || investment.payoutProcessed) {
+            return res.status(400).json({ error: 'Withdrawal already requested or processed' });
+        }
+
+        if (!investment.user.bankDetails) {
+            return res.status(400).json({ error: 'Please save your bank details first' });
+        }
+
+        const totalRate = investment.baseRate + investment.bonusRate;
+        const payoutAmount = investment.principal * (1 + totalRate / 100);
+
+        await prisma.$transaction([
+            // Update investment status
+            prisma.investment.update({
+                where: { id },
+                data: { status: 'PAYOUT_PENDING' }
+            }),
+            // Create pending transaction for Admin Approval
+            prisma.transaction.create({
+                data: {
+                    userId,
+                    investmentId: id,
+                    type: 'INVESTMENT_PAYOUT',
+                    amount: payoutAmount,
+                    status: 'PENDING',
+                    description: `Matured Investment Withdrawal Request`,
+                    meta: {
+                        bankName: investment.user.bankDetails.bankName,
+                        accountNumber: investment.user.bankDetails.accountNumber,
+                        accountName: investment.user.bankDetails.accountName
+                    }
+                }
+            })
+        ]);
+
+        res.json({ message: 'Withdrawal request submitted for approval' });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Process matured investments (cron job endpoint)
 router.post('/process-maturity', async (req, res, next) => {
     try {
@@ -124,28 +199,15 @@ router.post('/process-maturity', async (req, res, next) => {
             const payout = investment.principal * (1 + totalRate / 100);
 
             await prisma.$transaction([
-                prisma.user.update({
-                    where: { id: investment.userId },
-                    data: { balance: { increment: payout } }
-                }),
                 prisma.investment.update({
                     where: { id: investment.id },
-                    data: { status: 'MATURED', payoutProcessed: true }
-                }),
-                prisma.transaction.create({
-                    data: {
-                        userId: investment.userId,
-                        type: 'INVESTMENT_PAYOUT',
-                        amount: payout,
-                        status: 'SUCCESS',
-                        description: `Investment #${investment.id.slice(-4)} matured`
-                    }
+                    data: { status: 'MATURED' }
                 }),
                 prisma.notification.create({
                     data: {
                         userId: investment.userId,
                         title: 'Investment Matured',
-                        message: `Investment #${investment.id.slice(-4)} matured! ₦${payout.toLocaleString()} credited.`,
+                        message: `Investment #${investment.id.slice(-4)} has matured! You can now request withdrawal.`,
                         type: 'SUCCESS'
                     }
                 })

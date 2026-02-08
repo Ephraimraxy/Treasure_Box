@@ -185,5 +185,28 @@ router.post('/kyc', authenticate, async (req: AuthRequest, res, next) => {
         next(error);
     }
 });
+// Save Bank Details
+router.post('/bank-details', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const schema = z.object({
+            bankName: z.string(),
+            accountNumber: z.string().length(10),
+            accountName: z.string()
+        });
+
+        const { bankName, accountNumber, accountName } = schema.parse(req.body);
+        const userId = req.user!.id;
+
+        const bankDetails = await prisma.bankDetail.upsert({
+            where: { userId },
+            update: { bankName, accountNumber, accountName },
+            create: { userId, bankName, accountNumber, accountName }
+        });
+
+        res.json({ message: 'Bank details saved successfully', bankDetails });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;

@@ -100,17 +100,13 @@ const App = () => {
     const [showSplash, setShowSplash] = useState(true);
     const [isFirstVisit, setIsFirstVisit] = useState(true);
 
+    // Always show splash on mount
     useEffect(() => {
-        // Only show splash on first visit per session
-        const hasShownSplash = sessionStorage.getItem('splashShown');
-        if (hasShownSplash) {
-            setShowSplash(false);
-            setIsFirstVisit(false);
-        }
+        // Ensure splash runs on refresh 
+        setShowSplash(true);
     }, []);
 
     const handleSplashComplete = () => {
-        sessionStorage.setItem('splashShown', 'true');
         setShowSplash(false);
     };
 
@@ -118,7 +114,7 @@ const App = () => {
         <BrowserRouter>
             <AuthProvider>
                 <ToastProvider>
-                    {showSplash && isFirstVisit ? (
+                    {showSplash ? (
                         <SplashScreen onComplete={handleSplashComplete} />
                     ) : (
                         <AppContent />
