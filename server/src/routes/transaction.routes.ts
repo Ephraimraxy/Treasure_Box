@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -55,11 +56,23 @@ router.post('/deposit', authenticate, async (req: AuthRequest, res, next) => {
 // Request withdrawal
 router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
     try {
-        const { amount } = withdrawSchema.parse(req.body);
+        const { amount, pin } = withdrawSchema.extend({
+            pin: z.string().length(4)
+        }).parse(req.body);
 
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+
         if (!user || user.balance < amount) {
             return res.status(400).json({ error: 'Insufficient balance' });
+        }
+
+        if (!user.transactionPin) {
+            return res.status(400).json({ error: 'Transaction PIN not set' });
+        }
+
+        const isPinValid = await bcrypt.compare(pin, user.transactionPin);
+        if (!isPinValid) {
+            return res.status(401).json({ error: 'Invalid PIN' });
         }
 
         // Deduct balance immediately, admin can reverse if rejected
@@ -90,11 +103,21 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
 // Utility payment (simulated)
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
     try {
-        const { type, amount, meta } = req.body;
+        const { type, amount, meta, pin } = req.body;
 
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+
         if (!user || user.balance < amount) {
             return res.status(400).json({ error: 'Insufficient balance' });
+        }
+
+        if (!user.transactionPin) {
+            return res.status(400).json({ error: 'Transaction PIN not set' });
+        }
+
+        const isPinValid = await bcrypt.compare(pin, user.transactionPin);
+        if (!isPinValid) {
+            return res.status(401).json({ error: 'Invalid PIN' });
         }
 
         await prisma.user.update({

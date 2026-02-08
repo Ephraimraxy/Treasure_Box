@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Building2, Shield, Camera } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building2, Shield, Camera, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userApi, paymentApi } from '../api';
@@ -214,6 +214,64 @@ export const ProfilePage = () => {
                         )}
                     </div>
                 )}
+            </Card>
+
+            {/* Security - Transaction PIN */}
+            <Card>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-white">Security</h3>
+                    <Lock className="text-amber-500" size={20} />
+                </div>
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-400">
+                        {user?.transactionPin
+                            ? 'Your transaction PIN is set. You can change it below.'
+                            : 'Set a 4-digit PIN to secure your withdrawals.'}
+                    </p>
+
+                    {user?.transactionPin ? (
+                        <Button
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() => {
+                                const oldPin = prompt('Enter current PIN:');
+                                if (!oldPin) return;
+                                const newPin = prompt('Enter new 4-digit PIN:');
+                                if (!newPin) return;
+
+                                setLoading(true);
+                                userApi.changePin(oldPin, newPin)
+                                    .then(() => {
+                                        addToast('success', 'PIN changed successfully');
+                                        refreshUser();
+                                    })
+                                    .catch((err: any) => addToast('error', err.response?.data?.error || 'Failed'))
+                                    .finally(() => setLoading(false));
+                            }}
+                        >
+                            Change PIN
+                        </Button>
+                    ) : (
+                        <Button
+                            className="w-full"
+                            onClick={() => {
+                                const pin = prompt('Set your 4-digit PIN:');
+                                if (!pin) return;
+
+                                setLoading(true);
+                                userApi.setPin(pin)
+                                    .then(() => {
+                                        addToast('success', 'PIN set successfully');
+                                        refreshUser();
+                                    })
+                                    .catch((err: any) => addToast('error', err.response?.data?.error || 'Failed'))
+                                    .finally(() => setLoading(false));
+                            }}
+                        >
+                            Set PIN
+                        </Button>
+                    )}
+                </div>
             </Card>
 
             {/* KYC Verification */}

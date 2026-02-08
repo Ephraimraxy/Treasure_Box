@@ -16,6 +16,7 @@ model User {
   password        String
   name            String?
   username        String?         @unique
+  transactionPin  String?         // Hashed PIN
   phone           String?
   address         String?
   bvn             String?

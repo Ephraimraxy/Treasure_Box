@@ -9,6 +9,7 @@ interface User {
     balance: number;
     referralCode: string;
     kycVerified: boolean;
+    transactionPin?: boolean; // Just to check if set, no need to store hash on client
     virtualAccount?: {
         bankName: string;
         accountNumber: string;

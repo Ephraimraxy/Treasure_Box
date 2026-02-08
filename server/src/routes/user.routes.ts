@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -58,7 +59,9 @@ router.get('/profile', authenticate, async (req: Request, res: Response) => {
                 referralCode: true,
                 balance: true,
                 referralEarnings: true,
-                virtualAccount: true
+                referralEarnings: true,
+                virtualAccount: true,
+                transactionPin: true
             }
         });
 
@@ -66,10 +69,70 @@ router.get('/profile', authenticate, async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json(user);
+        // Transform to return boolean for pin presence
+        const safeUser = {
+            ...user,
+            transactionPin: !!user.transactionPin
+        };
+
+        res.json(safeUser);
     } catch (error) {
         console.error('Profile fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// Set Transaction PIN
+router.post('/set-pin', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { pin } = z.object({
+            pin: z.string().length(4).regex(/^\d+$/, 'PIN must be 4 digits')
+        }).parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        if (user?.transactionPin) {
+            return res.status(400).json({ error: 'PIN already set. Use change-pin endpoint.' });
+        }
+
+        const hashedPin = await bcrypt.hash(pin, 10);
+        await prisma.user.update({
+            where: { id: req.user!.id },
+            data: { transactionPin: hashedPin }
+        });
+
+        res.json({ message: 'Transaction PIN set successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Change Transaction PIN
+router.post('/change-pin', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { oldPin, newPin } = z.object({
+            oldPin: z.string().length(4),
+            newPin: z.string().length(4).regex(/^\d+$/, 'PIN must be 4 digits')
+        }).parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        if (!user?.transactionPin) {
+            return res.status(400).json({ error: 'PIN not set. Use set-pin endpoint.' });
+        }
+
+        const isMatch = await bcrypt.compare(oldPin, user.transactionPin);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Incorrect old PIN' });
+        }
+
+        const hashedPin = await bcrypt.hash(newPin, 10);
+        await prisma.user.update({
+            where: { id: req.user!.id },
+            data: { transactionPin: hashedPin }
+        });
+
+        res.json({ message: 'Transaction PIN updated successfully' });
+    } catch (error) {
+        next(error);
     }
 });
 
