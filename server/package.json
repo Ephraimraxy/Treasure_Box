@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "nodemon",
         "build": "prisma generate && tsc",
-        "start": "prisma migrate deploy && node dist/index.js",
+        "start": "prisma db push && node dist/index.js",
         "studio": "prisma studio"
     },
     "dependencies": {
