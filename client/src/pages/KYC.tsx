@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import { ActionButton } from '../pages/Auth';
 import { Input } from '../components/ui';
 import { useNavigate } from 'react-router-dom';
-import * as faceMesh from '@mediapipe/face_mesh';
+import { FaceMesh, Results } from '@mediapipe/face_mesh';
 import * as cam from '@mediapipe/camera_utils';
 
 const KYC_STEPS = [
@@ -51,14 +51,14 @@ export const KYCPage = () => {
     const navigate = useNavigate();
 
     // Refs for detection logic to avoid re-renders
-    const faceMeshRef = useRef<faceMesh.FaceMesh | null>(null);
+    const faceMeshRef = useRef<FaceMesh | null>(null);
     const cameraRef = useRef<cam.Camera | null>(null);
     const lastActionTime = useRef<number>(0);
 
     // Initialize Face Mesh
     useEffect(() => {
         if (step === 2 && !faceMeshRef.current) {
-            const mesh = new faceMesh.FaceMesh({
+            const mesh = new FaceMesh({
                 locateFile: (file) => {
                     return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
                 }
@@ -117,7 +117,7 @@ export const KYCPage = () => {
         return (vertical1 + vertical2) / (2.0 * horizontal);
     };
 
-    const onResults = (results: faceMesh.Results) => {
+    const onResults = (results: Results) => {
         if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
 
         const landmarks = results.multiFaceLandmarks[0];
