@@ -1,18 +1,15 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import {
-    sendVerificationEmail,
-    sendPasswordResetEmail,
-    sendOTPEmail,
-    sendWelcomeEmail
-} from '../services/email.service';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+// Admin email - will be assigned ADMIN role on registration
+const ADMIN_EMAIL = 'burstbrainconcept@gmail.com';
 
 // Schemas
 const registerSchema = z.object({
@@ -49,8 +46,21 @@ const verifyOTPSchema = z.object({
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Register with email verification
-router.post('/register', async (req, res, next) => {
+// Safe email send helper (won't crash if Resend not configured)
+const safeSendEmail = async (emailFn: () => Promise<void>) => {
+    if (!process.env.RESEND_API_KEY) {
+        console.log('RESEND_API_KEY not set, skipping email');
+        return;
+    }
+    try {
+        await emailFn();
+    } catch (error) {
+        console.error('Email send failed:', error);
+    }
+};
+
+// Register - requires OTP verification
+router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password, name, referralCode } = registerSchema.parse(req.body);
 
@@ -69,7 +79,10 @@ router.post('/register', async (req, res, next) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const verificationToken = generateToken();
+        const otp = generateOTP();
+
+        // Assign ADMIN role to specific email
+        const role = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER';
 
         const user = await prisma.user.create({
             data: {
@@ -78,175 +91,36 @@ router.post('/register', async (req, res, next) => {
                 name,
                 referredById: referrerId,
                 referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                verificationToken,
-                verificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-            }
-        });
-
-        // Send verification email
-        try {
-            await sendVerificationEmail(email, verificationToken);
-        } catch (emailError) {
-            console.error('Failed to send verification email:', emailError);
-        }
-
-        const token = jwt.sign(
-            { userId: user.id },
-            process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: '7d' }
-        );
-
-        res.status(201).json({
-            message: 'Registration successful. Please check your email to verify your account.',
-            token,
-            user: { id: user.id, email: user.email, role: user.role, emailVerified: user.emailVerified }
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Verify email
-router.get('/verify-email', async (req, res, next) => {
-    try {
-        const { token } = req.query;
-
-        if (!token || typeof token !== 'string') {
-            return res.status(400).json({ error: 'Invalid verification token' });
-        }
-
-        const user = await prisma.user.findFirst({
-            where: {
-                verificationToken: token,
-                verificationExpires: { gt: new Date() }
-            }
-        });
-
-        if (!user) {
-            return res.status(400).json({ error: 'Invalid or expired verification token' });
-        }
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                emailVerified: true,
-                verificationToken: null,
-                verificationExpires: null
-            }
-        });
-
-        // Send welcome email
-        try {
-            await sendWelcomeEmail(user.email, user.name || undefined);
-        } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
-        }
-
-        res.json({ message: 'Email verified successfully' });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Resend verification email
-router.post('/resend-verification', async (req, res, next) => {
-    try {
-        const { email } = forgotPasswordSchema.parse(req.body);
-
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            return res.json({ message: 'If account exists, verification email has been sent' });
-        }
-
-        if (user.emailVerified) {
-            return res.status(400).json({ error: 'Email is already verified' });
-        }
-
-        const verificationToken = generateToken();
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                verificationToken,
-                verificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
-            }
-        });
-
-        await sendVerificationEmail(email, verificationToken);
-
-        res.json({ message: 'Verification email sent' });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Login
-router.post('/login', async (req, res, next) => {
-    try {
-        const { email, password } = loginSchema.parse(req.body);
-
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const token = jwt.sign(
-            { userId: user.id },
-            process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: '7d' }
-        );
-
-        res.json({
-            message: 'Login successful',
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                emailVerified: user.emailVerified
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Request OTP login
-router.post('/request-otp', async (req, res, next) => {
-    try {
-        const { email } = requestOTPSchema.parse(req.body);
-
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            // Return success even if user doesn't exist (security)
-            return res.json({ message: 'If account exists, OTP has been sent' });
-        }
-
-        const otp = generateOTP();
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
+                role,
+                emailVerified: false,
                 otp,
                 otpExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
             }
         });
 
-        await sendOTPEmail(email, otp);
+        // Send OTP email
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendOTPEmail } = await import('../services/email.service');
+                await sendOTPEmail(email, otp);
+            } catch (emailError) {
+                console.error('Failed to send OTP email:', emailError);
+            }
+        }
 
-        res.json({ message: 'OTP sent to your email' });
+        res.status(201).json({
+            message: 'Registration successful. Please enter the OTP sent to your email.',
+            requiresOTP: true,
+            email: user.email
+        });
     } catch (error) {
+        console.error('Register error:', error);
         next(error);
     }
 });
 
-// Verify OTP and login
-router.post('/verify-otp', async (req, res, next) => {
+// Verify OTP after registration or login
+router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, otp } = verifyOTPSchema.parse(req.body);
 
@@ -262,13 +136,13 @@ router.post('/verify-otp', async (req, res, next) => {
             return res.status(401).json({ error: 'Invalid or expired OTP' });
         }
 
-        // Clear OTP
+        // Clear OTP and mark email as verified
         await prisma.user.update({
             where: { id: user.id },
             data: {
                 otp: null,
                 otpExpires: null,
-                emailVerified: true // OTP login verifies email
+                emailVerified: true
             }
         });
 
@@ -279,28 +153,147 @@ router.post('/verify-otp', async (req, res, next) => {
         );
 
         res.json({
-            message: 'Login successful',
+            message: 'Verification successful',
             token,
             user: {
                 id: user.id,
                 email: user.email,
+                name: user.name,
                 role: user.role,
                 emailVerified: true
             }
         });
     } catch (error) {
+        console.error('Verify OTP error:', error);
+        next(error);
+    }
+});
+
+// Resend OTP
+router.post('/resend-otp', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email } = requestOTPSchema.parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.json({ message: 'If account exists, OTP has been sent' });
+        }
+
+        const otp = generateOTP();
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpires: new Date(Date.now() + 10 * 60 * 1000)
+            }
+        });
+
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendOTPEmail } = await import('../services/email.service');
+                await sendOTPEmail(email, otp);
+            } catch (emailError) {
+                console.error('Failed to send OTP email:', emailError);
+            }
+        }
+
+        res.json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        console.error('Resend OTP error:', error);
+        next(error);
+    }
+});
+
+// Login - sends OTP for verification
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email, password } = loginSchema.parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Generate OTP for login verification
+        const otp = generateOTP();
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpires: new Date(Date.now() + 10 * 60 * 1000)
+            }
+        });
+
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendOTPEmail } = await import('../services/email.service');
+                await sendOTPEmail(email, otp);
+            } catch (emailError) {
+                console.error('Failed to send OTP email:', emailError);
+            }
+        }
+
+        res.json({
+            message: 'Credentials verified. Please enter the OTP sent to your email.',
+            requiresOTP: true,
+            email: user.email
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        next(error);
+    }
+});
+
+// Request OTP (for passwordless login)
+router.post('/request-otp', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email } = requestOTPSchema.parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.json({ message: 'If account exists, OTP has been sent' });
+        }
+
+        const otp = generateOTP();
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpires: new Date(Date.now() + 10 * 60 * 1000)
+            }
+        });
+
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendOTPEmail } = await import('../services/email.service');
+                await sendOTPEmail(email, otp);
+            } catch (emailError) {
+                console.error('Failed to send OTP email:', emailError);
+            }
+        }
+
+        res.json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        console.error('Request OTP error:', error);
         next(error);
     }
 });
 
 // Forgot password
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/forgot-password', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email } = forgotPasswordSchema.parse(req.body);
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            // Return success even if user doesn't exist (security)
             return res.json({ message: 'If account exists, password reset email has been sent' });
         }
 
@@ -314,16 +307,24 @@ router.post('/forgot-password', async (req, res, next) => {
             }
         });
 
-        await sendPasswordResetEmail(email, resetToken);
+        if (process.env.RESEND_API_KEY) {
+            try {
+                const { sendPasswordResetEmail } = await import('../services/email.service');
+                await sendPasswordResetEmail(email, resetToken);
+            } catch (emailError) {
+                console.error('Failed to send reset email:', emailError);
+            }
+        }
 
         res.json({ message: 'Password reset email sent' });
     } catch (error) {
+        console.error('Forgot password error:', error);
         next(error);
     }
 });
 
 // Reset password
-router.post('/reset-password', async (req, res, next) => {
+router.post('/reset-password', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { token, password } = resetPasswordSchema.parse(req.body);
 
@@ -351,6 +352,43 @@ router.post('/reset-password', async (req, res, next) => {
 
         res.json({ message: 'Password reset successful' });
     } catch (error) {
+        console.error('Reset password error:', error);
+        next(error);
+    }
+});
+
+// Verify email token (from email link)
+router.get('/verify-email', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { token } = req.query;
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ error: 'Invalid verification token' });
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                verificationToken: token,
+                verificationExpires: { gt: new Date() }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid or expired verification token' });
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerified: true,
+                verificationToken: null,
+                verificationExpires: null
+            }
+        });
+
+        res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Verify email error:', error);
         next(error);
     }
 });

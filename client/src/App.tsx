@@ -1,10 +1,11 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ToastContainer, Spinner } from './components/ui';
 import { Layout } from './components/Layout';
+import { SplashScreen } from './components/SplashScreen';
 
 // Pages
 import {
@@ -90,13 +91,34 @@ const AppContent = () => {
     );
 };
 
-// Main App
+// Main App with Splash Screen
 const App = () => {
+    const [showSplash, setShowSplash] = useState(true);
+    const [isFirstVisit, setIsFirstVisit] = useState(true);
+
+    useEffect(() => {
+        // Only show splash on first visit per session
+        const hasShownSplash = sessionStorage.getItem('splashShown');
+        if (hasShownSplash) {
+            setShowSplash(false);
+            setIsFirstVisit(false);
+        }
+    }, []);
+
+    const handleSplashComplete = () => {
+        sessionStorage.setItem('splashShown', 'true');
+        setShowSplash(false);
+    };
+
     return (
         <BrowserRouter>
             <AuthProvider>
                 <ToastProvider>
-                    <AppContent />
+                    {showSplash && isFirstVisit ? (
+                        <SplashScreen onComplete={handleSplashComplete} />
+                    ) : (
+                        <AppContent />
+                    )}
                 </ToastProvider>
             </AuthProvider>
         </BrowserRouter>
