@@ -181,8 +181,8 @@ export const KYCPage = () => {
                                 <div className="flex items-start gap-4">
                                     <div className="bg-slate-700 p-2 rounded-lg"><Shield size={20} /></div>
                                     <div>
-                                        <h3 className="font-bold">Identity Document</h3>
-                                        <p className="text-sm text-slate-400">Upload a valid government-issued ID.</p>
+                                        <h3 className="font-bold">Identity Numbers</h3>
+                                        <p className="text-sm text-slate-400">Provide your BVN and NIN.</p>
                                     </div>
                                 </div>
                             </div>
@@ -213,50 +213,42 @@ export const KYCPage = () => {
                             )}
 
                             {step === 2 && (
-                                <div className="bg-slate-800 p-4 rounded-xl mb-6 animate-pulse-glow border border-amber-500/20">
-                                    <span className="text-4xl block mb-2">{CHALLENGES[challengeIndex].icon}</span>
-                                    <h3 className="text-xl font-bold text-white mb-1">{CHALLENGES[challengeIndex].text}</h3>
-                                    <p className="text-amber-500 text-sm font-medium uppercase tracking-wider">
-                                        {challengeStatus === 'success' ? 'Great!' : 'Detecting...'}
-                                    </p>
+                                <div className="text-center">
+                                    <div className="bg-slate-800 p-4 rounded-xl mb-6 animate-pulse-glow border border-amber-500/20">
+                                        <span className="text-4xl block mb-2">{CHALLENGES[challengeIndex].icon}</span>
+                                        <h3 className="text-xl font-bold text-white mb-1">{CHALLENGES[challengeIndex].text}</h3>
+                                        <p className="text-amber-500 text-sm font-medium uppercase tracking-wider">
+                                            {challengeStatus === 'success' ? 'Great!' : 'Detecting...'}
+                                        </p>
+                                    </div>
                                 </div>
-                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div className="space-y-6">
+                            <div className="space-y-4">
+                                <Input
+                                    label="BVN"
+                                    value={formData.bvn}
+                                    onChange={(e) => setFormData({ ...formData, bvn: e.target.value })}
+                                    placeholder="Enter your 11-digit BVN"
+                                    maxLength={11}
+                                />
+                                <Input
+                                    label="NIN"
+                                    value={formData.nin}
+                                    onChange={(e) => setFormData({ ...formData, nin: e.target.value })}
+                                    placeholder="Enter your 11-digit NIN"
+                                    maxLength={11}
+                                />
+                            </div>
+                            <ActionButton onClick={handleSubmit} loading={loading}>Submit Verification</ActionButton>
+                        </div>
                     )}
                 </div>
-                    )}
-
-                {step === 3 && (
-                    <div className="space-y-6">
-                        <div className="space-y-4">
-                            <Input
-                                label="BVN"
-                                value={formData.bvn}
-                                onChange={(e) => setFormData({ ...formData, bvn: e.target.value })}
-                                placeholder="Enter your 11-digit BVN"
-                                maxLength={11}
-                            />
-                            <Input
-                                label="NIN"
-                                value={formData.nin}
-                                onChange={(e) => setFormData({ ...formData, nin: e.target.value })}
-                                placeholder="Enter your 11-digit NIN"
-                                maxLength={11}
-                            />
-                        </div>
-
-                        <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-amber-500/50 transition-colors cursor-pointer bg-slate-900/50 text-center">
-                            <div className="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                                <Camera size={32} className="text-slate-400" />
-                            </div>
-                            <h3 className="font-bold text-white mb-2">Upload ID Document</h3>
-                            <p className="text-sm text-slate-400">Click to select or drag and drop</p>
-                            <input type="file" className="hidden" />
-                        </div>
-                        <ActionButton onClick={handleSubmit} loading={loading}>Submit Verification</ActionButton>
-                    </div>
-                )}
             </div>
         </div>
-        </div >
     );
 };
