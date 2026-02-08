@@ -86,6 +86,7 @@ export const paymentApi = {
         api.get('/payments/banks'),
     verifyAccount: (accountNumber: string, bankCode: string) =>
         api.post('/payments/verify-account', { accountNumber, bankCode }),
+    createVirtualAccount: () => api.post('/payments/virtual-account', {}),
 };
 
 // Admin API

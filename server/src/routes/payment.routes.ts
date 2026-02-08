@@ -189,4 +189,72 @@ router.post('/verify-account', authenticate, async (req: AuthRequest, res, next)
     }
 });
 
+// Create Virtual Account
+router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const userId = req.user!.id;
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { virtualAccount: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (user.virtualAccount) {
+            return res.json({
+                message: 'Virtual account already exists',
+                account: user.virtualAccount
+            });
+        }
+
+        // 1. Create/Get Customer Code
+        let customerCode = user.paystackCustomerCode;
+        if (!customerCode) {
+            // Split name for first/last
+            const nameParts = (user.name || 'User').split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
+            const phone = user.phone || '+2348000000000'; // Fallback phone if missing (should be enforced in profile)
+
+            const customer = await paystackService.createCustomer(user.email, firstName, lastName, phone);
+            customerCode = customer.data.customer_code;
+
+            // Save customer code
+            await prisma.user.update({
+                where: { id: userId },
+                data: { paystackCustomerCode: customerCode }
+            });
+        }
+
+        // 2. Create Dedicated Account
+        // Note: In production, you might want to let user choose bank, or default to 'wema-bank' or 'titan-paystack'
+        const dva = await paystackService.createDedicatedAccount(customerCode!, 'wema-bank');
+
+        // 3. Save Virtual Account
+        const savedAccount = await prisma.virtualAccount.create({
+            data: {
+                userId,
+                bankName: dva.data.bank.name,
+                accountNumber: dva.data.account_number,
+                accountName: dva.data.account_name
+            }
+        });
+
+        res.json({
+            message: 'Virtual account created successfully',
+            account: savedAccount
+        });
+
+    } catch (error: any) {
+        console.error('Virtual Account Creation Error:', error);
+        // Handle specific Paystack errors
+        if (error.response?.data?.message) {
+            return res.status(400).json({ error: error.response.data.message });
+        }
+        next(error);
+    }
+});
+
 export default router;

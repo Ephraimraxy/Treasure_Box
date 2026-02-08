@@ -9,6 +9,11 @@ interface User {
     balance: number;
     referralCode: string;
     kycVerified: boolean;
+    virtualAccount?: {
+        bankName: string;
+        accountNumber: string;
+        accountName: string;
+    };
 }
 
 interface AuthContextType {

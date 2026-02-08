@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Building2, Shield, Camera } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { userApi } from '../api';
+import { userApi, paymentApi } from '../api';
 import { Button, Input, Card } from '../components/ui';
 
 export const ProfilePage = () => {
@@ -64,8 +64,8 @@ export const ProfilePage = () => {
                     <h2 className="text-xl font-bold text-white">{user?.name || user?.email}</h2>
                     <p className="text-sm text-slate-400">{user?.email}</p>
                     <div className={`inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-xs font-bold ${user?.kycVerified
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-amber-500/20 text-amber-400'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-amber-500/20 text-amber-400'
                         }`}>
                         <Shield size={12} />
                         {user?.kycVerified ? 'Verified Account' : 'Verification Pending'}
@@ -135,6 +135,85 @@ export const ProfilePage = () => {
                         {loading ? 'Saving...' : 'Save Bank Details'}
                     </Button>
                 </div>
+            </Card>
+
+            {/* Virtual Account */}
+            <Card>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-white">Virtual Account</h3>
+
+                    {user?.virtualAccount && <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">Active</span>}
+                </div>
+
+                {user?.virtualAccount ? (
+                    <div className="bg-slate-900 rounded-xl p-4 border border-slate-700 space-y-3">
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-400 text-sm">Bank Name</span>
+
+                            <span className="font-bold text-white">{user.virtualAccount.bankName}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-400 text-sm">Account Number</span>
+                            <div className="flex items-center gap-2">
+
+                                <span className="font-mono text-xl text-amber-500 font-bold">{user.virtualAccount.accountNumber}</span>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(user?.virtualAccount?.accountNumber || '');
+                                        addToast('success', 'Copied to clipboard');
+                                    }}
+                                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <Shield size={14} className="rotate-180" /> {/* Using Shield as Copy icon fallback if needed, or just text */}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-400 text-sm">Account Name</span>
+
+                            <span className="font-medium text-white">{user.virtualAccount.accountName}</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-800 mt-2">
+                            <p className="text-xs text-slate-500 text-center">
+                                Transfers to this account will automatically fund your wallet.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center py-6">
+                        <div className="w-12 h-12 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                            <Building2 className="text-slate-400" size={24} />
+                        </div>
+                        <p className="text-slate-300 mb-4">Get a dedicated bank account to fund your wallet easily.</p>
+
+                        {user?.kycVerified ? (
+                            <Button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        await paymentApi.createVirtualAccount();
+                                        await refreshUser();
+                                        addToast('success', 'Virtual Account created successfully!');
+                                    } catch (error: any) {
+                                        addToast('error', error.response?.data?.error || 'Failed to create account');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading}
+                                className="w-full"
+                            >
+                                {loading ? 'Creating Account...' : 'Generate Virtual Account'}
+                            </Button>
+                        ) : (
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                                <p className="text-sm text-amber-500">
+                                    Please complete KYC verification to generate a virtual account.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Card>
 
             {/* KYC Verification */}

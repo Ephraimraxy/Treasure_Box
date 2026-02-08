@@ -57,7 +57,8 @@ router.get('/profile', authenticate, async (req: Request, res: Response) => {
                 role: true,
                 referralCode: true,
                 balance: true,
-                referralEarnings: true
+                referralEarnings: true,
+                virtualAccount: true
             }
         });
 

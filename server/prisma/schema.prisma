@@ -21,6 +21,7 @@ model User {
   bvn             String?
   nin             String?
   photoUrl        String?
+  paystackCustomerCode String?
   referralCode    String          @unique @default(cuid())
   referredById    String?
   referredBy      User?           @relation("Referrals", fields: [referredById], references: [id])

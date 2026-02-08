@@ -82,6 +82,34 @@ export const verifyAccountNumber = async (accountNumber: string, bankCode: strin
     return response.data;
 };
 
+// Create Paystack Customer
+export const createCustomer = async (email: string, firstName: string, lastName: string, phone: string) => {
+    try {
+        const response = await paystackApi.post('/customer', {
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            phone
+        });
+        return response.data;
+    } catch (error: any) {
+        // If customer already exists, Paystack returns 400 but might populate data or we just ignore
+        // For robustness, if it fails, we might try to fetch customer ?? 
+        // But usually creation is idempotent or we handle the error "Customer already exists"
+        console.error("Create Customer Error", error.response?.data);
+        throw error;
+    }
+};
+
+// Create Dedicated Virtual Account
+export const createDedicatedAccount = async (customerCode: string, preferredBank?: string) => {
+    const response = await paystackApi.post('/dedicated_account', {
+        customer: customerCode,
+        preferred_bank: preferredBank // e.g., "wema-bank"
+    });
+    return response.data;
+};
+
 // Verify webhook signature
 export const verifyWebhookSignature = (payload: string, signature: string): boolean => {
     const hash = crypto
