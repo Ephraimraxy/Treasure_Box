@@ -74,81 +74,99 @@ const ActionButton = ({
         onClick={onClick}
         disabled={disabled || loading}
         className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${variant === 'primary'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50'
-                : 'bg-slate-800 text-white hover:bg-slate-700'
+            ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50'
+            : 'bg-slate-800 text-white hover:bg-slate-700'
             }`}
     >
         {loading ? <Loader2 className="animate-spin" size={20} /> : children}
     </button>
 );
 
-// Login Page with Steps
+// Password Strength Meter Component
+const PasswordStrengthMeter = ({ password }: { password: string }) => {
+    const calculateStrength = (pass: string) => {
+        let strength = 0;
+        if (pass.length > 5) strength += 1;
+        if (pass.length > 10) strength += 1;
+        if (/[A-Z]/.test(pass)) strength += 1;
+        if (/[0-9]/.test(pass)) strength += 1;
+        if (/[^A-Za-z0-9]/.test(pass)) strength += 1;
+        return strength;
+    };
+
+    const strength = calculateStrength(password);
+
+    const getColor = (s: number) => {
+        if (s <= 2) return 'bg-red-500';
+        if (s <= 4) return 'bg-yellow-500';
+        return 'bg-emerald-500';
+    };
+
+    const getLabel = (s: number) => {
+        if (s <= 2) return 'Weak';
+        if (s <= 4) return 'Medium';
+        return 'Strong';
+    };
+
+    return (
+        <div className="mt-2 text-sm text-slate-400">
+            <div className="flex justify-between mb-1">
+                <span>Password Strength:</span>
+                <span className={`font-bold ${strength <= 2 ? 'text-red-500' : strength <= 4 ? 'text-yellow-500' : 'text-emerald-500'
+                    }`}>{getLabel(strength)}</span>
+            </div>
+            <div className="flex gap-1 h-1.5">
+                {[1, 2, 3, 4, 5].map((level) => (
+                    <div
+                        key={level}
+                        className={`flex-1 rounded-full transition-all duration-300 ${level <= strength ? getColor(strength) : 'bg-slate-800'
+                            }`}
+                    />
+                ))}
+            </div>
+            <ul className="mt-2 text-xs text-slate-500 space-y-1">
+                <li className={password.length > 5 ? 'text-emerald-500' : ''}>✓ Min 6 chars</li>
+                <li className={/[A-Z]/.test(password) ? 'text-emerald-500' : ''}>✓ Uppercase</li>
+                <li className={/[0-9]/.test(password) ? 'text-emerald-500' : ''}>✓ Number</li>
+                <li className={/[^A-Za-z0-9]/.test(password) ? 'text-emerald-500' : ''}>✓ Special Char</li>
+            </ul>
+        </div>
+    );
+};
+
+// Login Page (No OTP)
 export const LoginPage = () => {
-    const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const { addToast } = useToast();
     const navigate = useNavigate();
 
-    const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    const handleEmailSubmit = () => {
-        if (!validateEmail(email)) {
-            addToast('error', 'Please enter a valid email');
-            return;
-        }
-        setStep(2);
-    };
-
-    const handlePasswordSubmit = async () => {
-        if (password.length < 6) {
-            addToast('error', 'Password must be at least 6 characters');
+    const handleLogin = async () => {
+        if (!email || !password) {
+            addToast('error', 'Please enter both email and password');
             return;
         }
         setLoading(true);
         try {
             const response = await authApi.login(email, password);
+
+            // Check if email needs verification (legacy flow or new safeguard)
             if (response.data.requiresOTP) {
-                addToast('success', 'OTP sent to your email');
-                setStep(3);
-            } else if (response.data.token) {
+                // If the user isn't verified, we might redirect them to a verify page 
+                // or handle the OTP flow if you decide to keep it for unverified users.
+                // For now, let's assume standard login succeeds with a token.
+                addToast('warning', 'Please verify your email first.');
+                return;
+            }
+
+            if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
+                addToast('success', 'Welcome back!');
                 window.location.href = '/';
             }
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Invalid credentials');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleOTPSubmit = async () => {
-        if (otp.length !== 6) {
-            addToast('error', 'Please enter a 6-digit OTP');
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await authApi.verifyOTP(email, otp);
-            localStorage.setItem('token', response.data.token);
-            addToast('success', 'Login successful!');
-            window.location.href = '/';
-        } catch (error: any) {
-            addToast('error', error.response?.data?.error || 'Invalid OTP');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleResendOTP = async () => {
-        setLoading(true);
-        try {
-            await authApi.resendOTP(email);
-            addToast('success', 'New OTP sent');
-        } catch {
-            addToast('error', 'Failed to resend OTP');
         } finally {
             setLoading(false);
         }
@@ -161,93 +179,42 @@ export const LoginPage = () => {
             <div className="absolute bottom-20 right-1/4 w-72 h-72 bg-orange-500/10 blur-[120px] rounded-full" />
 
             <div className="w-full max-w-md relative z-10">
-                {/* Logo */}
                 <div className="text-center mb-10">
                     <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
                         <Box size={48} className="text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                        {step === 1 ? 'Welcome Back' : step === 2 ? 'Enter Password' : 'Verify OTP'}
-                    </h1>
-                    <p className="text-slate-400">
-                        {step === 1 ? 'Sign in to your account' : step === 2 ? 'Keep your account secure' : 'Check your email'}
-                    </p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                    <p className="text-slate-400">Sign in to your account</p>
                 </div>
 
-                <StepIndicator current={step - 1} total={3} />
-
                 <div className="space-y-4">
-                    {step === 1 && (
-                        <>
-                            <AnimatedInput
-                                type="email"
-                                placeholder="Email Address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                icon={Mail}
-                                autoFocus
-                                onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
-                            />
-                            <ActionButton onClick={handleEmailSubmit} disabled={!email}>
-                                Continue <ArrowRight size={20} />
-                            </ActionButton>
-                        </>
-                    )}
+                    <AnimatedInput
+                        type="email"
+                        placeholder="Email Address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        icon={Mail}
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    />
+                    <AnimatedInput
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        icon={Lock}
+                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    />
 
-                    {step === 2 && (
-                        <>
-                            <div className="bg-slate-900/50 rounded-xl p-3 flex items-center gap-3 mb-4">
-                                <Mail size={18} className="text-amber-500" />
-                                <span className="text-slate-300">{email}</span>
-                                <button onClick={() => setStep(1)} className="ml-auto text-slate-500 hover:text-white">
-                                    Change
-                                </button>
-                            </div>
-                            <AnimatedInput
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                icon={Lock}
-                                autoFocus
-                                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                            />
-                            <ActionButton onClick={handlePasswordSubmit} loading={loading} disabled={!password}>
-                                {loading ? 'Verifying...' : 'Sign In'}
-                            </ActionButton>
-                            <Link to="/forgot-password" className="block text-center text-slate-500 hover:text-amber-500 text-sm">
-                                Forgot password?
-                            </Link>
-                        </>
-                    )}
+                    <div className="flex justify-end">
+                        <Link to="/forgot-password" className="text-sm text-amber-500 hover:text-amber-400">
+                            Forgot Password?
+                        </Link>
+                    </div>
 
-                    {step === 3 && (
-                        <>
-                            <div className="text-center mb-4">
-                                <div className="w-16 h-16 mx-auto bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
-                                    <KeyRound className="text-amber-500" size={32} />
-                                </div>
-                                <p className="text-slate-400">Enter the 6-digit code sent to</p>
-                                <p className="text-white font-medium">{email}</p>
-                            </div>
-                            <AnimatedInput
-                                type="text"
-                                placeholder="000000"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                icon={KeyRound}
-                                autoFocus
-                                maxLength={6}
-                                onKeyDown={(e) => e.key === 'Enter' && handleOTPSubmit()}
-                            />
-                            <ActionButton onClick={handleOTPSubmit} loading={loading} disabled={otp.length !== 6}>
-                                {loading ? 'Verifying...' : 'Verify & Login'}
-                            </ActionButton>
-                            <button onClick={handleResendOTP} disabled={loading} className="w-full text-center text-slate-500 hover:text-white text-sm py-2">
-                                Didn't receive code? Resend
-                            </button>
-                        </>
-                    )}
+                    <ActionButton onClick={handleLogin} loading={loading} disabled={!email || !password}>
+                        {loading ? 'Signing In...' : 'Sign In'}
+                    </ActionButton>
                 </div>
 
                 <div className="mt-10 pt-6 border-t border-slate-800 text-center">
@@ -263,7 +230,7 @@ export const LoginPage = () => {
     );
 };
 
-// Register Page with Steps
+// Register Page with Steps & Strength Meter
 export const RegisterPage = () => {
     const [step, setStep] = useState(1);
     const [name, setName] = useState('');
@@ -417,6 +384,7 @@ export const RegisterPage = () => {
                                 icon={Lock}
                                 autoFocus
                             />
+                            <PasswordStrengthMeter password={password} />
                             <AnimatedInput
                                 type="password"
                                 placeholder="Confirm Password"
