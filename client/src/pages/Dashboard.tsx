@@ -63,8 +63,15 @@ export const DashboardPage = () => {
             {/* Welcome Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-bold text-white">Welcome back!</h1>
-                    <p className="text-slate-400 text-sm">{user?.email}</p>
+                    <div className="flex items-center gap-3">
+                        {user?.kycPhotoUrl ? (
+                            <img src={user.kycPhotoUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-amber-500" />
+                        ) : null}
+                        <div>
+                            <h1 className="text-lg font-bold text-white">Welcome, {user?.username || 'back!'}</h1>
+                            <p className="text-slate-400 text-sm">{user?.email}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

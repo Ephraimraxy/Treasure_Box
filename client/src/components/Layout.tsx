@@ -70,11 +70,15 @@ export const Layout = ({ children }: LayoutProps) => {
 
                 <div className="mt-auto p-6 border-t border-slate-800">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                            <User size={20} className="text-slate-400" />
-                        </div>
+                        {user?.kycPhotoUrl ? (
+                            <img src={user.kycPhotoUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-slate-700" />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                <User size={20} className="text-slate-400" />
+                            </div>
+                        )}
                         <div className="overflow-hidden">
-                            <div className="text-sm font-bold text-white truncate">{user?.email}</div>
+                            <div className="text-sm font-bold text-white truncate">{user?.username || user?.name || user?.email}</div>
                             <div className="text-xs text-slate-500 capitalize">{user?.role?.toLowerCase()} Account</div>
                         </div>
                     </div>

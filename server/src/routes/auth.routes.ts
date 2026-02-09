@@ -128,6 +128,44 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     }
 });
 
+// Resend OTP (Resume Verification)
+router.post('/resend-otp', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        // Security: Don't reveal if user exists. Only send if user exists AND is not verified.
+        if (user && !user.emailVerified) {
+            const otp = generateOTP();
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    otp,
+                    otpExpires: new Date(Date.now() + 10 * 60 * 1000)
+                }
+            });
+
+            if (process.env.RESEND_API_KEY) {
+                try {
+                    const { sendOTPEmail } = await import('../services/email.service');
+                    await sendOTPEmail(email, otp);
+                } catch (emailError) {
+                    console.error('Failed to send OTP email:', emailError);
+                }
+            }
+        }
+
+        // Always return success to prevent email enumeration
+        res.json({ message: 'If account exists and is unverified, OTP has been sent.' });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Verify OTP
 router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -258,12 +296,12 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         // Send Login Alert (Async)
         safeSendEmail(async () => {
             const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
-            if (settings?.enableNotifications ?? true) { // Default to true if not set, or false if strictly disabled
+            if (settings?.enableEmailLoginAlerts ?? true) { // Default to true if not set, or false if strictly disabled
                 // Actually, "enableNotifications" in Settings defaults to true.
                 // If the user wants to *disable* it, they uncheck it.
                 // The prompt says "set admin control to enable and disable these".
-                // So if settings.enableNotifications is false, we skip.
-                if (settings && !settings.enableNotifications) return;
+                // So if settings.enableEmailLoginAlerts is false, we skip.
+                if (settings && !settings.enableEmailLoginAlerts) return;
 
                 const { sendLoginAlertEmail } = await import('../services/email.service');
                 const ip = req.ip || 'Unknown IP';

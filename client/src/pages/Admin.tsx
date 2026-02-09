@@ -294,8 +294,10 @@ export const AdminUsersPage = () => {
                             <div className="font-bold text-white">
                                 <FormatCurrency amount={user.balance} />
                             </div>
-                            <div className={`text-xs uppercase font-bold ${user.kycVerified ? 'text-emerald-400' : 'text-slate-500'}`}>
-                                {user.kycVerified ? 'Verified' : 'Unverified'}
+                            <div className={`text-xs uppercase font-bold ${user.kycVerified ? 'text-emerald-400' :
+                                user.emailVerified ? 'text-blue-400' : 'text-slate-500'
+                                }`}>
+                                {user.kycVerified ? 'KYC Verified' : user.emailVerified ? 'Verified' : 'Unverified'}
                             </div>
                         </div>
                     </Card>
@@ -370,7 +372,8 @@ export const AdminSettingsPage = () => {
         minInvestment: 5000,
         isSystemPaused: false,
         paystackPublicKey: '',
-        kycRequiredForAccount: true
+        kycRequiredForAccount: true,
+        enableEmailLoginAlerts: true
     });
 
     useEffect(() => {
@@ -446,6 +449,22 @@ export const AdminSettingsPage = () => {
                                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                            <div>
+                                <div className="font-medium text-white">Email Login Alerts</div>
+                                <div className="text-xs text-slate-400">Send email when user logs in</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.enableEmailLoginAlerts ?? true}
+                                    onChange={e => setSettings({ ...settings, enableEmailLoginAlerts: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
                     </div>
                 </Card>
 
@@ -475,13 +494,13 @@ export const AdminSettingsPage = () => {
                         />
                     </div>
                 </Card>
-            </div>
+            </div >
 
             <div className="flex justify-end">
                 <Button onClick={handleSave} className="w-full md:w-auto">
                     Save Changes
                 </Button>
             </div>
-        </div>
+        </div >
     );
 };

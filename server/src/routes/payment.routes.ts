@@ -269,8 +269,11 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
             if (!user.username) {
                 return res.status(400).json({ error: 'Please set a username in your profile first' });
             }
-            if (!user.phone || !user.bvn || !user.nin) {
-                return res.status(400).json({ error: 'Please complete your profile (Phone, BVN, NIN) first' });
+            if (!user.phone) {
+                return res.status(400).json({ error: 'Please set your phone number in your profile first' });
+            }
+            if (kycRequired && (!user.bvn || !user.nin)) {
+                return res.status(400).json({ error: 'Please complete your KYC (BVN, NIN) first' });
             }
 
             firstName = 'TB';

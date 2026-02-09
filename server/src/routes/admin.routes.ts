@@ -18,6 +18,7 @@ router.get('/users', async (req: AuthRequest, res, next) => {
                 name: true,
                 phone: true,
                 balance: true,
+                emailVerified: true,
                 kycVerified: true,
                 role: true,
                 createdAt: true,

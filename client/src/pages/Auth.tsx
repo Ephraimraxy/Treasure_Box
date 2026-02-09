@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Mail, Lock, Users, User, ArrowLeft, ArrowRight, KeyRound, CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api';
 
 // Animated Input Component
@@ -139,8 +140,55 @@ export const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const { login } = useAuth(); // Destructure login
+    const [view, setView] = useState<'login' | 'resume'>('login');
+    const [resumeEmail, setResumeEmail] = useState('');
+    const [resumeStep, setResumeStep] = useState<'email' | 'otp'>('email');
+    const [otp, setOtp] = useState('');
     const { addToast } = useToast();
     const navigate = useNavigate();
+
+
+
+    const handleResumeSubmit = async () => {
+        if (!resumeEmail) {
+            addToast('error', 'Please enter your email');
+            return;
+        }
+        setLoading(true);
+        try {
+            await authApi.resendOtp(resumeEmail);
+            addToast('success', 'If account exists, OTP sent!');
+            setResumeStep('otp');
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Failed to send OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyResume = async () => {
+        if (otp.length !== 6) {
+            addToast('error', 'Enter valid OTP');
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await authApi.verifyOtp(resumeEmail, otp);
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                // We need to fetch user profile here ideally, or reload
+                // authApi.login gets user? No, verifies token.
+                // Just reload or redirect
+                addToast('success', 'Verification successful!');
+                window.location.href = '/';
+            }
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Verification failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -172,6 +220,8 @@ export const LoginPage = () => {
         }
     };
 
+
+
     return (
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-950 to-slate-950" />
@@ -179,43 +229,108 @@ export const LoginPage = () => {
             <div className="absolute bottom-20 right-1/4 w-72 h-72 bg-orange-500/10 blur-[120px] rounded-full" />
 
             <div className="w-full max-w-md relative z-10">
-                <div className="text-center mb-10">
-                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
-                        <Box size={48} className="text-white" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                    <p className="text-slate-400">Sign in to your account</p>
-                </div>
+                {view === 'login' ? (
+                    <>
+                        <div className="text-center mb-10">
+                            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
+                                <Box size={48} className="text-white" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                            <p className="text-slate-400">Sign in to your account</p>
+                        </div>
 
-                <div className="space-y-4">
-                    <AnimatedInput
-                        type="email"
-                        placeholder="Email Address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        icon={Mail}
-                        autoFocus
-                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    />
-                    <AnimatedInput
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        icon={Lock}
-                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    />
+                        <div className="space-y-4">
+                            <AnimatedInput
+                                type="email"
+                                placeholder="Email Address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                icon={Mail}
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                            />
+                            <AnimatedInput
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                icon={Lock}
+                                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                            />
 
-                    <div className="flex justify-end">
-                        <Link to="/forgot-password" className="text-sm text-amber-500 hover:text-amber-400">
-                            Forgot Password?
-                        </Link>
-                    </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <button
+                                    onClick={() => setView('resume')}
+                                    className="text-slate-400 hover:text-white transition-colors"
+                                >
+                                    Continue Verification?
+                                </button>
+                                <Link to="/forgot-password" className="text-amber-500 hover:text-amber-400">
+                                    Forgot Password?
+                                </Link>
+                            </div>
 
-                    <ActionButton onClick={handleLogin} loading={loading} disabled={!email || !password}>
-                        {loading ? 'Signing In...' : 'Sign In'}
-                    </ActionButton>
-                </div>
+                            <ActionButton onClick={handleLogin} loading={loading} disabled={!email || !password}>
+                                {loading ? 'Signing In...' : 'Sign In'}
+                            </ActionButton>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="text-center mb-10">
+                            <div className="w-20 h-20 mx-auto bg-slate-800 rounded-2xl flex items-center justify-center mb-6">
+                                <Mail size={40} className="text-amber-500" />
+                            </div>
+                            <h1 className="text-2xl font-bold text-white mb-2">Resume Verification</h1>
+                            <p className="text-slate-400">
+                                {resumeStep === 'email'
+                                    ? 'Enter email to receive a new code'
+                                    : `Enter code sent to ${resumeEmail}`}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {resumeStep === 'email' ? (
+                                <AnimatedInput
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={resumeEmail}
+                                    onChange={(e) => setResumeEmail(e.target.value)}
+                                    icon={Mail}
+                                    autoFocus
+                                />
+                            ) : (
+                                <AnimatedInput
+                                    type="text"
+                                    placeholder="Enter 6-digit OTP"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    icon={KeyRound}
+                                    maxLength={6}
+                                    autoFocus
+                                />
+                            )}
+
+                            <ActionButton
+                                onClick={resumeStep === 'email' ? handleResumeSubmit : handleVerifyResume}
+                                loading={loading}
+                            >
+                                {resumeStep === 'email' ? 'Send Code' : 'Verify & Login'}
+                            </ActionButton>
+
+                            <button
+                                onClick={() => {
+                                    setView('login');
+                                    setResumeStep('email');
+                                    setOtp('');
+                                }}
+                                className="w-full text-slate-400 text-sm hover:text-white mt-4"
+                            >
+                                Back to Login
+                            </button>
+                        </div>
+                    </>
+                )}
 
                 <div className="mt-10 pt-6 border-t border-slate-800 text-center">
                     <p className="text-slate-400">

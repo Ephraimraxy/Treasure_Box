@@ -126,6 +126,7 @@ model Settings {
   minWithdrawal             Float   @default(1000)
   minInvestment             Float   @default(5000)
   enableNotifications       Boolean @default(true)
+  enableEmailLoginAlerts    Boolean @default(true)
   kycRequiredForAccount     Boolean @default(true)
 }
 

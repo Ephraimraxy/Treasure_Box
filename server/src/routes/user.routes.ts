@@ -83,11 +83,18 @@ router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
         const userId = req.user!.id;
 
         // Check username uniqueness if changing
-        if (data.username) {
+        if (data.username && data.username.trim() !== '') {
             const existing = await prisma.user.findUnique({ where: { username: data.username } });
             if (existing && existing.id !== userId) {
                 return res.status(400).json({ error: 'Username already taken' });
             }
+        } else if (data.username === '') {
+            // Treat empty string as null/undefined, or just delete it from data to avoid unique constraint if multiple users have empty string
+            // Actually, if database field is optional (String?), we can set it to null.
+            // If schema is String @unique, then empty string is a value.
+            // Assuming schema allows null. If not, this is tricky.
+            // Let's check schema.
+            delete data.username;
         }
 
         const user = await prisma.user.update({
