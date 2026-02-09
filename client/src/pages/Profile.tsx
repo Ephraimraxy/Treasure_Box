@@ -398,5 +398,6 @@ export const ProfilePage = () => {
                         </Card>
                     )}
                 </div>
-                );
+        </div>
+    );
 };
