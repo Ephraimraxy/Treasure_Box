@@ -19,6 +19,11 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
+
+// IMPORTANT: Paystack webhook needs raw body for signature verification
+// Must be BEFORE express.json() or use a specific route
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 

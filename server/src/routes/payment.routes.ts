@@ -117,14 +117,21 @@ router.get('/verify/:reference', authenticate, async (req: AuthRequest, res, nex
 router.post('/webhook', async (req: any, res: any, next: any) => {
     try {
         const signature = req.headers['x-paystack-signature'] as string;
-        const payload = JSON.stringify(req.body);
+
+        // Use raw body buffer for signature verification (set by express.raw() middleware in index.ts)
+        // If body is a Buffer, convert to string; otherwise use as-is
+        const payload = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
 
         // Verify webhook signature
         if (!paystackService.verifyWebhookSignature(payload, signature)) {
+            console.error('Webhook signature verification failed');
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const event = req.body;
+        // Parse the body if it came as raw buffer
+        const event = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body;
+
+        console.log('Paystack webhook received:', event.event);
 
         if (event.event === 'charge.success') {
             const { reference, amount, metadata } = event.data;
