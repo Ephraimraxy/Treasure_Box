@@ -65,10 +65,17 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
             pin: z.string().length(4)
         }).parse(req.body);
 
-        const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            include: { bankDetails: true }
+        });
 
         if (!user || user.balance < amount) {
             return res.status(400).json({ error: 'Insufficient balance' });
+        }
+
+        if (!user.bankDetails) {
+            return res.status(400).json({ error: 'Please set your bank account details first' });
         }
 
         if (!user.transactionPin) {

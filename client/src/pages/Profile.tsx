@@ -23,11 +23,11 @@ export const ProfilePage = () => {
     });
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pinMode, setPinMode] = useState<'set' | 'change'>('set');
-    const [pinData, setPinData] = useState({ oldPin: '', newPin: '', confirmPin: '' });
+    const [pinData, setPinData] = useState({ oldPin: '', newPin: '', confirmPin: '', password: '' });
 
     const openPinModal = (mode: 'set' | 'change') => {
         setPinMode(mode);
-        setPinData({ oldPin: '', newPin: '', confirmPin: '' });
+        setPinData({ oldPin: '', newPin: '', confirmPin: '', password: '' });
         setIsPinModalOpen(true);
     };
 
@@ -44,7 +44,11 @@ export const ProfilePage = () => {
         setLoading(true);
         try {
             if (pinMode === 'set') {
-                await userApi.setPin(pinData.newPin);
+                if (!pinData.password) {
+                    addToast('error', 'Please enter your password');
+                    return;
+                }
+                await userApi.setPin(pinData.newPin, pinData.password);
                 addToast('success', 'PIN set successfully');
             } else {
                 if (!pinData.oldPin) {
@@ -346,6 +350,15 @@ export const ProfilePage = () => {
                             value={pinData.oldPin}
                             onChange={(e) => setPinData({ ...pinData, oldPin: e.target.value })}
                             placeholder="Enter current PIN"
+                        />
+                    )}
+                    {pinMode === 'set' && (
+                        <Input
+                            label="Login Password"
+                            type="password"
+                            value={pinData.password}
+                            onChange={(e) => setPinData({ ...pinData, password: e.target.value })}
+                            placeholder="Enter login password"
                         />
                     )}
                     <Input

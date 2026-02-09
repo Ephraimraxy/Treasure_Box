@@ -131,13 +131,21 @@ router.get('/referrals', authenticate, async (req: AuthRequest, res, next) => {
 // Set Transaction PIN
 router.post('/set-pin', authenticate, async (req: AuthRequest, res, next) => {
     try {
-        const { pin } = z.object({
-            pin: z.string().length(4).regex(/^\d+$/, 'PIN must be 4 digits')
+        const { pin, password } = z.object({
+            pin: z.string().length(4).regex(/^\d+$/, 'PIN must be 4 digits'),
+            password: z.string().min(1, 'Password is required')
         }).parse(req.body);
 
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
-        if (user?.transactionPin) {
-            return res.status(400).json({ error: 'PIN already set. Use change-pin endpoint.' });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (user.transactionPin) {
+            return res.status(400).json({ error: 'PIN already set. Use change-pin or reset-pin.' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
         }
 
         const hashedPin = await bcrypt.hash(pin, 10);
@@ -147,6 +155,34 @@ router.post('/set-pin', authenticate, async (req: AuthRequest, res, next) => {
         });
 
         res.json({ message: 'Transaction PIN set successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Reset Transaction PIN (using password)
+router.post('/reset-pin', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { password, newPin } = z.object({
+            password: z.string().min(1, 'Password is required'),
+            newPin: z.string().length(4).regex(/^\d+$/, 'PIN must be 4 digits')
+        }).parse(req.body);
+
+        const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        const hashedPin = await bcrypt.hash(newPin, 10);
+        await prisma.user.update({
+            where: { id: req.user!.id },
+            data: { transactionPin: hashedPin }
+        });
+
+        res.json({ message: 'Transaction PIN reset successfully' });
     } catch (error) {
         next(error);
     }

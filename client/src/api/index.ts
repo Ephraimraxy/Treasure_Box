@@ -60,7 +60,8 @@ export const userApi = {
     getNotifications: () => api.get('/users/me/notifications'),
     markNotificationsRead: () => api.patch('/users/me/notifications/read'),
     submitKYC: (data: { photoUrl: string }) => api.post('/users/kyc', data),
-    setPin: (pin: string) => api.post('/users/set-pin', { pin }),
+    setPin: (pin: string, password: string) => api.post('/users/set-pin', { pin, password }),
+    resetPin: (password: string, newPin: string) => api.post('/users/reset-pin', { password, newPin }),
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
     getReferrals: () => api.get('/users/referrals'),
     getSettings: () => api.get('/users/settings'),
@@ -70,7 +71,7 @@ export const userApi = {
 export const transactionApi = {
     getAll: () => api.get('/transactions'),
     deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
-    withdraw: (amount: number) => api.post('/transactions/withdraw', { amount }),
+    withdraw: (amount: number, pin: string) => api.post('/transactions/withdraw', { amount, pin }),
     payUtility: (data: any) => api.post('/transactions/utility', data),
 };
 

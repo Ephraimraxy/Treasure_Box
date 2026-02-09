@@ -30,7 +30,12 @@ export const WalletPage = () => {
         kycRequiredForAccount: true
     });
 
-    // Fetch system settings on mount
+    // Pin Management State
+    const [pinModal, setPinModal] = useState({ open: false, mode: 'create' as 'create' | 'reset' });
+    const [pinStep, setPinStep] = useState(1);
+    const [pinInputs, setPinInputs] = useState({ pin: '', confirm: '', password: '' });
+    const [withdrawPin, setWithdrawPin] = useState('');
+
     useEffect(() => {
         userApi.getSettings().then(res => {
             setSettings(res.data);
@@ -46,6 +51,36 @@ export const WalletPage = () => {
             addToast('error', 'Failed to update balance');
         } finally {
             setRefreshing(false);
+        }
+    };
+
+    const handlePinSubmit = async () => {
+        setLoading(true);
+        try {
+            if (pinModal.mode === 'create') {
+                if (pinInputs.pin !== pinInputs.confirm) {
+                    addToast('error', 'PINs do not match');
+                    return;
+                }
+                await userApi.setPin(pinInputs.pin, pinInputs.password);
+                addToast('success', 'Transaction PIN set successfully');
+            } else {
+                // Reset mode
+                if (pinInputs.pin !== pinInputs.confirm) {
+                    addToast('error', 'PINs do not match');
+                    return;
+                }
+                await userApi.resetPin(pinInputs.password, pinInputs.pin);
+                addToast('success', 'Transaction PIN reset successfully');
+            }
+            await refreshUser();
+            setPinModal({ ...pinModal, open: false });
+            setPinInputs({ pin: '', confirm: '', password: '' });
+            setPinStep(1);
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Failed to update PIN');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -80,14 +115,31 @@ export const WalletPage = () => {
             addToast('error', `Minimum withdrawal is ₦${settings.minWithdrawal.toLocaleString()}`);
             return;
         }
+
+        // Check prerequisites
+        if (!user?.transactionPin) {
+            setPinModal({ open: true, mode: 'create' });
+            return;
+        }
+
+        if (!withdrawPin) {
+            addToast('error', 'Please enter your transaction PIN');
+            return;
+        }
+
         setLoading(true);
         try {
-            await transactionApi.withdraw(amt);
+            await transactionApi.withdraw(amt, withdrawPin);
             addToast('success', 'Withdrawal request submitted for approval');
             await refreshUser();
             setAmount('');
+            setWithdrawPin('');
         } catch (error: any) {
-            addToast('error', error.response?.data?.error || 'Withdrawal failed');
+            if (error.response?.data?.error?.includes('bank account')) {
+                addToast('error', 'Please link your bank account first');
+            } else {
+                addToast('error', error.response?.data?.error || 'Withdrawal failed');
+            }
         } finally {
             setLoading(false);
         }
@@ -120,7 +172,78 @@ export const WalletPage = () => {
     const estimatedReturn = plan ? parseFloat(amount || '0') * (1 + plan.baseRate / 100) : 0;
 
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-4 animate-fade-in relative">
+            {/* Modal for Pin */}
+            {pinModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setPinModal({ ...pinModal, open: false })} />
+                    <Card className="relative z-10 w-full max-w-sm space-y-4">
+                        <h3 className="text-lg font-bold text-white">
+                            {pinModal.mode === 'create' ? 'Create Transaction PIN' : 'Reset Transaction PIN'}
+                        </h3>
+
+                        {pinStep === 1 && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-400">
+                                    {pinModal.mode === 'create' ? 'Enter a 4-digit PIN for your transactions.' : 'Enter your new 4-digit PIN.'}
+                                </p>
+                                <Input
+                                    type="password"
+                                    placeholder="Enter 4-digit PIN"
+                                    maxLength={4}
+                                    value={pinInputs.pin}
+                                    onChange={(e) => setPinInputs({ ...pinInputs, pin: e.target.value.replace(/\D/g, '') })}
+                                    className="text-center tracking-[1em]"
+                                />
+                                <Button className="w-full" onClick={() => {
+                                    if (pinInputs.pin.length !== 4) return addToast('error', 'PIN must be 4 digits');
+                                    setPinStep(2);
+                                }}>Next</Button>
+                            </div>
+                        )}
+
+                        {pinStep === 2 && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-400">Confirm your PIN.</p>
+                                <Input
+                                    type="password"
+                                    placeholder="Confirm PIN"
+                                    maxLength={4}
+                                    value={pinInputs.confirm}
+                                    onChange={(e) => setPinInputs({ ...pinInputs, confirm: e.target.value.replace(/\D/g, '') })}
+                                    className="text-center tracking-[1em]"
+                                />
+                                <div className="flex gap-2">
+                                    <Button variant="outline" className="flex-1" onClick={() => setPinStep(1)}>Back</Button>
+                                    <Button className="flex-1" onClick={() => {
+                                        if (pinInputs.pin !== pinInputs.confirm) return addToast('error', 'PINs do not match');
+                                        setPinStep(3);
+                                    }}>Next</Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {pinStep === 3 && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-400">Enter your login password to authorize.</p>
+                                <Input
+                                    type="password"
+                                    placeholder="Login Password"
+                                    value={pinInputs.password}
+                                    onChange={(e) => setPinInputs({ ...pinInputs, password: e.target.value })}
+                                />
+                                <div className="flex gap-2">
+                                    <Button variant="outline" className="flex-1" onClick={() => setPinStep(2)}>Back</Button>
+                                    <Button className="flex-1" disabled={loading || !pinInputs.password} onClick={handlePinSubmit}>
+                                        {loading ? 'Processing...' : 'Submit'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Balance Card */}
                 <Card className="bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
@@ -173,7 +296,6 @@ export const WalletPage = () => {
                                         onClick={async () => {
                                             setLoading(true);
                                             try {
-                                                // Call API to create virtual account
                                                 await paymentApi.createVirtualAccount();
                                                 addToast('success', 'Virtual Account generated!');
                                                 await refreshUser();
@@ -199,6 +321,7 @@ export const WalletPage = () => {
                             </div>
                         )}
 
+                        {/* Referral Code */}
                         <div className="bg-white/5 p-2.5 rounded-lg border border-white/10">
                             <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Referral Code</div>
                             <div className="flex justify-between items-center">
@@ -298,9 +421,35 @@ export const WalletPage = () => {
                     />
 
                     {tab === 'withdraw' && (
-                        <div className="text-xs text-amber-500 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                            Funds will be sent to your linked bank account. Processing time: 1-24 hours.
-                        </div>
+                        <>
+                            {!user?.transactionPin && (
+                                <div className="text-xs text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20 flex justify-between items-center">
+                                    <span>Transaction PIN not set</span>
+                                    <button onClick={() => setPinModal({ open: true, mode: 'create' })} className="underline font-bold">Set PIN</button>
+                                </div>
+                            )}
+
+                            <div className="space-y-1">
+                                <Input
+                                    label="Transaction PIN"
+                                    type="password"
+                                    maxLength={4}
+                                    value={withdrawPin}
+                                    onChange={(e) => setWithdrawPin(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="Enter 4-digit PIN"
+                                    className="tracking-widest"
+                                />
+                                <div className="flex justify-end">
+                                    <button onClick={() => setPinModal({ open: true, mode: 'reset' })} className="text-xs text-slate-500 hover:text-amber-500">
+                                        Reset PIN?
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="text-xs text-amber-500 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                                Funds will be sent to your linked bank account. Processing time: 1-24 hours.
+                            </div>
+                        </>
                     )}
 
                     <Button
