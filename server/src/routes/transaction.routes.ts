@@ -56,7 +56,12 @@ router.post('/deposit', authenticate, async (req: AuthRequest, res, next) => {
 // Request withdrawal
 router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
     try {
+        // Fetch settings
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+        const minWithdrawal = settings?.minWithdrawal || 1000;
+
         const { amount, pin } = withdrawSchema.extend({
+            amount: z.number().min(minWithdrawal, `Minimum withdrawal is ₦${minWithdrawal.toLocaleString()}`),
             pin: z.string().length(4)
         }).parse(req.body);
 

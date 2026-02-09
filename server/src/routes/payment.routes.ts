@@ -10,8 +10,12 @@ const prisma = new PrismaClient();
 // Initialize Paystack Payment
 router.post('/initialize', authenticate, async (req: AuthRequest, res, next) => {
     try {
+        // Fetch global settings
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+        const minDeposit = settings?.minDeposit || 1000;
+
         const schema = z.object({
-            amount: z.number().min(1000),
+            amount: z.number().min(minDeposit, `Minimum deposit is ₦${minDeposit.toLocaleString()}`),
             purpose: z.enum(['deposit', 'investment'])
         });
 

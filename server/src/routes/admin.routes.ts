@@ -231,9 +231,7 @@ router.get('/settings', async (req: AuthRequest, res, next) => {
         // Return default if not exists
         res.json(settings || {
             minDeposit: 1000,
-            maxDeposit: 5000000,
             minWithdrawal: 1000,
-            maxWithdrawal: 1000000,
             minInvestment: 5000,
             isSystemPaused: false
         });

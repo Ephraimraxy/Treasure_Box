@@ -123,11 +123,8 @@ model Settings {
   withdrawalPacingThreshold Int     @default(10)
   withdrawalPacingDelay     String  @default("24 hours")
   minDeposit                Float   @default(1000)
-  maxDeposit                Float   @default(5000000)
   minWithdrawal             Float   @default(1000)
-  maxWithdrawal             Float   @default(1000000)
   minInvestment             Float   @default(5000)
-  dailyTransactionLimit     Float   @default(5000000)
 }
 
 model AuditLog {

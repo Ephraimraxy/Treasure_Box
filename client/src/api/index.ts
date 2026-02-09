@@ -104,6 +104,8 @@ export const adminApi = {
     creditUser: (userId: string, amount: number, description?: string) =>
         api.post(`/admin/users/${userId}/credit`, { amount, description }),
     getAuditLogs: () => api.get('/admin/audit-logs'),
+    getSettings: () => api.get('/admin/settings'),
+    updateSettings: (data: any) => api.put('/admin/settings', data),
 };
 
 export default api;

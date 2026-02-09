@@ -363,18 +363,48 @@ export const AdminAuditPage = () => {
 
 export const AdminSettingsPage = () => {
     const { addToast } = useToast();
+    const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
-        maintenanceMode: false,
+        minDeposit: 1000,
         minWithdrawal: 1000,
-        maxWithdrawal: 500000,
-        referralBonus: 500,
-        enableNotifications: true
+        minInvestment: 5000,
+        isSystemPaused: false,
+        paystackPublicKey: ''
     });
 
-    const handleSave = () => {
-        // In a real app, this would save to backend
-        addToast('success', 'Settings saved successfully');
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await adminApi.getSettings();
+                // Ensure we merge with defaults in case of new fields
+                setSettings(prev => ({ ...prev, ...response.data }));
+            } catch (error: any) {
+                console.error('Failed to fetch settings:', error);
+                addToast('error', 'Failed to load settings');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            await adminApi.updateSettings(settings);
+            addToast('success', 'Settings saved successfully');
+        } catch (error: any) {
+            console.error('Failed to save settings:', error);
+            addToast('error', 'Failed to save settings');
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Spinner />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -386,58 +416,45 @@ export const AdminSettingsPage = () => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
                             <div>
-                                <div className="font-medium text-white">Maintenance Mode</div>
-                                <div className="text-xs text-slate-400">Suspend all user activities</div>
+                                <div className="font-medium text-white">System Pause</div>
+                                <div className="text-xs text-slate-400">Suspend all withdrawals & deposits</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
-                                    checked={settings.maintenanceMode}
-                                    onChange={e => setSettings({ ...settings, maintenanceMode: e.target.checked })}
+                                    checked={settings.isSystemPaused}
+                                    onChange={e => setSettings({ ...settings, isSystemPaused: e.target.checked })}
                                 />
                                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                            </label>
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
-                            <div>
-                                <div className="font-medium text-white">System Notifications</div>
-                                <div className="text-xs text-slate-400">Enable global alerts</div>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    checked={settings.enableNotifications}
-                                    onChange={e => setSettings({ ...settings, enableNotifications: e.target.checked })}
-                                />
-                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
                     </div>
                 </Card>
 
                 <Card>
-                    <h3 className="font-bold text-white mb-4">Financial Limits</h3>
+                    <h3 className="font-bold text-white mb-4">Financial Limits (Minimums)</h3>
                     <div className="space-y-4">
                         <Input
-                            label="Minimum Withdrawal (₦)"
+                            label="Minimum Funding Amount (₦)"
+                            type="number"
+                            value={settings.minDeposit}
+                            onChange={e => setSettings({ ...settings, minDeposit: parseInt(e.target.value) || 0 })}
+                            hint="Minimum amount a user can deposit"
+                        />
+                        <Input
+                            label="Minimum Withdrawal Amount (₦)"
                             type="number"
                             value={settings.minWithdrawal}
-                            onChange={e => setSettings({ ...settings, minWithdrawal: parseInt(e.target.value) })}
+                            onChange={e => setSettings({ ...settings, minWithdrawal: parseInt(e.target.value) || 0 })}
+                            hint="Minimum amount a user can withdraw"
                         />
                         <Input
-                            label="Maximum Withdrawal (₦)"
+                            label="Minimum Investment Amount (₦)"
                             type="number"
-                            value={settings.maxWithdrawal}
-                            onChange={e => setSettings({ ...settings, maxWithdrawal: parseInt(e.target.value) })}
-                        />
-                        <Input
-                            label="Referral Bonus (₦)"
-                            type="number"
-                            value={settings.referralBonus}
-                            onChange={e => setSettings({ ...settings, referralBonus: parseInt(e.target.value) })}
+                            value={settings.minInvestment}
+                            onChange={e => setSettings({ ...settings, minInvestment: parseInt(e.target.value) || 0 })}
+                            hint="Minimum amount required to create an investment"
                         />
                     </div>
                 </Card>
