@@ -33,9 +33,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     icon?: React.ReactNode;
     error?: string;
     success?: boolean;
+    hint?: string;
 }
 
-export const Input = ({ label, icon, className = '', error, success, ...props }: InputProps) => (
+export const Input = ({ label, icon, className = '', error, success, hint, ...props }: InputProps) => (
     <div className="space-y-1.5 w-full">
         {label && <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</label>}
         <div className="relative">
@@ -48,6 +49,7 @@ export const Input = ({ label, icon, className = '', error, success, ...props }:
             {success && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"><CheckCircle size={16} /></div>}
         </div>
         {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
+        {hint && !error && <p className="text-[10px] text-slate-500 font-medium">{hint}</p>}
     </div>
 );
 
