@@ -183,6 +183,67 @@ router.post('/webhook', async (req: any, res: any, next: any) => {
                     const { sendTransactionEmail } = await import('../services/email.service');
                     sendTransactionEmail(user.email, 'deposit', amountInNaira, 'SUCCESS').catch(console.error);
                 }
+            } else if (!transaction && event.data.channel === 'dedicated_nuban') {
+                // HANDLE VIRTUAL ACCOUNT TRANSFER
+                console.log(`Processing Virtual Account transfer: ${reference} for ${amountInNaira}`);
+
+                // Find user by customer code or email
+                const user = await prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            { paystackCustomerCode: event.data.customer.customer_code },
+                            { email: event.data.customer.email }
+                        ]
+                    }
+                });
+
+                if (user) {
+                    // Check if we already processed this reference (safety check)
+                    const existingTx = await prisma.transaction.findFirst({
+                        where: {
+                            meta: { path: ['reference'], equals: reference }
+                        }
+                    });
+
+                    if (existingTx) {
+                        console.log('Transaction already processed');
+                        return res.sendStatus(200);
+                    }
+
+                    // Create successful transaction
+                    await prisma.$transaction([
+                        prisma.transaction.create({
+                            data: {
+                                userId: user.id,
+                                type: 'DEPOSIT',
+                                amount: amountInNaira,
+                                status: 'SUCCESS',
+                                description: `Deposit via Virtual Account`,
+                                meta: { reference, channel: 'dedicated_nuban', sender: event.data.authorization }
+                            }
+                        }),
+                        prisma.user.update({
+                            where: { id: user.id },
+                            data: { balance: { increment: amountInNaira } }
+                        }),
+                        prisma.notification.create({
+                            data: {
+                                userId: user.id,
+                                title: 'Deposit Received',
+                                message: `You received a deposit of ₦${amountInNaira.toLocaleString()} to your virtual account.`,
+                                type: 'SUCCESS'
+                            }
+                        })
+                    ]);
+
+                    // Send Email Notification (Async)
+                    if (process.env.RESEND_API_KEY) {
+                        const { sendTransactionEmail } = await import('../services/email.service');
+                        sendTransactionEmail(user.email, 'deposit', amountInNaira, 'SUCCESS').catch(console.error);
+                    }
+                } else {
+                    console.error(`Virtual Account deposit received but user not found. Customer: ${event.data.customer.customer_code}`);
+                }
             }
         }
 
@@ -276,9 +337,21 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
                 return res.status(400).json({ error: 'Please complete your KYC (BVN, NIN) first' });
             }
 
-            firstName = 'TB';
-            lastName = user.username;
-            phone = user.phone;
+            if (user.name && user.name.trim().length > 0) {
+                const parts = user.name.trim().split(' ');
+                if (parts.length > 1) {
+                    firstName = parts[0];
+                    lastName = parts.slice(1).join(' ');
+                } else {
+                    firstName = parts[0];
+                    lastName = parts[0]; // Fallback
+                }
+                phone = user.phone;
+            } else {
+                firstName = 'TB';
+                lastName = user.username!;
+                phone = user.phone;
+            }
         }
 
         if (!customerCode) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Info } from 'lucide-react';
+import { Copy, Info, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
@@ -21,6 +21,8 @@ export const WalletPage = () => {
     const [duration, setDuration] = useState(7);
     const [tab, setTab] = useState<'deposit' | 'withdraw' | 'invest'>('deposit');
     const [loading, setLoading] = useState(false);
+    const [showBalance, setShowBalance] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [settings, setSettings] = useState({
         minDeposit: 1000,
         minWithdrawal: 1000,
@@ -34,6 +36,18 @@ export const WalletPage = () => {
             setSettings(res.data);
         }).catch(console.error);
     }, []);
+
+    const handleRefreshBalance = async () => {
+        setRefreshing(true);
+        try {
+            await refreshUser();
+            addToast('success', 'Balance updated');
+        } catch (error) {
+            addToast('error', 'Failed to update balance');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleDeposit = async () => {
         const amt = parseFloat(amount);
@@ -111,9 +125,19 @@ export const WalletPage = () => {
                 {/* Balance Card */}
                 <Card className="bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
                     <div className="relative z-10">
-                        <div className="text-slate-400 font-medium mb-1">Total Balance</div>
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="text-slate-400 font-medium">Total Balance</div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowBalance(!showBalance)} className="text-slate-400 hover:text-white transition-colors">
+                                    {showBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                                <button onClick={handleRefreshBalance} className={`text-slate-400 hover:text-white transition-colors ${refreshing ? 'animate-spin' : ''}`} disabled={refreshing}>
+                                    <RefreshCw size={16} />
+                                </button>
+                            </div>
+                        </div>
                         <div className="text-2xl font-bold text-white font-mono mb-3">
-                            <FormatCurrency amount={user?.balance || 0} />
+                            {showBalance ? <FormatCurrency amount={user?.balance || 0} /> : '*******'}
                         </div>
 
                         {user?.virtualAccount ? (
