@@ -74,6 +74,10 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
             return res.status(400).json({ error: 'Insufficient balance' });
         }
 
+        if (user.isSuspended) {
+            return res.status(403).json({ error: 'Your account is suspended. You cannot make withdrawals.' });
+        }
+
         if (!user.bankDetails) {
             return res.status(400).json({ error: 'Please set your bank account details first' });
         }
@@ -137,6 +141,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
 
         if (!user || user.balance < amount) {
             return res.status(400).json({ error: 'Insufficient balance' });
+        }
+
+        if (user.isSuspended) {
+            return res.status(403).json({ error: 'Your account is suspended. You cannot make payments.' });
         }
 
         if (!user.transactionPin) {

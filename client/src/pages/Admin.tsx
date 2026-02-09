@@ -253,20 +253,77 @@ export const AdminWithdrawalsPage = () => {
 export const AdminUsersPage = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
+    const { addToast } = useToast();
+
+    // Modal states
+    const [editUser, setEditUser] = useState<any>(null);
+    const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+    const [deleteUser, setDeleteUser] = useState<any>(null);
+    const [suspendUser, setSuspendUser] = useState<any>(null);
+    const [suspendReason, setSuspendReason] = useState('');
+
+    const fetchUsers = async () => {
+        try {
+            const response = await adminApi.getUsers();
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await adminApi.getUsers();
-                setUsers(response.data);
-            } catch (error) {
-                console.error('Failed to fetch users:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchUsers();
     }, []);
+
+    const handleEdit = async () => {
+        if (!editUser) return;
+        setProcessing(true);
+        try {
+            await adminApi.updateUser(editUser.id, editForm);
+            addToast('success', 'User updated');
+            setEditUser(null);
+            fetchUsers();
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Update failed');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteUser) return;
+        setProcessing(true);
+        try {
+            await adminApi.deleteUser(deleteUser.id);
+            addToast('success', 'User deleted');
+            setDeleteUser(null);
+            fetchUsers();
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Delete failed');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleSuspendToggle = async () => {
+        if (!suspendUser) return;
+        setProcessing(true);
+        const willSuspend = !suspendUser.isSuspended;
+        try {
+            await adminApi.toggleSuspension(suspendUser.id, willSuspend, suspendReason);
+            addToast('success', willSuspend ? 'User suspended' : 'User unsuspended');
+            setSuspendUser(null);
+            setSuspendReason('');
+            fetchUsers();
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Failed');
+        } finally {
+            setProcessing(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -282,27 +339,171 @@ export const AdminUsersPage = () => {
 
             <div className="space-y-3">
                 {users.map((user) => (
-                    <Card key={user.id} className="flex items-center justify-between">
-                        <div>
-                            <div className="font-bold text-white">{user.name || user.email}</div>
-                            <div className="text-sm text-slate-400">{user.email}</div>
-                            <div className="text-xs text-slate-600 mt-1">
-                                Joined: {new Date(user.createdAt).toLocaleDateString()}
+                    <Card key={user.id} className={`relative ${user.isSuspended ? 'border border-red-500/30' : ''}`}>
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-white truncate">{user.name || user.email}</span>
+                                    {user.isSuspended && (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full text-[10px] font-bold whitespace-nowrap">
+                                            <AlertTriangle size={10} /> SUSPENDED
+                                        </span>
+                                    )}
+                                    {user.role === 'ADMIN' && (
+                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-bold">ADMIN</span>
+                                    )}
+                                </div>
+                                <div className="text-sm text-slate-400 truncate">{user.email}</div>
+                                {user.username && <div className="text-xs text-slate-500">@{user.username}</div>}
+                                <div className="text-xs text-slate-600 mt-1">
+                                    Joined: {new Date(user.createdAt).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                                <div className="font-bold text-white">
+                                    <FormatCurrency amount={user.balance} />
+                                </div>
+                                <div className={`text-xs uppercase font-bold ${user.kycVerified ? 'text-emerald-400' :
+                                    user.emailVerified ? 'text-blue-400' : 'text-slate-500'
+                                    }`}>
+                                    {user.kycVerified ? 'KYC Verified' : user.emailVerified ? 'Verified' : 'Unverified'}
+                                </div>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="font-bold text-white">
-                                <FormatCurrency amount={user.balance} />
+
+                        {/* Action Buttons */}
+                        {user.role !== 'ADMIN' && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-slate-800">
+                                <button
+                                    onClick={() => {
+                                        setEditUser(user);
+                                        setEditForm({ name: user.name || '', email: user.email, phone: user.phone || '' });
+                                    }}
+                                    className="flex-1 text-xs py-2 px-3 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors font-medium"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setSuspendUser(user);
+                                        setSuspendReason('');
+                                    }}
+                                    className={`flex-1 text-xs py-2 px-3 rounded-lg font-medium transition-colors ${user.isSuspended
+                                        ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                        : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                                        }`}
+                                >
+                                    {user.isSuspended ? 'Unsuspend' : 'Suspend'}
+                                </button>
+                                <button
+                                    onClick={() => setDeleteUser(user)}
+                                    className="flex-1 text-xs py-2 px-3 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors font-medium"
+                                >
+                                    Delete
+                                </button>
                             </div>
-                            <div className={`text-xs uppercase font-bold ${user.kycVerified ? 'text-emerald-400' :
-                                user.emailVerified ? 'text-blue-400' : 'text-slate-500'
-                                }`}>
-                                {user.kycVerified ? 'KYC Verified' : user.emailVerified ? 'Verified' : 'Unverified'}
-                            </div>
-                        </div>
+                        )}
                     </Card>
                 ))}
             </div>
+
+            {/* Edit Modal */}
+            <Modal isOpen={!!editUser} onClose={() => setEditUser(null)} title="Edit User">
+                <div className="space-y-4">
+                    <Input
+                        label="Name"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        placeholder="Full name"
+                    />
+                    <Input
+                        label="Email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        placeholder="Email address"
+                    />
+                    <Input
+                        label="Phone"
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        placeholder="Phone number"
+                    />
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setEditUser(null)} className="flex-1">Cancel</Button>
+                        <Button onClick={handleEdit} disabled={processing} className="flex-1">
+                            {processing ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Modal */}
+            <Modal isOpen={!!deleteUser} onClose={() => setDeleteUser(null)} title="Delete User">
+                <div className="space-y-4">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-red-400 mb-2">
+                            <AlertTriangle size={18} />
+                            <span className="font-bold">Irreversible Action</span>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                            This will permanently delete <strong className="text-white">{deleteUser?.name || deleteUser?.email}</strong> and all their data (transactions, investments, virtual account).
+                        </p>
+                        {deleteUser?.balance > 0 && (
+                            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                <p className="text-sm text-amber-400">
+                                    ⚠ This user has a balance of <strong><FormatCurrency amount={deleteUser.balance} /></strong>
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setDeleteUser(null)} className="flex-1">Cancel</Button>
+                        <Button variant="danger" onClick={handleDelete} disabled={processing} className="flex-1">
+                            {processing ? 'Deleting...' : 'Delete Permanently'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Suspend Modal */}
+            <Modal
+                isOpen={!!suspendUser}
+                onClose={() => setSuspendUser(null)}
+                title={suspendUser?.isSuspended ? 'Unsuspend User' : 'Suspend User'}
+            >
+                <div className="space-y-4">
+                    {suspendUser?.isSuspended ? (
+                        <p className="text-sm text-slate-300">
+                            Remove suspension from <strong className="text-white">{suspendUser?.name || suspendUser?.email}</strong>?
+                            They will regain full access to withdrawals, investments, and services.
+                        </p>
+                    ) : (
+                        <>
+                            <p className="text-sm text-slate-300">
+                                Suspend <strong className="text-white">{suspendUser?.name || suspendUser?.email}</strong>?
+                                They will be unable to withdraw, invest, or purchase services. Deposits will still work.
+                            </p>
+                            <Input
+                                label="Reason"
+                                value={suspendReason}
+                                onChange={(e) => setSuspendReason(e.target.value)}
+                                placeholder="e.g. Suspicious activity"
+                            />
+                        </>
+                    )}
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setSuspendUser(null)} className="flex-1">Cancel</Button>
+                        <Button
+                            variant={suspendUser?.isSuspended ? 'success' : 'danger'}
+                            onClick={handleSuspendToggle}
+                            disabled={processing || (!suspendUser?.isSuspended && !suspendReason)}
+                            className="flex-1"
+                        >
+                            {processing ? 'Processing...' : suspendUser?.isSuspended ? 'Unsuspend' : 'Suspend User'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

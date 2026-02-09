@@ -65,6 +65,10 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
             return res.status(400).json({ error: 'Insufficient balance' });
         }
 
+        if (user.isSuspended) {
+            return res.status(403).json({ error: 'Your account is suspended. You cannot create investments.' });
+        }
+
         // Deduct balance
         await prisma.user.update({
             where: { id: req.user!.id },

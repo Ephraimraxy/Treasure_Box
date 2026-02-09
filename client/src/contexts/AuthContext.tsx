@@ -15,6 +15,8 @@ interface User {
     kycStatus?: 'PENDING' | 'VERIFIED' | 'FAILED';
     kycPhotoUrl?: string;
     transactionPin?: boolean;
+    isSuspended?: boolean;
+    suspensionReason?: string;
     virtualAccount?: {
         bankName: string;
         accountNumber: string;

@@ -337,21 +337,9 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
                 return res.status(400).json({ error: 'Please complete your KYC (BVN, NIN) first' });
             }
 
-            if (user.name && user.name.trim().length > 0) {
-                const parts = user.name.trim().split(' ');
-                if (parts.length > 1) {
-                    firstName = parts[0];
-                    lastName = parts.slice(1).join(' ');
-                } else {
-                    firstName = parts[0];
-                    lastName = parts[0]; // Fallback
-                }
-                phone = user.phone;
-            } else {
-                firstName = 'TB';
-                lastName = user.username!;
-                phone = user.phone;
-            }
+            firstName = 'TB';
+            lastName = user.username!;
+            phone = user.phone;
         }
 
         if (!customerCode) {

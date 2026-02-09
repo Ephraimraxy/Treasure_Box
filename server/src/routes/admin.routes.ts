@@ -16,11 +16,14 @@ router.get('/users', async (req: AuthRequest, res, next) => {
                 id: true,
                 email: true,
                 name: true,
+                username: true,
                 phone: true,
                 balance: true,
                 emailVerified: true,
                 kycVerified: true,
                 role: true,
+                isSuspended: true,
+                suspensionReason: true,
                 createdAt: true,
                 _count: {
                     select: { investments: true, transactions: true }
@@ -191,6 +194,116 @@ router.get('/audit-logs', async (req: AuthRequest, res, next) => {
         });
 
         res.json(logs);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Edit user details
+router.put('/users/:id', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { name, email, phone, role } = req.body;
+
+        const user = await prisma.user.update({
+            where: { id },
+            data: {
+                ...(name !== undefined && { name }),
+                ...(email !== undefined && { email }),
+                ...(phone !== undefined && { phone }),
+                ...(role !== undefined && { role }),
+            },
+            select: { id: true, name: true, email: true, phone: true, role: true }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'EDIT_USER',
+                details: `Edited user ${user.email} (${id})`
+            }
+        });
+
+        res.json({ message: 'User updated', user });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Delete user
+router.delete('/users/:id', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: { email: true, balance: true, role: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (user.role === 'ADMIN') {
+            return res.status(403).json({ error: 'Cannot delete admin accounts' });
+        }
+
+        // Cascade delete handles all related records
+        await prisma.user.delete({ where: { id } });
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'DELETE_USER',
+                details: `Deleted user ${user.email} (balance: ₦${user.balance.toLocaleString()})`
+            }
+        });
+
+        res.json({ message: 'User deleted', deletedBalance: user.balance });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Suspend / Unsuspend user
+router.patch('/users/:id/suspend', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { suspend, reason } = req.body; // suspend: boolean
+
+        const user = await prisma.user.findUnique({ where: { id }, select: { email: true, role: true } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.role === 'ADMIN') return res.status(403).json({ error: 'Cannot suspend admin accounts' });
+
+        await prisma.user.update({
+            where: { id },
+            data: {
+                isSuspended: suspend,
+                suspensionReason: suspend ? (reason || 'Suspicious activity') : null
+            }
+        });
+
+        // Notify the user
+        await prisma.notification.create({
+            data: {
+                userId: id,
+                title: suspend ? 'Account Suspended' : 'Account Restored',
+                message: suspend
+                    ? `Your account has been suspended. Reason: ${reason || 'Suspicious activity'}. You can submit an appeal.`
+                    : 'Your account suspension has been lifted. You can now use all features.',
+                type: suspend ? 'WARNING' : 'SUCCESS'
+            }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: suspend ? 'SUSPEND_USER' : 'UNSUSPEND_USER',
+                details: `${suspend ? 'Suspended' : 'Unsuspended'} user ${user.email}. ${reason ? 'Reason: ' + reason : ''}`
+            }
+        });
+
+        res.json({ message: suspend ? 'User suspended' : 'User unsuspended' });
     } catch (error) {
         next(error);
     }

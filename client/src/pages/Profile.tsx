@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Building2, Shield, Camera, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Mail, Phone, MapPin, Building2, Shield, Camera, Lock, Search, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userApi, paymentApi } from '../api';
@@ -16,14 +16,67 @@ export const ProfilePage = () => {
         username: user?.username || '',
         photoUrl: ''
     });
+
+    // Bank details state
+    const [banks, setBanks] = useState<any[]>([]);
+    const [bankSearch, setBankSearch] = useState('');
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
     const [bankData, setBankData] = useState({
         bankName: '',
+        bankCode: '',
         accountNumber: '',
         accountName: '',
     });
+    const [verifyingAccount, setVerifyingAccount] = useState(false);
+    const [accountVerified, setAccountVerified] = useState(false);
+
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pinMode, setPinMode] = useState<'set' | 'change'>('set');
     const [pinData, setPinData] = useState({ oldPin: '', newPin: '', confirmPin: '', password: '' });
+
+    // Fetch banks on mount
+    useEffect(() => {
+        paymentApi.getBanks().then(res => {
+            setBanks(res.data || []);
+        }).catch(console.error);
+    }, []);
+
+    // Auto-verify account when number + bank are set
+    useEffect(() => {
+        if (bankData.accountNumber.length === 10 && bankData.bankCode) {
+            verifyAccount();
+        } else {
+            setAccountVerified(false);
+            setBankData(prev => ({ ...prev, accountName: '' }));
+        }
+    }, [bankData.accountNumber, bankData.bankCode]);
+
+    const verifyAccount = async () => {
+        setVerifyingAccount(true);
+        setAccountVerified(false);
+        try {
+            const res = await paymentApi.verifyAccount(bankData.accountNumber, bankData.bankCode);
+            setBankData(prev => ({ ...prev, accountName: res.data.accountName }));
+            setAccountVerified(true);
+        } catch {
+            setBankData(prev => ({ ...prev, accountName: '' }));
+            addToast('error', 'Could not verify account. Please check the details.');
+        } finally {
+            setVerifyingAccount(false);
+        }
+    };
+
+    const filteredBanks = banks.filter((b: any) =>
+        b.name?.toLowerCase().includes(bankSearch.toLowerCase())
+    );
+
+    const selectBank = (bank: any) => {
+        setBankData(prev => ({ ...prev, bankName: bank.name, bankCode: bank.code }));
+        setBankSearch('');
+        setShowBankDropdown(false);
+        setAccountVerified(false);
+        setBankData(prev => ({ ...prev, accountName: '', bankName: bank.name, bankCode: bank.code }));
+    };
 
     const openPinModal = (mode: 'set' | 'change') => {
         setPinMode(mode);
@@ -86,9 +139,17 @@ export const ProfilePage = () => {
             addToast('error', 'Please fill all bank details');
             return;
         }
+        if (!accountVerified) {
+            addToast('error', 'Please verify your account first');
+            return;
+        }
         setLoading(true);
         try {
-            await userApi.updateBankDetails(bankData);
+            await userApi.updateBankDetails({
+                bankName: bankData.bankName,
+                accountNumber: bankData.accountNumber,
+                accountName: bankData.accountName,
+            });
             addToast('success', 'Bank details updated successfully');
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Update failed');
@@ -192,34 +253,107 @@ export const ProfilePage = () => {
                 </div>
             </Card>
 
-            {/* Bank Details */}
+            {/* Bank Details - Professional Auto-Resolve */}
             <Card>
                 <h3 className="font-bold text-white mb-4">Bank Details</h3>
                 <p className="text-sm text-slate-400 mb-4">
-                    Add your bank details for withdrawals
+                    Link your bank account for withdrawals
                 </p>
                 <div className="space-y-4">
-                    <Input
-                        label="Bank Name"
-                        icon={<Building2 size={18} />}
-                        value={bankData.bankName}
-                        onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
-                        placeholder="e.g. GTBank, Access Bank"
-                    />
+                    {/* Bank Selection Dropdown */}
+                    <div className="relative">
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Select Bank</label>
+                        <button
+                            type="button"
+                            onClick={() => setShowBankDropdown(!showBankDropdown)}
+                            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-left hover:border-slate-600 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Building2 size={18} className="text-slate-500" />
+                                <span className={bankData.bankName ? 'text-white' : 'text-slate-500'}>
+                                    {bankData.bankName || 'Choose your bank'}
+                                </span>
+                            </div>
+                            <Search size={16} className="text-slate-500" />
+                        </button>
+
+                        {showBankDropdown && (
+                            <div className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                                <div className="p-2">
+                                    <input
+                                        type="text"
+                                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                                        placeholder="Search banks..."
+                                        value={bankSearch}
+                                        onChange={(e) => setBankSearch(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="max-h-48 overflow-y-auto">
+                                    {filteredBanks.length === 0 ? (
+                                        <div className="px-4 py-3 text-sm text-slate-500">No banks found</div>
+                                    ) : (
+                                        filteredBanks.map((bank: any) => (
+                                            <button
+                                                key={bank.code}
+                                                onClick={() => selectBank(bank)}
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 transition-colors ${bankData.bankCode === bank.code ? 'bg-amber-500/10 text-amber-400' : 'text-white'
+                                                    }`}
+                                            >
+                                                {bank.name}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Account Number */}
                     <Input
                         label="Account Number"
                         value={bankData.accountNumber}
-                        onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
-                        placeholder="10-digit account number"
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setBankData({ ...bankData, accountNumber: val });
+                        }}
+                        placeholder="Enter 10-digit account number"
                         maxLength={10}
                     />
-                    <Input
-                        label="Account Name"
-                        value={bankData.accountName}
-                        onChange={(e) => setBankData({ ...bankData, accountName: e.target.value })}
-                        placeholder="Account holder name"
-                    />
-                    <Button onClick={handleBankUpdate} variant="secondary" disabled={loading} className="w-full">
+
+                    {/* Account Name (Auto-resolved) */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Account Name</label>
+                        <div className={`px-4 py-3 rounded-xl border flex items-center gap-2 ${accountVerified
+                            ? 'bg-emerald-500/5 border-emerald-500/30'
+                            : 'bg-slate-900 border-slate-700'
+                            }`}>
+                            {verifyingAccount ? (
+                                <>
+                                    <Loader2 size={16} className="text-amber-400 animate-spin" />
+                                    <span className="text-sm text-slate-400">Verifying account...</span>
+                                </>
+                            ) : accountVerified ? (
+                                <>
+                                    <CheckCircle size={16} className="text-emerald-400" />
+                                    <span className="text-white font-medium">{bankData.accountName}</span>
+                                </>
+                            ) : (
+                                <span className="text-sm text-slate-500">
+                                    {bankData.bankCode && bankData.accountNumber.length === 10
+                                        ? 'Could not verify account'
+                                        : 'Select bank & enter account number'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <Button
+                        onClick={handleBankUpdate}
+                        variant="secondary"
+                        disabled={loading || !accountVerified}
+                        className="w-full"
+                    >
                         {loading ? 'Saving...' : 'Save Bank Details'}
                     </Button>
                 </div>

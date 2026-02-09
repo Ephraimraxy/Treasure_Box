@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Info, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Copy, Info, RefreshCw, Eye, EyeOff, AlertTriangle, Flag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
-import { Button, Input, Card, FormatCurrency } from '../components/ui';
+import { Button, Input, Card, FormatCurrency, Modal } from '../components/ui';
 
 const DURATIONS = [
     { days: 7, baseRate: 2 },
@@ -35,6 +35,26 @@ export const WalletPage = () => {
     const [pinStep, setPinStep] = useState(1);
     const [pinInputs, setPinInputs] = useState({ pin: '', confirm: '', password: '' });
     const [withdrawPin, setWithdrawPin] = useState('');
+
+    // Suspension appeal state
+    const [appealModal, setAppealModal] = useState(false);
+    const [appealMessage, setAppealMessage] = useState('');
+    const [appealLoading, setAppealLoading] = useState(false);
+
+    const handleAppealSubmit = async () => {
+        if (!appealMessage.trim()) return;
+        setAppealLoading(true);
+        try {
+            await userApi.submitAppeal(appealMessage);
+            addToast('success', 'Appeal submitted! An admin will review your case.');
+            setAppealModal(false);
+            setAppealMessage('');
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Failed to submit appeal');
+        } finally {
+            setAppealLoading(false);
+        }
+    };
 
     useEffect(() => {
         userApi.getSettings().then(res => {
@@ -173,6 +193,50 @@ export const WalletPage = () => {
 
     return (
         <div className="space-y-4 animate-fade-in relative">
+            {/* Suspension Banner */}
+            {user?.isSuspended && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-red-500/20 rounded-lg shrink-0">
+                            <Flag className="text-red-400" size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-red-400 mb-1">Account Suspended</h3>
+                            <p className="text-sm text-slate-300">
+                                {user.suspensionReason || 'Your account has been suspended.'} You can still receive deposits, but withdrawals, investments, and services are restricted.
+                            </p>
+                            <button
+                                onClick={() => setAppealModal(true)}
+                                className="mt-2 text-sm text-amber-400 hover:text-amber-300 font-medium underline underline-offset-2"
+                            >
+                                Submit an Appeal →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Appeal Modal */}
+            <Modal isOpen={appealModal} onClose={() => setAppealModal(false)} title="Appeal Suspension">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-400">
+                        Explain why your suspension should be lifted. An admin will review your appeal.
+                    </p>
+                    <textarea
+                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none resize-none"
+                        rows={4}
+                        placeholder="Write your appeal here..."
+                        value={appealMessage}
+                        onChange={(e) => setAppealMessage(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setAppealModal(false)} className="flex-1">Cancel</Button>
+                        <Button onClick={handleAppealSubmit} disabled={appealLoading || !appealMessage.trim()} className="flex-1">
+                            {appealLoading ? 'Submitting...' : 'Submit Appeal'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
             {/* Modal for Pin */}
             {pinModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

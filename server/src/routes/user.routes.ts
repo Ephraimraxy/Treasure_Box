@@ -300,5 +300,32 @@ router.post('/bank-details', authenticate, async (req: AuthRequest, res, next) =
         next(error);
     }
 });
+// Appeal suspension
+router.post('/appeal', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { message } = req.body;
+        const userId = req.user!.id;
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user.isSuspended) return res.status(400).json({ error: 'Your account is not suspended' });
+
+        // Find all admins and notify them
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+
+        await prisma.notification.createMany({
+            data: admins.map(admin => ({
+                userId: admin.id,
+                title: 'Suspension Appeal',
+                message: `User ${user.email} (${user.name || user.username}) has appealed their suspension: "${message}"`,
+                type: 'WARNING' as const
+            }))
+        });
+
+        res.json({ message: 'Appeal submitted successfully. An admin will review your case.' });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;

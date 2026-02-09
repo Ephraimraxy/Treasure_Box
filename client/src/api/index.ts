@@ -65,6 +65,7 @@ export const userApi = {
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
     getReferrals: () => api.get('/users/referrals'),
     getSettings: () => api.get('/users/settings'),
+    submitAppeal: (message: string) => api.post('/users/appeal', { message }),
 };
 
 // Transaction API
@@ -108,6 +109,10 @@ export const adminApi = {
     getAuditLogs: () => api.get('/admin/audit-logs'),
     getSettings: () => api.get('/admin/settings'),
     updateSettings: (data: any) => api.put('/admin/settings', data),
+    updateUser: (id: string, data: any) => api.put(`/admin/users/${id}`, data),
+    deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
+    toggleSuspension: (id: string, suspend: boolean, reason?: string) =>
+        api.patch(`/admin/users/${id}/suspend`, { suspend, reason }),
 };
 
 export default api;
