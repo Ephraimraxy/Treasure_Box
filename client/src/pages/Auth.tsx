@@ -157,7 +157,7 @@ export const LoginPage = () => {
         }
         setLoading(true);
         try {
-            await authApi.resendOtp(resumeEmail);
+            await authApi.resendOTP(resumeEmail);
             addToast('success', 'If account exists, OTP sent!');
             setResumeStep('otp');
         } catch (error: any) {
@@ -174,7 +174,7 @@ export const LoginPage = () => {
         }
         setLoading(true);
         try {
-            const response = await authApi.verifyOtp(resumeEmail, otp);
+            const response = await authApi.verifyOTP(resumeEmail, otp);
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
                 // We need to fetch user profile here ideally, or reload
