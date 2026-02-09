@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Shield, Clock, DollarSign, Users, Activity } from 'lucide-react';
+import { TrendingUp, Shield, Clock, DollarSign, Users, Activity, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { transactionApi, investmentApi } from '../api';
 import { Card, FormatCurrency, Spinner } from '../components/ui';
@@ -28,6 +28,8 @@ export const DashboardPage = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [investments, setInvestments] = useState<Investment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showBalance, setShowBalance] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,15 +80,25 @@ export const DashboardPage = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <Card className="bg-gradient-to-br from-amber-900/40 to-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-500/20 rounded-xl">
-                            <DollarSign className="text-amber-500" size={20} />
-                        </div>
-                        <div>
-                            <div className="text-xs text-slate-400">Balance</div>
-                            <div className="text-lg font-bold text-white">
-                                <FormatCurrency amount={user?.balance || 0} />
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-500/20 rounded-xl">
+                                <DollarSign className="text-amber-500" size={20} />
                             </div>
+                            <div>
+                                <div className="text-xs text-slate-400">Balance</div>
+                                <div className="text-lg font-bold text-white">
+                                    {showBalance ? <FormatCurrency amount={user?.balance || 0} /> : '•••••'}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <button onClick={() => setShowBalance(!showBalance)} className="text-slate-400 hover:text-white transition-colors">
+                                {showBalance ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button onClick={async () => { setRefreshing(true); await refreshUser(); setRefreshing(false); }} className={`text-slate-400 hover:text-white transition-colors ${refreshing ? 'animate-spin' : ''}`} disabled={refreshing}>
+                                <RefreshCw size={14} />
+                            </button>
                         </div>
                     </div>
                 </Card>
