@@ -21,7 +21,12 @@ export const WalletPage = () => {
     const [duration, setDuration] = useState(7);
     const [tab, setTab] = useState<'deposit' | 'withdraw' | 'invest'>('deposit');
     const [loading, setLoading] = useState(false);
-    const [settings, setSettings] = useState({ minDeposit: 1000, minWithdrawal: 1000, minInvestment: 5000 });
+    const [settings, setSettings] = useState({
+        minDeposit: 1000,
+        minWithdrawal: 1000,
+        minInvestment: 5000,
+        kycRequiredForAccount: true
+    });
 
     // Fetch system settings on mount
     useEffect(() => {
@@ -132,30 +137,41 @@ export const WalletPage = () => {
                         ) : (
                             <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg mb-2">
                                 <p className="text-xs text-amber-200 mb-2">
-                                    {user?.role === 'ADMIN'
-                                        ? 'Generate Admin Virtual Account'
+                                    {(user?.role === 'ADMIN' || !settings.kycRequiredForAccount || user?.kycVerified)
+                                        ? 'Generate your dedicated virtual account number.'
                                         : 'Complete KYC & Profile to get your dedicated account number.'}
                                 </p>
-                                <Button
-                                    variant="secondary"
-                                    className="w-full text-xs"
-                                    onClick={async () => {
-                                        setLoading(true);
-                                        try {
-                                            // Call API to create virtual account
-                                            await paymentApi.createVirtualAccount();
-                                            addToast('success', 'Virtual Account generated!');
-                                            await refreshUser();
-                                        } catch (error: any) {
-                                            addToast('error', error.response?.data?.error || 'Failed to generate account');
-                                        } finally {
-                                            setLoading(false);
-                                        }
-                                    }}
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Generating...' : 'Generate Account No.'}
-                                </Button>
+
+                                {(user?.role === 'ADMIN' || !settings.kycRequiredForAccount || user?.kycVerified) ? (
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full text-xs"
+                                        onClick={async () => {
+                                            setLoading(true);
+                                            try {
+                                                // Call API to create virtual account
+                                                await paymentApi.createVirtualAccount();
+                                                addToast('success', 'Virtual Account generated!');
+                                                await refreshUser();
+                                            } catch (error: any) {
+                                                addToast('error', error.response?.data?.error || 'Failed to generate account');
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Generating...' : 'Generate Account No.'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                                        onClick={() => window.location.href = '/kyc'}
+                                    >
+                                        Complete KYC
+                                    </Button>
+                                )}
                             </div>
                         )}
 

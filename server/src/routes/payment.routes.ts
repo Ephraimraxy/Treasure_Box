@@ -258,8 +258,12 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
             lastName = 'admin';
             phone = user.phone || '+2348000000000';
         } else {
+            // Check global settings for KYC requirement
+            const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+            const kycRequired = settings?.kycRequiredForAccount ?? true;
+
             // Strict checks for USER
-            if (!user.kycVerified) {
+            if (kycRequired && !user.kycVerified) {
                 return res.status(400).json({ error: 'KYC must be verified before generating account' });
             }
             if (!user.username) {
