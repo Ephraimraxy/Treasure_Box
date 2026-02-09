@@ -52,6 +52,39 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
     }
 });
 
+// Update User Profile
+router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const schema = z.object({
+            name: z.string().optional(),
+            phone: z.string().optional(),
+            address: z.string().optional(),
+            username: z.string().optional(),
+            photoUrl: z.string().optional()
+        });
+
+        const data = schema.parse(req.body);
+        const userId = req.user!.id;
+
+        // Check username uniqueness if changing
+        if (data.username) {
+            const existing = await prisma.user.findUnique({ where: { username: data.username } });
+            if (existing && existing.id !== userId) {
+                return res.status(400).json({ error: 'Username already taken' });
+            }
+        }
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data
+        });
+
+        res.json({ message: 'Profile updated successfully', user });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Get User Referrals
 router.get('/referrals', authenticate, async (req: AuthRequest, res, next) => {
     try {

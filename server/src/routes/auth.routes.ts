@@ -257,10 +257,19 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 
         // Send Login Alert (Async)
         safeSendEmail(async () => {
-            const { sendLoginAlertEmail } = await import('../services/email.service');
-            const ip = req.ip || 'Unknown IP';
-            const userAgent = req.headers['user-agent'] || 'Unknown Device';
-            await sendLoginAlertEmail(user.email, new Date().toLocaleString(), ip, userAgent);
+            const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+            if (settings?.enableNotifications ?? true) { // Default to true if not set, or false if strictly disabled
+                // Actually, "enableNotifications" in Settings defaults to true.
+                // If the user wants to *disable* it, they uncheck it.
+                // The prompt says "set admin control to enable and disable these".
+                // So if settings.enableNotifications is false, we skip.
+                if (settings && !settings.enableNotifications) return;
+
+                const { sendLoginAlertEmail } = await import('../services/email.service');
+                const ip = req.ip || 'Unknown IP';
+                const userAgent = req.headers['user-agent'] || 'Unknown Device';
+                await sendLoginAlertEmail(user.email, new Date().toLocaleString(), ip, userAgent);
+            }
         });
 
         res.json({
