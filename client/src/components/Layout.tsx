@@ -93,7 +93,11 @@ export const Layout = ({ children }: LayoutProps) => {
                 {/* Header */}
                 <div className="h-12 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/80 backdrop-blur-md z-20 shrink-0">
                     <div className="flex items-center gap-2 md:hidden">
-                        <Box className="text-amber-500" size={24} />
+                        {user?.kycPhotoUrl ? (
+                            <img src={user.kycPhotoUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-amber-500" />
+                        ) : (
+                            <Box className="text-amber-500" size={24} />
+                        )}
                         <span className="font-bold text-white">Treasure Box</span>
                     </div>
 

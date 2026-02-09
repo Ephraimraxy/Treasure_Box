@@ -69,7 +69,7 @@ export const DashboardPage = () => {
                         ) : null}
                         <div>
                             <h1 className="text-lg font-bold text-white">Welcome, {user?.username || 'back!'}</h1>
-                            <p className="text-slate-400 text-sm">{user?.email}</p>
+                            <p className="text-slate-400 text-sm">{user?.username ? `@${user.username}` : user?.email}</p>
                         </div>
                     </div>
                 </div>
