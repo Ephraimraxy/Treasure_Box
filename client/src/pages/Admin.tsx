@@ -54,10 +54,10 @@ export const AdminDashboardPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <div className="space-y-4 animate-fade-in">
+            <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-blue-500/20 rounded-xl">
@@ -65,7 +65,7 @@ export const AdminDashboardPage = () => {
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Total Users</div>
-                            <div className="text-2xl font-bold text-white">{stats?.totalUsers || 0}</div>
+                            <div className="text-lg font-bold text-white">{stats?.totalUsers || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -91,7 +91,7 @@ export const AdminDashboardPage = () => {
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Active Plans</div>
-                            <div className="text-2xl font-bold text-white">{stats?.activeInvestments || 0}</div>
+                            <div className="text-lg font-bold text-white">{stats?.activeInvestments || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -103,7 +103,7 @@ export const AdminDashboardPage = () => {
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Pending</div>
-                            <div className="text-2xl font-bold text-white">{stats?.pendingWithdrawals || 0}</div>
+                            <div className="text-lg font-bold text-white">{stats?.pendingWithdrawals || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -173,8 +173,8 @@ export const AdminWithdrawalsPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-white">Pending Withdrawals</h1>
+        <div className="space-y-4 animate-fade-in">
+            <h1 className="text-lg font-bold text-white">Pending Withdrawals</h1>
 
             {withdrawals.length === 0 ? (
                 <Card className="text-center py-12">
@@ -184,7 +184,7 @@ export const AdminWithdrawalsPage = () => {
             ) : (
                 <div className="space-y-4">
                     {withdrawals.map((w) => (
-                        <Card key={w.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <Card key={w.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                             <div>
                                 <div className="font-bold text-white">{w.user.name || w.user.email}</div>
                                 <div className="text-sm text-slate-400">{w.user.email}</div>
@@ -277,8 +277,8 @@ export const AdminUsersPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-white">Users ({users.length})</h1>
+        <div className="space-y-4 animate-fade-in">
+            <h1 className="text-lg font-bold text-white">Users ({users.length})</h1>
 
             <div className="space-y-3">
                 {users.map((user) => (
@@ -332,8 +332,8 @@ export const AdminAuditPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
+        <div className="space-y-4 animate-fade-in">
+            <h1 className="text-lg font-bold text-white">Audit Logs</h1>
 
             {logs.length === 0 ? (
                 <Card className="text-center py-12">
@@ -407,10 +407,10 @@ export const AdminSettingsPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <h1 className="text-2xl font-bold text-white">System Settings</h1>
+        <div className="space-y-4 animate-fade-in">
+            <h1 className="text-lg font-bold text-white">System Settings</h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                     <h3 className="font-bold text-white mb-4">General Configuration</h3>
                     <div className="space-y-4">

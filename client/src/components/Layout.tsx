@@ -87,7 +87,7 @@ export const Layout = ({ children }: LayoutProps) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Header */}
-                <div className="h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/80 backdrop-blur-md z-20 shrink-0">
+                <div className="h-12 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/80 backdrop-blur-md z-20 shrink-0">
                     <div className="flex items-center gap-2 md:hidden">
                         <Box className="text-amber-500" size={24} />
                         <span className="font-bold text-white">Treasure Box</span>
@@ -107,7 +107,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     </div>
                 </div>
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 relative scroll-smooth">
+                <main className="flex-1 overflow-y-auto p-3 md:p-6 pb-20 md:pb-6 relative scroll-smooth">
                     <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none z-0" />
                     <div className="relative z-10 max-w-5xl mx-auto">
                         {children}
@@ -116,7 +116,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
                 {/* Mobile Bottom Nav */}
                 <div className="md:hidden fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-800 pb-safe z-30">
-                    <div className="flex justify-around items-center p-2">
+                    <div className="flex justify-around items-center py-1.5">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -126,8 +126,8 @@ export const Layout = ({ children }: LayoutProps) => {
                                     `flex flex-col items-center p-2 rounded-lg ${isActive ? 'text-amber-500' : 'text-slate-500'}`
                                 }
                             >
-                                <item.icon size={20} />
-                                <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                                <item.icon size={18} />
+                                <span className="text-[9px] mt-0.5 font-medium">{item.label}</span>
                             </NavLink>
                         ))}
                     </div>

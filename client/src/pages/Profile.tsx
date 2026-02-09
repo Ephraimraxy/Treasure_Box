@@ -111,7 +111,7 @@ export const ProfilePage = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
             {/* Profile Header */}
             <Card className="relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-amber-500 to-orange-600" />
@@ -373,7 +373,7 @@ export const ProfilePage = () => {
             {/* KYC Verification */}
             {!user?.kycVerified && (
                 <Card className="bg-gradient-to-r from-amber-900/20 to-slate-800 border-amber-500/20">
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-2">
                         <div className="p-3 bg-amber-500/20 rounded-xl">
                             <Shield className="text-amber-500" size={24} />
                         </div>

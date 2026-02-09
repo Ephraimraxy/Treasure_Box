@@ -53,12 +53,12 @@ export const ReferralsPage = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
             {/* Hero Card */}
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10">
-                    <h2 className="text-2xl font-bold mb-2">Refer & Earn</h2>
+                    <h2 className="text-lg font-bold mb-2">Refer & Earn</h2>
                     <p className="text-blue-100 mb-6 max-w-md">
                         Share your unique code with friends and earn bonuses on their first investment.
                     </p>
@@ -84,7 +84,7 @@ export const ReferralsPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                     <div className="text-slate-400 text-sm mb-1">Total Earnings</div>
                     <div className="text-3xl font-bold text-white">
@@ -143,21 +143,21 @@ export const ReferralsPage = () => {
             <Card>
                 <h3 className="font-bold text-white mb-4">How It Works</h3>
                 <div className="space-y-4">
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-2">
                         <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-slate-900 font-bold shrink-0">1</div>
                         <div>
                             <div className="font-medium text-white">Share Your Code</div>
                             <div className="text-sm text-slate-400">Give your referral code to friends</div>
                         </div>
                     </div>
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-2">
                         <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-slate-900 font-bold shrink-0">2</div>
                         <div>
                             <div className="font-medium text-white">They Sign Up</div>
                             <div className="text-sm text-slate-400">Friend registers using your code</div>
                         </div>
                     </div>
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-2">
                         <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-slate-900 font-bold shrink-0">3</div>
                         <div>
                             <div className="font-medium text-white">Earn Bonus</div>

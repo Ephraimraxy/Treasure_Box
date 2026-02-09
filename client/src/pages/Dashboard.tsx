@@ -59,21 +59,21 @@ export const DashboardPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
             {/* Welcome Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Welcome back!</h1>
+                    <h1 className="text-lg font-bold text-white">Welcome back!</h1>
                     <p className="text-slate-400 text-sm">{user?.email}</p>
                 </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <Card className="bg-gradient-to-br from-amber-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-amber-500/20 rounded-xl">
-                            <DollarSign className="text-amber-500" size={24} />
+                        <div className="p-2 bg-amber-500/20 rounded-xl">
+                            <DollarSign className="text-amber-500" size={20} />
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Balance</div>
@@ -86,8 +86,8 @@ export const DashboardPage = () => {
 
                 <Card className="bg-gradient-to-br from-emerald-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-emerald-500/20 rounded-xl">
-                            <TrendingUp className="text-emerald-500" size={24} />
+                        <div className="p-2 bg-emerald-500/20 rounded-xl">
+                            <TrendingUp className="text-emerald-500" size={20} />
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Invested</div>
@@ -100,8 +100,8 @@ export const DashboardPage = () => {
 
                 <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-blue-500/20 rounded-xl">
-                            <Activity className="text-blue-500" size={24} />
+                        <div className="p-2 bg-blue-500/20 rounded-xl">
+                            <Activity className="text-blue-500" size={20} />
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">Active Plans</div>
@@ -112,8 +112,8 @@ export const DashboardPage = () => {
 
                 <Card className="bg-gradient-to-br from-purple-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-500/20 rounded-xl">
-                            <Shield className="text-purple-500" size={24} />
+                        <div className="p-2 bg-purple-500/20 rounded-xl">
+                            <Shield className="text-purple-500" size={20} />
                         </div>
                         <div>
                             <div className="text-xs text-slate-400">KYC Status</div>
@@ -128,8 +128,8 @@ export const DashboardPage = () => {
             {/* Active Investments */}
             {activeInvestments.length > 0 && (
                 <Card>
-                    <h3 className="text-lg font-bold text-white mb-4">Active Investments</h3>
-                    <div className="space-y-3">
+                    <h3 className="text-base font-bold text-white mb-3">Active Investments</h3>
+                    <div className="space-y-2">
                         {activeInvestments.map((inv) => {
                             const maturity = new Date(inv.maturityDate);
                             const now = new Date();
@@ -137,9 +137,9 @@ export const DashboardPage = () => {
                             const totalRate = inv.baseRate + inv.bonusRate;
 
                             return (
-                                <div key={inv.id} className="flex items-center justify-between p-4 bg-slate-900 rounded-xl border border-slate-700">
+                                <div key={inv.id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg border border-slate-700">
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-emerald-500/20 rounded-xl">
+                                        <div className="p-2 bg-emerald-500/20 rounded-lg">
                                             <TrendingUp className="text-emerald-500" size={20} />
                                         </div>
                                         <div>
@@ -169,13 +169,13 @@ export const DashboardPage = () => {
 
             {/* Recent Transactions */}
             <Card>
-                <h3 className="text-lg font-bold text-white mb-4">Recent Activity</h3>
+                <h3 className="text-base font-bold text-white mb-3">Recent Activity</h3>
                 {transactions.length === 0 ? (
                     <div className="text-center py-8 text-slate-500">No transactions yet</div>
                 ) : (
                     <div className="space-y-2">
                         {transactions.map((tx) => (
-                            <div key={tx.id} className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                            <div key={tx.id} className="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg">
                                 <div>
                                     <div className="text-sm font-medium text-white">{tx.description}</div>
                                     <div className="text-xs text-slate-500">
@@ -188,8 +188,8 @@ export const DashboardPage = () => {
                                         <FormatCurrency amount={tx.amount} />
                                     </div>
                                     <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded inline-block ${tx.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
-                                            tx.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' :
-                                                'bg-red-500/20 text-red-400'
+                                        tx.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' :
+                                            'bg-red-500/20 text-red-400'
                                         }`}>
                                         {tx.status}
                                     </div>

@@ -55,9 +55,9 @@ export const HistoryPage = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Transaction History</h1>
+                <h1 className="text-lg font-bold text-white">Transaction History</h1>
             </div>
 
             {/* Filter Tabs */}
@@ -86,7 +86,7 @@ export const HistoryPage = () => {
                 <div className="space-y-3">
                     {filteredTransactions.map((tx) => (
                         <Card key={tx.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
                                 <div className="p-3 bg-slate-900 rounded-xl">
                                     {getTypeIcon(tx.type)}
                                 </div>

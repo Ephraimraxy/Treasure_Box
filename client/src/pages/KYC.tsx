@@ -314,16 +314,16 @@ export const KYCPage = () => {
 
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                     {step === 0 && (
-                        <div className="text-center space-y-6">
+                        <div className="text-center space-y-4">
                             <div className="bg-slate-800/50 p-6 rounded-xl text-left space-y-4">
-                                <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-2">
                                     <div className="bg-slate-700 p-2 rounded-lg"><Camera size={20} /></div>
                                     <div>
                                         <h3 className="font-bold">Face Verification</h3>
                                         <p className="text-sm text-slate-400">We'll scan your face to ensure you're a real person.</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-2">
                                     <div className="bg-slate-700 p-2 rounded-lg"><Shield size={20} /></div>
                                     <div>
                                         <h3 className="font-bold">Identity Numbers</h3>
@@ -336,7 +336,7 @@ export const KYCPage = () => {
                     )}
 
                     {(step === 1 || step === 2) && (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             <div className="relative rounded-xl overflow-hidden aspect-video bg-black max-w-md mx-auto border-2 border-slate-700 shadow-2xl">
                                 <Webcam
                                     audio={false}
@@ -382,7 +382,7 @@ export const KYCPage = () => {
                     )}
 
                     {step === 3 && (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             <div className="space-y-4">
                                 <Input
                                     label="BVN"

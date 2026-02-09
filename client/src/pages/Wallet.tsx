@@ -93,18 +93,18 @@ export const WalletPage = () => {
     const estimatedReturn = plan ? parseFloat(amount || '0') * (1 + plan.baseRate / 100) : 0;
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Balance Card */}
                 <Card className="bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="text-slate-400 font-medium mb-1">Total Balance</div>
-                        <div className="text-4xl font-bold text-white font-mono mb-4">
+                        <div className="text-2xl font-bold text-white font-mono mb-3">
                             <FormatCurrency amount={user?.balance || 0} />
                         </div>
 
                         {user?.virtualAccount ? (
-                            <div className="bg-white/5 p-3 rounded-lg border border-white/10 mb-2">
+                            <div className="bg-white/5 p-2.5 rounded-lg border border-white/10 mb-2">
                                 <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Virtual Account</div>
                                 <div className="text-white font-bold">{user.virtualAccount.bankName}</div>
                                 <div className="flex justify-between items-center">
@@ -122,7 +122,7 @@ export const WalletPage = () => {
                                 <div className="text-xs text-slate-500 mt-1">{user.virtualAccount.accountName}</div>
                             </div>
                         ) : (
-                            <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg mb-2">
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg mb-2">
                                 <p className="text-xs text-amber-200 mb-2">
                                     {user?.role === 'ADMIN'
                                         ? 'Generate Admin Virtual Account'
@@ -151,7 +151,7 @@ export const WalletPage = () => {
                             </div>
                         )}
 
-                        <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                        <div className="bg-white/5 p-2.5 rounded-lg border border-white/10">
                             <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Referral Code</div>
                             <div className="flex justify-between items-center">
                                 <div className="text-white font-bold text-lg font-mono">{user?.referralCode}</div>
@@ -199,7 +199,7 @@ export const WalletPage = () => {
 
             {/* Action Form */}
             <Card className="max-w-xl mx-auto">
-                <h3 className="text-xl font-bold text-white mb-4 capitalize">{tab} Funds</h3>
+                <h3 className="text-lg font-bold text-white mb-3 capitalize">{tab} Funds</h3>
                 <div className="space-y-4">
                     {tab === 'invest' && (
                         <>
@@ -208,7 +208,7 @@ export const WalletPage = () => {
                                     <button
                                         key={d.days}
                                         onClick={() => setDuration(d.days)}
-                                        className={`p-3 rounded-xl border transition-all text-sm ${duration === d.days
+                                        className={`p-2.5 rounded-lg border transition-all text-sm ${duration === d.days
                                             ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold'
                                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                                             }`}
@@ -218,7 +218,7 @@ export const WalletPage = () => {
                                 ))}
                             </div>
                             {amount && parseFloat(amount) >= MIN_INVESTMENT && (
-                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg">
                                     <div className="text-xs text-emerald-400 mb-1">Estimated Return</div>
                                     <div className="text-2xl font-bold text-emerald-400">
                                         <FormatCurrency amount={estimatedReturn} />
@@ -229,7 +229,7 @@ export const WalletPage = () => {
                     )}
 
                     {tab === 'deposit' && (
-                        <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex items-start gap-3">
+                        <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg flex items-start gap-2">
                             <Info className="text-blue-400 shrink-0 mt-0.5" size={18} />
                             <div>
                                 <h4 className="text-sm font-bold text-white mb-1">Instant Card Funding</h4>
@@ -250,7 +250,7 @@ export const WalletPage = () => {
                     />
 
                     {tab === 'withdraw' && (
-                        <div className="text-xs text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                        <div className="text-xs text-amber-500 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                             Funds will be sent to your linked bank account. Processing time: 1-24 hours.
                         </div>
                     )}

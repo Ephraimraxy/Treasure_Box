@@ -59,10 +59,10 @@ export const ServicesPage = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in relative">
-            <h1 className="text-2xl font-bold text-white">Other Services</h1>
+        <div className="space-y-4 animate-fade-in relative">
+            <h1 className="text-lg font-bold text-white">Other Services</h1>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {services.map((service) => (
                     <button
                         key={service.id}
@@ -78,7 +78,7 @@ export const ServicesPage = () => {
             </div>
 
             <Card className="bg-gradient-to-r from-amber-900/20 to-slate-800">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     <div className="p-4 bg-amber-500/20 rounded-xl">
                         <Zap className="text-amber-500" size={24} />
                     </div>
@@ -91,7 +91,7 @@ export const ServicesPage = () => {
                 </div>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <Card>
                     <div className="text-center">
                         <div className="text-3xl font-bold text-amber-500 mb-1">₦0</div>
