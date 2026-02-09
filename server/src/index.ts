@@ -22,7 +22,9 @@ app.use(cors());
 
 // IMPORTANT: Paystack webhook needs raw body for signature verification
 // Must be BEFORE express.json() or use a specific route
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+const webhookMiddleware = express.raw({ type: 'application/json' });
+app.use('/api/payments/webhook', webhookMiddleware);
+app.use('/api/payment/webhook', webhookMiddleware); // Alias for typo in Paystack dashboard
 
 app.use(express.json());
 app.use(morgan('dev'));
@@ -39,6 +41,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/payment', paymentRoutes); // Alias for singular path
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
