@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { transactionApi, investmentApi, paymentApi } from '../api';
+import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
 import { Button, Input, Card, FormatCurrency } from '../components/ui';
 
 const DURATIONS = [
@@ -21,11 +21,19 @@ export const WalletPage = () => {
     const [duration, setDuration] = useState(7);
     const [tab, setTab] = useState<'deposit' | 'withdraw' | 'invest'>('deposit');
     const [loading, setLoading] = useState(false);
+    const [settings, setSettings] = useState({ minDeposit: 1000, minWithdrawal: 1000, minInvestment: 5000 });
+
+    // Fetch system settings on mount
+    useEffect(() => {
+        userApi.getSettings().then(res => {
+            setSettings(res.data);
+        }).catch(console.error);
+    }, []);
 
     const handleDeposit = async () => {
         const amt = parseFloat(amount);
-        if (amt < 1000) {
-            addToast('error', 'Minimum deposit is ₦1,000');
+        if (amt < settings.minDeposit) {
+            addToast('error', `Minimum deposit is ₦${settings.minDeposit.toLocaleString()}`);
             return;
         }
         setLoading(true);
@@ -49,8 +57,8 @@ export const WalletPage = () => {
             addToast('error', 'Insufficient funds');
             return;
         }
-        if (amt < 1000) {
-            addToast('error', 'Minimum withdrawal is ₦1,000');
+        if (amt < settings.minWithdrawal) {
+            addToast('error', `Minimum withdrawal is ₦${settings.minWithdrawal.toLocaleString()}`);
             return;
         }
         setLoading(true);

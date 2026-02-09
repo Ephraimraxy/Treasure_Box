@@ -63,6 +63,7 @@ export const userApi = {
     setPin: (pin: string) => api.post('/users/set-pin', { pin }),
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
     getReferrals: () => api.get('/users/referrals'),
+    getSettings: () => api.get('/users/settings'),
 };
 
 // Transaction API

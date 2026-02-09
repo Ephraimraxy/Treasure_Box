@@ -8,7 +8,22 @@ import { verifyIdentityNumber } from '../services/identity.service';
 const router = Router();
 const prisma = new PrismaClient();
 
-// ... (previous code)
+// Public Settings - for any authenticated user to get system limits
+router.get('/settings', authenticate, async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+
+        res.json({
+            minDeposit: settings?.minDeposit || 1000,
+            minWithdrawal: settings?.minWithdrawal || 1000,
+            minInvestment: 5000, // Hardcoded for now as not in schema
+            isSystemPaused: settings?.isSystemPaused || false
+        });
+    } catch (error) {
+        console.error('Settings fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
 
 // Get User Profile (including KYC status)
 router.get('/me', authenticate, async (req: Request, res: Response) => {
