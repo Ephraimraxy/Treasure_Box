@@ -4,7 +4,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
-import { verifyIdentityNumber } from '../services/identity.service';
+import { verifyIdentityNumber, IdentityType } from '../services/identity.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -38,8 +38,15 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         let verificationData = null;
 
         // Perform verification if applicable
-        if (type === 'NIN' || type === 'BVN') {
-            const result = await verifyIdentityNumber(type.toLowerCase() as 'nin' | 'bvn', meta.identifier);
+        const identityTypes = ['NIN', 'BVN', 'NIN_MODIFICATION', 'NIN_VALIDATION', 'NIN_PERSONALIZATION', 'BVN_MODIFICATION', 'BVN_RETRIEVAL'];
+
+        if (identityTypes.includes(type)) {
+            const result = await verifyIdentityNumber(
+                type.toLowerCase() as IdentityType,
+                meta.identifier,
+                meta.details // Pass details for modifications
+            );
+
             if (!result.success) {
                 return res.status(400).json({ error: result.message || 'Verification failed' });
             }
@@ -57,7 +64,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                 type: 'UTILITY_BILL',
                 amount,
                 status: 'SUCCESS',
-                description: `${type} Service`,
+                description: `${type.replace('_', ' ')} Service`,
                 meta: { ...meta, verificationData }
             }
         });

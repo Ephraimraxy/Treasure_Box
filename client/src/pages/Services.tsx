@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2, UserCheck, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2, UserCheck, ShieldCheck, CheckCircle, FileText, UserCog, Search, Edit } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
@@ -11,8 +11,13 @@ const services = [
     { id: 'power', name: 'Electricity', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
     { id: 'cable', name: 'Cable TV', icon: Tv, color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { id: 'airtime_cash', name: 'Airtime to Cash', icon: ArrowRightLeft, color: 'text-pink-400', bg: 'bg-pink-500/10' },
-    { id: 'nin', name: 'NIN Verify', icon: UserCheck, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { id: 'bvn', name: 'BVN Verify', icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10' },
+    // Identity Services
+    { id: 'nin_validation', name: 'NIN Validation', icon: UserCheck, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { id: 'nin_modification', name: 'NIN Modification', icon: Edit, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { id: 'nin_personalization', name: 'NIN Personalization', icon: UserCog, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { id: 'bvn_validation', name: 'BVN Validation', icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10' },
+    { id: 'bvn_modification', name: 'BVN Modification', icon: Edit, color: 'text-teal-400', bg: 'bg-teal-500/10' },
+    { id: 'bvn_retrieval', name: 'BVN Retrieval', icon: Search, color: 'text-teal-400', bg: 'bg-teal-500/10' },
 ];
 
 export const ServicesPage = () => {
@@ -21,6 +26,7 @@ export const ServicesPage = () => {
     const [selectedService, setSelectedService] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [identifier, setIdentifier] = useState(''); // Phone, Meter, IUC, NIN, BVN
+    const [details, setDetails] = useState(''); // For modifications/personalization
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
     const [verificationResult, setVerificationResult] = useState<any>(null);
@@ -30,12 +36,18 @@ export const ServicesPage = () => {
         setSelectedService(service);
         setAmount('');
         setIdentifier('');
+        setDetails('');
         setPin('');
     };
 
     const handlePayment = async () => {
         if (!amount || !identifier || !pin) {
-            addToast('error', 'Please fill all fields');
+            addToast('error', 'Please fill all required fields');
+            return;
+        }
+
+        if (requiresDetails(selectedService?.id) && !details) {
+            addToast('error', 'Please provide details for the request');
             return;
         }
 
@@ -49,7 +61,7 @@ export const ServicesPage = () => {
             const response = await transactionApi.payUtility({
                 type: selectedService.id.toUpperCase(),
                 amount: parseFloat(amount),
-                meta: { identifier, serviceName: selectedService.name },
+                meta: { identifier, details, serviceName: selectedService.name },
                 pin
             });
 
@@ -59,7 +71,7 @@ export const ServicesPage = () => {
             if (response.data.verificationData) {
                 setVerificationResult(response.data.verificationData);
                 setShowResultModal(true);
-                addToast('success', 'Verification successful');
+                addToast('success', 'Service successful');
             } else {
                 addToast('success', `${selectedService.name} successful!`);
             }
@@ -70,13 +82,22 @@ export const ServicesPage = () => {
         }
     };
 
-    const isIdentityService = selectedService?.id === 'nin' || selectedService?.id === 'bvn';
+    const isIdentityService = (id: string) => [
+        'nin_validation', 'nin_modification', 'nin_personalization',
+        'bvn_validation', 'bvn_modification', 'bvn_retrieval'
+    ].includes(id);
+
+    const requiresDetails = (id: string) => [
+        'nin_modification', 'nin_personalization', 'bvn_modification'
+    ].includes(id);
 
     const getLabel = () => {
         if (!selectedService) return '';
-        if (selectedService.id.includes('airtime') || selectedService.id.includes('data')) return "Phone Number";
-        if (selectedService.id === 'nin') return "NIN Number";
-        if (selectedService.id === 'bvn') return "BVN Number";
+        const id = selectedService.id;
+
+        if (id.includes('airtime') || id.includes('data') || id === 'bvn_retrieval') return "Phone Number";
+        if (id.includes('nin')) return "NIN Number";
+        if (id.includes('bvn')) return "BVN Number";
         return "Smart Card / Meter No.";
     };
 
@@ -137,7 +158,7 @@ export const ServicesPage = () => {
             {/* Payment Modal */}
             {selectedService && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                    <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
                         <button
                             onClick={() => setSelectedService(null)}
                             className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -168,8 +189,20 @@ export const ServicesPage = () => {
                                 value={identifier}
                                 onChange={(e) => setIdentifier(e.target.value)}
                                 placeholder="Enter number"
-                                maxLength={isIdentityService ? 11 : undefined}
+                                maxLength={isIdentityService(selectedService.id) && selectedService.id !== 'bvn_retrieval' ? 11 : undefined}
                             />
+
+                            {requiresDetails(selectedService.id) && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-300">Request Details</label>
+                                    <textarea
+                                        value={details}
+                                        onChange={(e) => setDetails(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors h-24"
+                                        placeholder="Describe the changes required..."
+                                    />
+                                </div>
+                            )}
 
                             <Input
                                 label="Transaction PIN"
@@ -181,7 +214,7 @@ export const ServicesPage = () => {
                             />
 
                             <Button onClick={handlePayment} disabled={loading} className="w-full mt-4">
-                                {loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService ? 'Verification' : 'Payment'}`}
+                                {loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService(selectedService.id) ? 'Request' : 'Payment'}`}
                             </Button>
                         </div>
                     </div>
@@ -203,22 +236,46 @@ export const ServicesPage = () => {
                             <div className="p-4 rounded-full bg-emerald-500/20 text-emerald-500">
                                 <CheckCircle size={48} />
                             </div>
-                            <h2 className="text-xl font-bold text-white">Verification Successful</h2>
+                            <h2 className="text-xl font-bold text-white">Success</h2>
                         </div>
 
                         <div className="bg-slate-800 rounded-xl p-4 space-y-3">
-                            <div className="flex justify-between border-b border-slate-700 pb-2">
-                                <span className="text-slate-400">First Name</span>
-                                <span className="font-bold text-white">{verificationResult?.firstName || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-slate-700 pb-2">
-                                <span className="text-slate-400">Last Name</span>
-                                <span className="font-bold text-white">{verificationResult?.lastName || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-400">Valid</span>
-                                <span className="font-bold text-white">{verificationResult?.valid ? 'Yes' : 'No'}</span>
-                            </div>
+                            {verificationResult?.firstName && (
+                                <div className="flex justify-between border-b border-slate-700 pb-2">
+                                    <span className="text-slate-400">First Name</span>
+                                    <span className="font-bold text-white">{verificationResult.firstName}</span>
+                                </div>
+                            )}
+                            {verificationResult?.lastName && (
+                                <div className="flex justify-between border-b border-slate-700 pb-2">
+                                    <span className="text-slate-400">Last Name</span>
+                                    <span className="font-bold text-white">{verificationResult.lastName}</span>
+                                </div>
+                            )}
+                            {verificationResult?.valid !== undefined && (
+                                <div className="flex justify-between border-b border-slate-700 pb-2">
+                                    <span className="text-slate-400">Valid</span>
+                                    <span className="font-bold text-emerald-400">{verificationResult.valid ? 'Yes' : 'No'}</span>
+                                </div>
+                            )}
+                            {verificationResult?.bvn && (
+                                <div className="flex justify-between border-b border-slate-700 pb-2">
+                                    <span className="text-slate-400">BVN</span>
+                                    <span className="font-bold text-white">{verificationResult.bvn}</span>
+                                </div>
+                            )}
+                            {verificationResult?.status && (
+                                <div className="flex justify-between border-b border-slate-700 pb-2">
+                                    <span className="text-slate-400">Status</span>
+                                    <span className="font-bold text-white">{verificationResult.status}</span>
+                                </div>
+                            )}
+                            {verificationResult?.reference && (
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Ref ID</span>
+                                    <span className="font-bold text-amber-500 font-mono">{verificationResult.reference}</span>
+                                </div>
+                            )}
                         </div>
 
                         <Button onClick={() => setShowResultModal(false)} className="w-full mt-6">

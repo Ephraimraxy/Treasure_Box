@@ -9,29 +9,44 @@ interface VerificationResult {
     message?: string;
 }
 
-export const verifyIdentityNumber = async (type: 'bvn' | 'nin', value: string): Promise<VerificationResult> => {
-    // 1. Basic Validation (Length & Numeric)
-    if (!/^\d{11}$/.test(value)) {
-        return { success: false, message: `${type.toUpperCase()} must be exactly 11 digits.` };
+export type IdentityType = 'bvn' | 'nin' | 'nin_modification' | 'nin_validation' | 'nin_personalization' | 'bvn_modification' | 'bvn_retrieval';
+
+export const verifyIdentityNumber = async (type: IdentityType, value: string, details?: string): Promise<VerificationResult> => {
+    // 0. Handle Retrieval (Phone Number)
+    if (type === 'bvn_retrieval') {
+        if (!/^\d{11}$/.test(value)) {
+            return { success: false, message: 'Phone number must be 11 digits.' };
+        }
+        return simulateRetrieval(type, value);
     }
 
-    // 2. Real Verification (If Enabled)
+    // 1. Basic Validation (Length & Numeric) for standard ID types
+    // NIN and BVN are 11 digits
+    if (!/^\d{11}$/.test(value)) {
+        return { success: false, message: `${type.toUpperCase().replace('_', ' ')} value must be exactly 11 digits.` };
+    }
+
+    // 2. Handle Modifications & Personalization (Manual Request Simulation)
+    if (['nin_modification', 'nin_personalization', 'bvn_modification'].includes(type)) {
+        // In a real app, this might upload files or save a request to a distinct table.
+        // Here we simulate accepting the request.
+        return {
+            success: true,
+            message: 'Request received successfully',
+            data: {
+                status: 'Request Received',
+                details: details || 'No details provided',
+                reference: `REQ-${Math.floor(Math.random() * 1000000)}`
+            }
+        };
+    }
+
+    // 3. Real Verification (If Enabled) for standard Verify/Validate
     if (USE_REAL_VERIFICATION && PAYSTACK_SECRET_KEY) {
         try {
             // Note: Paystack BVN/NIN resolution endpoints vary by account permissions.
             // This is a generic implementation structure for the Identity API.
-            // You may need to replace the URL with your specific provider (e.g., Dojah, YouVerify).
-
-            // Example for Paystack (Hypothetical /customer/identification endpoint or similar)
-            // const response = await axios.get(`https://api.paystack.co/bank/resolve_bvn/${value}`, {
-            //     headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` }
-            // });
-
-            // For now, we will log that we WOULD call the API, but fallback to simulation 
-            // to avoid breaking the app if the specific endpoint isn't enabled on your account.
             console.log(`[IdentityService] Real check requested for ${type}:${value} - Implementation requires specific provider endpoint.`);
-
-            // returning simulation for safety until specific endpoint is confirmed
             return simulateVerification(type, value);
 
         } catch (error: any) {
@@ -40,18 +55,28 @@ export const verifyIdentityNumber = async (type: 'bvn' | 'nin', value: string): 
         }
     }
 
-    // 3. Simulation (Default)
-    // Allows development without incurring costs or needing live API permissions
+    // 4. Simulation (Default)
     return simulateVerification(type, value);
+};
+
+const simulateRetrieval = (type: string, value: string): VerificationResult => {
+    return {
+        success: true,
+        message: 'Retrieval successful',
+        data: {
+            bvn: '222' + value.slice(-8), // Simulate a BVN derived from phone
+            phone: value,
+            name: 'Test Retrieval User'
+        }
+    };
 };
 
 const simulateVerification = (type: string, value: string): VerificationResult => {
     // Simulator Logic:
     // - Reject a specific "test failure" number (e.g., all zeros)
-    // - Accept valid 11-digit numbers
 
     if (value === '00000000000') {
-        return { success: false, message: `The ${type.toUpperCase()} provided is invalid (Simulated Rejection).` };
+        return { success: false, message: `The ${type.toUpperCase().replace('_', ' ')} provided is invalid (Simulated Rejection).` };
     }
 
     console.log(`[IdentityService] Simulating success for ${type}:${value}`);
@@ -61,7 +86,8 @@ const simulateVerification = (type: string, value: string): VerificationResult =
         data: {
             firstName: 'Test',
             lastName: 'User',
-            valid: true
+            valid: true,
+            photoUrl: 'https://via.placeholder.com/150'
         }
     };
 };
