@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Copy, Info, RefreshCw, Eye, EyeOff, AlertTriangle, Flag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -17,10 +18,18 @@ const MIN_INVESTMENT = 20000;
 export const WalletPage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
+    const navigate = useNavigate();
     const [amount, setAmount] = useState('');
     const [duration, setDuration] = useState(7);
     const [tab, setTab] = useState<'deposit' | 'withdraw' | 'invest'>('deposit');
-    const [loading, setLoading] = useState(false);
+
+    // Split loading states to prevent shared state issues
+    const [depositLoading, setDepositLoading] = useState(false);
+    const [withdrawLoading, setWithdrawLoading] = useState(false);
+    const [investLoading, setInvestLoading] = useState(false);
+    const [pinLoading, setPinLoading] = useState(false);
+    const [accountLoading, setAccountLoading] = useState(false);
+
     const [showBalance, setShowBalance] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [settings, setSettings] = useState({
@@ -75,7 +84,7 @@ export const WalletPage = () => {
     };
 
     const handlePinSubmit = async () => {
-        setLoading(true);
+        setPinLoading(true);
         try {
             if (pinModal.mode === 'create') {
                 if (pinInputs.pin !== pinInputs.confirm) {
@@ -100,7 +109,7 @@ export const WalletPage = () => {
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Failed to update PIN');
         } finally {
-            setLoading(false);
+            setPinLoading(false);
         }
     };
 
@@ -110,7 +119,7 @@ export const WalletPage = () => {
             addToast('error', `Minimum deposit is ₦${settings.minDeposit.toLocaleString()}`);
             return;
         }
-        setLoading(true);
+        setDepositLoading(true);
         try {
             const response = await paymentApi.initialize(amt, 'deposit');
             if (response.data.authorization_url) {
@@ -121,7 +130,7 @@ export const WalletPage = () => {
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Deposit failed');
         } finally {
-            setLoading(false);
+            setDepositLoading(false);
         }
     };
 
@@ -147,7 +156,7 @@ export const WalletPage = () => {
             return;
         }
 
-        setLoading(true);
+        setWithdrawLoading(true);
         try {
             await transactionApi.withdraw(amt, withdrawPin);
             addToast('success', 'Withdrawal request submitted for approval');
@@ -161,7 +170,7 @@ export const WalletPage = () => {
                 addToast('error', error.response?.data?.error || 'Withdrawal failed');
             }
         } finally {
-            setLoading(false);
+            setWithdrawLoading(false);
         }
     };
 
@@ -175,7 +184,7 @@ export const WalletPage = () => {
             addToast('error', 'Insufficient funds');
             return;
         }
-        setLoading(true);
+        setInvestLoading(true);
         try {
             await investmentApi.create(amt, duration);
             addToast('success', 'Investment created successfully!');
@@ -184,7 +193,7 @@ export const WalletPage = () => {
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Investment failed');
         } finally {
-            setLoading(false);
+            setInvestLoading(false);
         }
     };
 
@@ -298,8 +307,8 @@ export const WalletPage = () => {
                                 />
                                 <div className="flex gap-2">
                                     <Button variant="outline" className="flex-1" onClick={() => setPinStep(2)}>Back</Button>
-                                    <Button className="flex-1" disabled={loading || !pinInputs.password} onClick={handlePinSubmit}>
-                                        {loading ? 'Processing...' : 'Submit'}
+                                    <Button className="flex-1" disabled={pinLoading || !pinInputs.password} onClick={handlePinSubmit}>
+                                        {pinLoading ? 'Processing...' : 'Submit'}
                                     </Button>
                                 </div>
                             </div>
@@ -358,7 +367,7 @@ export const WalletPage = () => {
                                         variant="secondary"
                                         className="w-full text-xs"
                                         onClick={async () => {
-                                            setLoading(true);
+                                            setAccountLoading(true);
                                             try {
                                                 await paymentApi.createVirtualAccount();
                                                 addToast('success', 'Virtual Account generated!');
@@ -366,18 +375,18 @@ export const WalletPage = () => {
                                             } catch (error: any) {
                                                 addToast('error', error.response?.data?.error || 'Failed to generate account');
                                             } finally {
-                                                setLoading(false);
+                                                setAccountLoading(false);
                                             }
                                         }}
-                                        disabled={loading}
+                                        disabled={accountLoading}
                                     >
-                                        {loading ? 'Generating...' : 'Generate Account No.'}
+                                        {accountLoading ? 'Generating...' : 'Generate Account No.'}
                                     </Button>
                                 ) : (
                                     <Button
                                         variant="outline"
                                         className="w-full text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                                        onClick={() => window.location.href = '/kyc'}
+                                        onClick={() => navigate('/kyc')}
                                     >
                                         Complete KYC
                                     </Button>
@@ -518,10 +527,17 @@ export const WalletPage = () => {
 
                     <Button
                         onClick={tab === 'deposit' ? handleDeposit : tab === 'withdraw' ? handleWithdraw : handleInvest}
-                        disabled={loading || !amount}
+                        disabled={
+                            (tab === 'deposit' && depositLoading) ||
+                            (tab === 'withdraw' && withdrawLoading) ||
+                            (tab === 'invest' && investLoading) ||
+                            !amount
+                        }
                         className="w-full"
                     >
-                        {loading ? 'Processing...' : `Confirm ${tab}`}
+                        {tab === 'deposit' && (depositLoading ? 'Processing...' : `Confirm Deposit`)}
+                        {tab === 'withdraw' && (withdrawLoading ? 'Processing...' : `Confirm Withdraw`)}
+                        {tab === 'invest' && (investLoading ? 'Processing...' : `Confirm Investment`)}
                     </Button>
                 </div>
             </Card>

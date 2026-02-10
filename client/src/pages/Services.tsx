@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2 } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2, UserCheck, ShieldCheck, CheckCircle } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
@@ -11,6 +11,8 @@ const services = [
     { id: 'power', name: 'Electricity', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
     { id: 'cable', name: 'Cable TV', icon: Tv, color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { id: 'airtime_cash', name: 'Airtime to Cash', icon: ArrowRightLeft, color: 'text-pink-400', bg: 'bg-pink-500/10' },
+    { id: 'nin', name: 'NIN Verify', icon: UserCheck, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { id: 'bvn', name: 'BVN Verify', icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10' },
 ];
 
 export const ServicesPage = () => {
@@ -18,9 +20,11 @@ export const ServicesPage = () => {
     const { addToast } = useToast();
     const [selectedService, setSelectedService] = useState<any>(null);
     const [amount, setAmount] = useState('');
-    const [identifier, setIdentifier] = useState(''); // Phone, Meter, IUC
+    const [identifier, setIdentifier] = useState(''); // Phone, Meter, IUC, NIN, BVN
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
+    const [verificationResult, setVerificationResult] = useState<any>(null);
+    const [showResultModal, setShowResultModal] = useState(false);
 
     const handleServiceClick = (service: any) => {
         setSelectedService(service);
@@ -42,20 +46,38 @@ export const ServicesPage = () => {
 
         setLoading(true);
         try {
-            await transactionApi.payUtility({
+            const response = await transactionApi.payUtility({
                 type: selectedService.id.toUpperCase(),
                 amount: parseFloat(amount),
                 meta: { identifier, serviceName: selectedService.name },
                 pin
             });
-            addToast('success', `${selectedService.name} successful!`);
+
             await refreshUser();
             setSelectedService(null);
+
+            if (response.data.verificationData) {
+                setVerificationResult(response.data.verificationData);
+                setShowResultModal(true);
+                addToast('success', 'Verification successful');
+            } else {
+                addToast('success', `${selectedService.name} successful!`);
+            }
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Transaction failed');
         } finally {
             setLoading(false);
         }
+    };
+
+    const isIdentityService = selectedService?.id === 'nin' || selectedService?.id === 'bvn';
+
+    const getLabel = () => {
+        if (!selectedService) return '';
+        if (selectedService.id.includes('airtime') || selectedService.id.includes('data')) return "Phone Number";
+        if (selectedService.id === 'nin') return "NIN Number";
+        if (selectedService.id === 'bvn') return "BVN Number";
+        return "Smart Card / Meter No.";
     };
 
     return (
@@ -141,11 +163,12 @@ export const ServicesPage = () => {
                             />
 
                             <Input
-                                label={selectedService.id.includes('airtime') || selectedService.id.includes('data') ? "Phone Number" : "Smart Card / Meter No."}
+                                label={getLabel()}
                                 type="text"
                                 value={identifier}
                                 onChange={(e) => setIdentifier(e.target.value)}
                                 placeholder="Enter number"
+                                maxLength={isIdentityService ? 11 : undefined}
                             />
 
                             <Input
@@ -158,9 +181,49 @@ export const ServicesPage = () => {
                             />
 
                             <Button onClick={handlePayment} disabled={loading} className="w-full mt-4">
-                                {loading ? <Loader2 className="animate-spin" /> : 'Confirm Payment'}
+                                {loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService ? 'Verification' : 'Payment'}`}
                             </Button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Verification Result Modal */}
+            {showResultModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                        <button
+                            onClick={() => setShowResultModal(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <div className="flex flex-col items-center gap-4 mb-6 text-center">
+                            <div className="p-4 rounded-full bg-emerald-500/20 text-emerald-500">
+                                <CheckCircle size={48} />
+                            </div>
+                            <h2 className="text-xl font-bold text-white">Verification Successful</h2>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-xl p-4 space-y-3">
+                            <div className="flex justify-between border-b border-slate-700 pb-2">
+                                <span className="text-slate-400">First Name</span>
+                                <span className="font-bold text-white">{verificationResult?.firstName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-700 pb-2">
+                                <span className="text-slate-400">Last Name</span>
+                                <span className="font-bold text-white">{verificationResult?.lastName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400">Valid</span>
+                                <span className="font-bold text-white">{verificationResult?.valid ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+
+                        <Button onClick={() => setShowResultModal(false)} className="w-full mt-6">
+                            Close
+                        </Button>
                     </div>
                 </div>
             )}

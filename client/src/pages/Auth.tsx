@@ -140,7 +140,7 @@ export const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth(); // Destructure login
+    const { login, handleLoginSuccess } = useAuth(); // Destructure handleLoginSuccess
     const [view, setView] = useState<'login' | 'resume'>('login');
     const [resumeEmail, setResumeEmail] = useState('');
     const [resumeStep, setResumeStep] = useState<'email' | 'otp'>('email');
@@ -176,12 +176,9 @@ export const LoginPage = () => {
         try {
             const response = await authApi.verifyOTP(resumeEmail, otp);
             if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                // We need to fetch user profile here ideally, or reload
-                // authApi.login gets user? No, verifies token.
-                // Just reload or redirect
+                handleLoginSuccess(response.data.token);
                 addToast('success', 'Verification successful!');
-                window.location.href = '/';
+                navigate('/');
             }
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Verification failed');
@@ -209,9 +206,9 @@ export const LoginPage = () => {
             }
 
             if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
+                handleLoginSuccess(response.data.token);
                 addToast('success', 'Welcome back!');
-                window.location.href = '/';
+                navigate('/');
             }
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Invalid credentials');
@@ -357,6 +354,7 @@ export const RegisterPage = () => {
     const [loading, setLoading] = useState(false);
     const { addToast } = useToast();
     const navigate = useNavigate();
+    const { handleLoginSuccess } = useAuth(); // Destructure handleLoginSuccess
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
@@ -417,9 +415,9 @@ export const RegisterPage = () => {
         setLoading(true);
         try {
             const response = await authApi.verifyOTP(email, otp);
-            localStorage.setItem('token', response.data.token);
+            handleLoginSuccess(response.data.token);
             addToast('success', 'Account verified successfully!');
-            window.location.href = '/';
+            navigate('/');
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Invalid OTP');
         } finally {

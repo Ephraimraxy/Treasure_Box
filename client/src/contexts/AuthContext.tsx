@@ -35,6 +35,7 @@ interface AuthContextType {
     register: (email: string, password: string, referralCode?: string) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
+    handleLoginSuccess: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,8 +87,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUser();
     };
 
+    const handleLoginSuccess = (newToken: string) => {
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser, handleLoginSuccess }}>
             {children}
         </AuthContext.Provider>
     );

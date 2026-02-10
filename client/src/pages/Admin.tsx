@@ -577,6 +577,8 @@ export const AdminSettingsPage = () => {
         enableEmailLoginAlerts: true
     });
 
+    const [saveLoading, setSaveLoading] = useState(false);
+
     useEffect(() => {
         const fetchSettings = async () => {
             try {
@@ -594,12 +596,15 @@ export const AdminSettingsPage = () => {
     }, []);
 
     const handleSave = async () => {
+        setSaveLoading(true);
         try {
             await adminApi.updateSettings(settings);
             addToast('success', 'Settings saved successfully');
         } catch (error: any) {
             console.error('Failed to save settings:', error);
             addToast('error', 'Failed to save settings');
+        } finally {
+            setSaveLoading(false);
         }
     };
 
@@ -698,8 +703,8 @@ export const AdminSettingsPage = () => {
             </div >
 
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="w-full md:w-auto">
-                    Save Changes
+                <Button onClick={handleSave} className="w-full md:w-auto" disabled={saveLoading}>
+                    {saveLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
         </div >

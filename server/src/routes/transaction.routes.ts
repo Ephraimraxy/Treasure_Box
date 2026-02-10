@@ -4,133 +4,12 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
+import { verifyIdentityNumber } from '../services/identity.service';
+
 const router = Router();
 const prisma = new PrismaClient();
 
-const depositSchema = z.object({
-    amount: z.number().positive()
-});
-
-const withdrawSchema = z.object({
-    amount: z.number().positive()
-});
-
-// Get user transactions
-router.get('/', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const transactions = await prisma.transaction.findMany({
-            where: { userId: req.user!.id },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        res.json(transactions);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Request deposit (simulated - in production, integrate with payment gateway)
-router.post('/deposit', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        const { amount } = depositSchema.parse(req.body);
-
-        const transaction = await prisma.transaction.create({
-            data: {
-                userId: req.user!.id,
-                type: 'DEPOSIT',
-                amount,
-                status: 'PENDING',
-                description: `Deposit of ₦${amount.toLocaleString()}`
-            }
-        });
-
-        res.status(201).json({
-            message: 'Deposit request created',
-            transaction
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Request withdrawal
-router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
-    try {
-        // Fetch settings
-        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
-        const minWithdrawal = settings?.minWithdrawal || 1000;
-
-        const { amount, pin } = withdrawSchema.extend({
-            amount: z.number().min(minWithdrawal, `Minimum withdrawal is ₦${minWithdrawal.toLocaleString()}`),
-            pin: z.string().length(4)
-        }).parse(req.body);
-
-        const user = await prisma.user.findUnique({
-            where: { id: req.user!.id },
-            include: { bankDetails: true }
-        });
-
-        if (!user || user.balance < amount) {
-            return res.status(400).json({ error: 'Insufficient balance' });
-        }
-
-        if (user.isSuspended) {
-            return res.status(403).json({ error: 'Your account is suspended. You cannot make withdrawals.' });
-        }
-
-        if (!user.bankDetails) {
-            return res.status(400).json({ error: 'Please set your bank account details first' });
-        }
-
-        if (!user.transactionPin) {
-            return res.status(400).json({ error: 'Transaction PIN not set' });
-        }
-
-        const isPinValid = await bcrypt.compare(pin, user.transactionPin);
-        if (!isPinValid) {
-            return res.status(401).json({ error: 'Invalid PIN' });
-        }
-
-        // Deduct balance immediately, admin can reverse if rejected
-        await prisma.user.update({
-            where: { id: req.user!.id },
-            data: { balance: { decrement: amount } }
-        });
-
-        const transaction = await prisma.transaction.create({
-            data: {
-                userId: req.user!.id,
-                type: 'WITHDRAWAL',
-                amount,
-                status: 'PENDING',
-                description: `Withdrawal of ₦${amount.toLocaleString()}`
-            }
-        });
-
-        // Send Email Notification
-        if (process.env.RESEND_API_KEY) {
-            const { sendTransactionEmail } = await import('../services/email.service');
-            sendTransactionEmail(user.email, 'withdrawal', amount, 'PENDING').catch(console.error);
-        }
-
-        // Create In-App Notification
-        await prisma.notification.create({
-            data: {
-                userId: req.user!.id,
-                title: 'Withdrawal Initiated',
-                message: `Your withdrawal request of ₦${amount.toLocaleString()} has been submitted.`,
-                type: 'INFO'
-            }
-        });
-
-        res.status(201).json({
-            message: 'Withdrawal request submitted for approval',
-            transaction
-        });
-    } catch (error) {
-        next(error);
-    }
-});
+// ... existing code ...
 
 // Utility payment (simulated)
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
@@ -156,6 +35,17 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
             return res.status(401).json({ error: 'Invalid PIN' });
         }
 
+        let verificationData = null;
+
+        // Perform verification if applicable
+        if (type === 'NIN' || type === 'BVN') {
+            const result = await verifyIdentityNumber(type.toLowerCase() as 'nin' | 'bvn', meta.identifier);
+            if (!result.success) {
+                return res.status(400).json({ error: result.message || 'Verification failed' });
+            }
+            verificationData = result.data;
+        }
+
         await prisma.user.update({
             where: { id: req.user!.id },
             data: { balance: { decrement: amount } }
@@ -167,8 +57,8 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                 type: 'UTILITY_BILL',
                 amount,
                 status: 'SUCCESS',
-                description: `${type} payment`,
-                meta
+                description: `${type} Service`,
+                meta: { ...meta, verificationData }
             }
         });
 
@@ -176,15 +66,16 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         await prisma.notification.create({
             data: {
                 userId: req.user!.id,
-                title: 'Payment Successful',
-                message: `Your ${type} payment of ₦${amount.toLocaleString()} was successful.`,
+                title: 'Service Successful',
+                message: `Your ${type} service of ₦${amount.toLocaleString()} was successful.`,
                 type: 'SUCCESS'
             }
         });
 
         res.status(201).json({
-            message: 'Payment successful',
-            transaction
+            message: 'Service successful',
+            transaction,
+            verificationData
         });
     } catch (error) {
         next(error);
