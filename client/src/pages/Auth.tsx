@@ -176,7 +176,7 @@ export const LoginPage = () => {
         try {
             const response = await authApi.verifyOTP(resumeEmail, otp);
             if (response.data.token) {
-                handleLoginSuccess(response.data.token);
+                await handleLoginSuccess(response.data.token);
                 addToast('success', 'Verification successful!');
                 navigate('/');
             }
@@ -206,8 +206,10 @@ export const LoginPage = () => {
             }
 
             if (response.data.token) {
-                handleLoginSuccess(response.data.token);
+                await handleLoginSuccess(response.data.token);
                 addToast('success', 'Welcome back!');
+                // Navigation will be handled by the router/protected route logic if needed, 
+                // but we default to / and let the App component handle redirects based on role.
                 navigate('/');
             }
         } catch (error: any) {
@@ -415,7 +417,7 @@ export const RegisterPage = () => {
         setLoading(true);
         try {
             const response = await authApi.verifyOTP(email, otp);
-            handleLoginSuccess(response.data.token);
+            await handleLoginSuccess(response.data.token);
             addToast('success', 'Account verified successfully!');
             navigate('/');
         } catch (error: any) {

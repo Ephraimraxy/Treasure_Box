@@ -35,8 +35,11 @@ import { KYCPage } from './pages/KYC';
 import './index.css';
 
 // Protected Route Component
+import { useLocation } from 'react-router-dom';
+
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
     const { user, isLoading } = useAuth();
+    const location = useLocation();
 
     if (isLoading) {
         return (
@@ -52,6 +55,11 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
 
     if (adminOnly && user.role !== 'ADMIN') {
         return <Navigate to="/" replace />;
+    }
+
+    // Redirect Admin from User Dashboard to Admin Dashboard
+    if (user.role === 'ADMIN' && location.pathname === '/') {
+        return <Navigate to="/admin" replace />;
     }
 
     return <Layout>{children}</Layout>;
