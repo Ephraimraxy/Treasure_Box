@@ -316,19 +316,45 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
             totalUsers,
             totalBalance,
             activeInvestments,
-            pendingWithdrawals
+            pendingWithdrawals,
+            quizFeeAgg,
+            systemWinAgg
         ] = await Promise.all([
             prisma.user.count(),
             prisma.user.aggregate({ _sum: { balance: true } }),
             prisma.investment.count({ where: { status: 'ACTIVE' } }),
-            prisma.transaction.count({ where: { type: 'WITHDRAWAL', status: 'PENDING' } })
+            prisma.transaction.count({ where: { type: 'WITHDRAWAL', status: 'PENDING' } }),
+            // Platform Logic
+            prisma.quizGame.aggregate({ _sum: { platformFee: true }, where: { status: 'COMPLETED' } }),
+            // System Wins: Sum of prizePool for SOLO games where nobody won
+            prisma.quizGame.aggregate({
+                _sum: { prizePool: true },
+                where: {
+                    mode: 'SOLO',
+                    status: 'COMPLETED',
+                    participants: { none: { isWinner: true } }
+                }
+            })
         ]);
+
+        const quizFees = quizFeeAgg._sum.platformFee || 0;
+        const systemWins = systemWinAgg._sum.prizePool || 0;
+        const investmentProfit = 0; // Placeholder for now
+        const totalPlatformProfit = quizFees + systemWins + investmentProfit;
 
         res.json({
             totalUsers,
             totalBalance: totalBalance._sum.balance || 0,
             activeInvestments,
-            pendingWithdrawals
+            pendingWithdrawals,
+            platformProfit: {
+                total: totalPlatformProfit,
+                breakdown: {
+                    quizFees,
+                    systemWins,
+                    investmentProfit
+                }
+            }
         });
     } catch (error) {
         next(error);

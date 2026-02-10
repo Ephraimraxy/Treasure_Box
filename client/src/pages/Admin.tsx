@@ -9,6 +9,14 @@ interface Stats {
     totalBalance: number;
     activeInvestments: number;
     pendingWithdrawals: number;
+    platformProfit: {
+        total: number;
+        breakdown: {
+            quizFees: number;
+            systemWins: number;
+            investmentProfit: number;
+        }
+    };
 }
 
 interface Withdrawal {
@@ -30,6 +38,7 @@ interface Withdrawal {
 export const AdminDashboardPage = () => {
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [profitModalOpen, setProfitModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -57,7 +66,24 @@ export const AdminDashboardPage = () => {
         <div className="space-y-4 animate-fade-in">
             <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                {/* Platform Profit Card */}
+                <Card
+                    className="bg-gradient-to-br from-indigo-900/40 to-slate-800 cursor-pointer hover:border-indigo-500/50 transition-all group"
+                    onClick={() => setProfitModalOpen(true)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                            <Activity className="text-indigo-500" size={24} />
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-400">Platform Profit</div>
+                            <div className="text-lg font-bold text-white">
+                                <FormatCurrency amount={stats?.platformProfit.total || 0} />
+                            </div>
+                        </div>
+                    </div>
+                </Card>
                 <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-blue-500/20 rounded-xl">
@@ -108,6 +134,64 @@ export const AdminDashboardPage = () => {
                     </div>
                 </Card>
             </div>
+
+            <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit History">
+                <div className="space-y-4">
+                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div className="text-slate-400 text-sm mb-1">Total Platform Profit</div>
+                        <div className="text-3xl font-bold text-white">
+                            <FormatCurrency amount={stats?.platformProfit.total || 0} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                                    <DollarSign size={18} className="text-emerald-400" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">Investment Profit</div>
+                                    <div className="text-xs text-slate-500">Margins from payouts</div>
+                                </div>
+                            </div>
+                            <div className="font-bold text-white">
+                                <FormatCurrency amount={stats?.platformProfit.breakdown.investmentProfit || 0} />
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Activity size={18} className="text-purple-400" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">Quiz Fees</div>
+                                    <div className="text-xs text-slate-500">Platform commission</div>
+                                </div>
+                            </div>
+                            <div className="font-bold text-white">
+                                <FormatCurrency amount={stats?.platformProfit.breakdown.quizFees || 0} />
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-amber-500/10 rounded-lg">
+                                    <Shield size={18} className="text-amber-400" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">System Wins</div>
+                                    <div className="text-xs text-slate-500">Solo mode losses</div>
+                                </div>
+                            </div>
+                            <div className="font-bold text-white">
+                                <FormatCurrency amount={stats?.platformProfit.breakdown.systemWins || 0} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
