@@ -20,6 +20,7 @@ import { QuizPage } from './pages/Quiz';
 import { HistoryPage } from './pages/History';
 import { ReferralsPage } from './pages/Referrals';
 import { ServicesPage } from './pages/Services';
+import { ServicePaymentPage } from './pages/ServicePayment';
 import { ResearchServicesPage } from './pages/ResearchServices';
 import { ProfilePage } from './pages/Profile';
 import {
@@ -86,8 +87,8 @@ const AppContent = () => {
                 <Route path="/quiz" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
-                <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
                 <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+                <Route path="/services/payment/:type" element={<ProtectedRoute><ServicePaymentPage /></ProtectedRoute>} />
                 <Route path="/research-services" element={<ProtectedRoute><ResearchServicesPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
