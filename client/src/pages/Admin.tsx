@@ -658,7 +658,8 @@ export const AdminSettingsPage = () => {
         isSystemPaused: false,
         paystackPublicKey: '',
         kycRequiredForAccount: true,
-        enableEmailLoginAlerts: true
+        enableEmailLoginAlerts: true,
+        enableWithdrawalApproval: true
     });
 
     const [saveLoading, setSaveLoading] = useState(false);
