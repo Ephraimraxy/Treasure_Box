@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Gift, TrendingUp, Shield, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Gift, TrendingUp, Shield, Zap, GraduationCap, Fingerprint, BrainCircuit } from 'lucide-react';
 
 interface Slide {
     id: string;
@@ -10,6 +11,7 @@ interface Slide {
     color: string;
     icon: React.ReactNode;
     badge?: string;
+    link?: string;
 }
 
 const FEATURED_SLIDES: Slide[] = [
@@ -18,7 +20,7 @@ const FEATURED_SLIDES: Slide[] = [
         title: 'Earn Up To 15% Returns',
         description: 'Unlock premium investment plans with guaranteed returns. Start with just ₦20,000 and watch your money grow daily.',
         cta: 'Invest Now',
-        image: 'https://images.unsplash.com/photo-1639762681057-408e52192e55?auto=format&fit=crop&q=80&w=800',
+        image: '/carousel/investment.png',
         color: 'from-amber-600/95 via-yellow-600/90 to-orange-600/85',
         icon: <TrendingUp size={20} className="text-amber-300" />,
         badge: '🔥 HOT'
@@ -28,43 +30,79 @@ const FEATURED_SLIDES: Slide[] = [
         title: 'Refer Friends, Get ₦500',
         description: 'Share your unique referral link and earn ₦500 instantly for every friend who joins Treasure Box.',
         cta: 'Share & Earn',
-        image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=800',
+        image: '/carousel/referral.png',
         color: 'from-blue-600/95 via-indigo-600/90 to-violet-600/85',
         icon: <Gift size={20} className="text-blue-300" />,
-        badge: '💰 BONUS'
+        badge: '💰 BONUS',
+        link: '/referrals'
     },
     {
         id: '3',
         title: 'Pay Bills Instantly',
         description: 'Buy airtime, data, and pay electricity bills from your wallet in seconds. Zero hassle, instant delivery.',
         cta: 'Pay Now',
-        image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&q=80&w=800',
+        image: '/carousel/utilities.png',
         color: 'from-emerald-600/95 via-teal-600/90 to-cyan-600/85',
         icon: <Zap size={20} className="text-emerald-300" />,
-        badge: '⚡ FAST'
+        badge: '⚡ FAST',
+        link: '/services'
     },
     {
         id: '4',
         title: 'Your Money, Protected',
         description: 'Bank-grade encryption, transaction PIN security, and full KYC verification to keep your assets safe.',
         cta: 'Learn More',
-        image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
+        image: '/carousel/security.png',
         color: 'from-purple-600/95 via-fuchsia-600/90 to-pink-600/85',
         icon: <Shield size={20} className="text-purple-300" />,
+        link: '/profile'
     },
     {
         id: '5',
         title: 'New! Virtual Accounts',
         description: 'Get your own dedicated virtual bank account for instant deposits. Fund your wallet 24/7 via bank transfer.',
         cta: 'Get Account',
-        image: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&q=80&w=800',
+        image: '/carousel/virtual-account.png',
         color: 'from-rose-600/95 via-red-600/90 to-orange-600/85',
         icon: <Sparkles size={20} className="text-rose-300" />,
-        badge: '✨ NEW'
+        badge: '✨ NEW',
+        link: '/profile'
+    },
+    {
+        id: '6',
+        title: 'Research & Academic Support',
+        description: 'Professional assistance for students and researchers. Get help with thesis, projects, and academic papers.',
+        cta: 'Explore Services',
+        image: '/carousel/research.png',
+        color: 'from-indigo-600/95 via-violet-600/90 to-purple-600/85',
+        icon: <GraduationCap size={20} className="text-indigo-300" />,
+        link: '/research-services'
+    },
+    {
+        id: '7',
+        title: 'Identity Verification',
+        description: 'Validate and update your NIN and BVN records securely. Official integration for seamless identity management.',
+        cta: 'Verify ID',
+        image: '/carousel/identity.png',
+        color: 'from-orange-600/95 via-amber-600/90 to-yellow-600/85',
+        icon: <Fingerprint size={20} className="text-orange-300" />,
+        link: '/services/payment/nin_validation'
+    },
+    {
+        id: '8',
+        title: 'Daily Quiz Rewards',
+        description: 'Test your knowledge and earn rewards! Participate in our daily quiz challenges to win cash prizes.',
+        cta: 'Play & Win',
+        image: '/carousel/quiz.png',
+        color: 'from-cyan-600/95 via-sky-600/90 to-blue-600/85',
+        icon: <BrainCircuit size={20} className="text-cyan-300" />,
+        badge: '🎮 FUN',
+        link: '/quiz'
     }
 ];
 
 export const FeaturedCarousel = () => {
+    const navigate = useNavigate();
     const [current, setCurrent] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -198,7 +236,10 @@ export const FeaturedCarousel = () => {
                                             {slide.description}
                                         </p>
                                     </div>
-                                    <button className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/25 rounded-xl text-white text-xs font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg">
+                                    <button
+                                        onClick={() => slide.link && navigate(slide.link)}
+                                        className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/25 rounded-xl text-white text-xs font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg"
+                                    >
                                         {slide.cta} <ArrowRight size={13} />
                                     </button>
                                 </div>
