@@ -31,8 +31,8 @@ interface AuthContextType {
     user: User | null;
     token: string | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, referralCode?: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<any>;
+    register: (email: string, password: string, referralCode?: string) => Promise<any>;
     logout: () => void;
     refreshUser: () => Promise<void>;
     handleLoginSuccess: (token: string) => Promise<void>;
