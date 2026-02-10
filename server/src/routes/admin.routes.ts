@@ -373,7 +373,11 @@ router.get('/settings', async (req: AuthRequest, res, next) => {
             minDeposit: 1000,
             minWithdrawal: 1000,
             minInvestment: 5000,
-            isSystemPaused: false
+            minDeposit: 1000,
+            minWithdrawal: 1000,
+            minInvestment: 5000,
+            isSystemPaused: false,
+            enableWithdrawalApproval: true
         });
     } catch (error) {
         next(error);

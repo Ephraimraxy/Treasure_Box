@@ -742,6 +742,22 @@ export const AdminSettingsPage = () => {
 
                         <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
                             <div>
+                                <div className="font-medium text-white">Withdrawal Approval Required</div>
+                                <div className="text-xs text-slate-400">If disabled, withdrawals are instant (automated)</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.enableWithdrawalApproval ?? true}
+                                    onChange={e => setSettings({ ...settings, enableWithdrawalApproval: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                            <div>
                                 <div className="font-medium text-white">Email Login Alerts</div>
                                 <div className="text-xs text-slate-400">Send email when user logs in</div>
                             </div>

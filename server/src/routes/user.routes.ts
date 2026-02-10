@@ -289,15 +289,16 @@ router.post('/bank-details', authenticate, async (req: AuthRequest, res, next) =
     try {
         const schema = z.object({
             bankName: z.string(),
+            bankCode: z.string().optional(),
             accountNumber: z.string().length(10),
             accountName: z.string()
         });
 
-        const { bankName, accountNumber, accountName } = schema.parse(req.body);
+        const { bankName, bankCode, accountNumber, accountName } = schema.parse(req.body);
         const userId = req.user!.id;
 
         const bankDetails = await prisma.bankDetail.create({
-            data: { userId, bankName, accountNumber, accountName }
+            data: { userId, bankName, bankCode, accountNumber, accountName }
         });
 
         res.json({ message: 'Bank details saved successfully', bankDetails });

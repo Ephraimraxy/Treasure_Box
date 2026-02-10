@@ -66,6 +66,7 @@ model BankDetail {
   userId        String
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   bankName      String
+  bankCode      String?
   accountNumber String
   accountName   String
 }
@@ -132,6 +133,7 @@ model Settings {
   minInvestment             Float   @default(5000)
   enableNotifications       Boolean @default(true)
   enableEmailLoginAlerts    Boolean @default(true)
+  enableWithdrawalApproval Boolean @default(true)
   kycRequiredForAccount     Boolean @default(true)
 }
 

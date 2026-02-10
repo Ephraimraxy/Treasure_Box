@@ -106,7 +106,12 @@ export const ProfilePage = () => {
         if (!accountVerified) { addToast('error', 'Please verify your account first'); return; }
         setBankLoading(true);
         try {
-            await userApi.updateBankDetails({ bankName: bankData.bankName, accountNumber: bankData.accountNumber, accountName: bankData.accountName });
+            await userApi.updateBankDetails({
+                bankName: bankData.bankName,
+                bankCode: bankData.bankCode, // Send bankCode
+                accountNumber: bankData.accountNumber,
+                accountName: bankData.accountName
+            });
             await refreshUser();
             addToast('success', 'Bank account added successfully');
             setShowAddBank(false);
