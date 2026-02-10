@@ -563,8 +563,8 @@ export const ProfilePage = () => {
                 {/* Avatar — overlapping the header */}
                 <div className="absolute left-1/2 -translate-x-1/2 -bottom-12 z-10">
                     <div className="w-24 h-24 rounded-full bg-slate-800 border-4 border-slate-950 flex items-center justify-center overflow-hidden relative group shadow-2xl">
-                        {user?.kycPhotoUrl || formData.photoUrl ? (
-                            <img src={formData.photoUrl || user?.kycPhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                        {formData.photoUrl || user?.photoUrl || user?.kycPhotoUrl ? (
+                            <img src={formData.photoUrl || user?.photoUrl || user?.kycPhotoUrl} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <User size={40} className="text-slate-400" />
                         )}

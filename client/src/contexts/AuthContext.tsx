@@ -16,6 +16,7 @@ interface User {
     kycVerified: boolean;
     kycStatus?: 'PENDING' | 'VERIFIED' | 'FAILED';
     kycPhotoUrl?: string;
+    photoUrl?: string;
     transactionPin?: boolean;
     isSuspended?: boolean;
     suspensionReason?: string;

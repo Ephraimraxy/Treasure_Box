@@ -42,6 +42,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 kycStatus: true,
                 kycVerified: true,
                 kycPhotoUrl: true,
+                photoUrl: true,
                 role: true,
                 referralCode: true,
                 balance: true,
