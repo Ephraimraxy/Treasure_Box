@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi, userApi } from '../api';
+import api, { authApi, userApi } from '../api';
 
 interface User {
     id: string;
@@ -68,19 +68,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return null;
         }
         try {
-            // No need to set isLoading(true) here if called from effect, 
-            // but if called manually we might want to. 
-            // For now, assume effect handles initial load, manual calls handle their own.
+            // Explicitly set header if token provided, to ensure immediate availability
+            if (currentToken) {
+                api.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
+            }
 
-            // Note: userApi.getProfile() likely uses the token from localStorage or interceptor.
-            // Ensure interceptor is using the latest token.
             const response = await userApi.getProfile();
             setUser(response.data);
             return response.data;
-        } catch {
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
+        } catch (error: any) {
+            console.error('Fetch user failed:', error);
+            // Only clear auth on 401/403, otherwise keep token (could be network error)
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                localStorage.removeItem('token');
+                setToken(null);
+                setUser(null);
+                delete api.defaults.headers.common['Authorization'];
+            }
             return null;
         } finally {
             setIsLoading(false);
@@ -88,12 +92,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        fetchUser();
+        if (token) {
+            fetchUser(token);
+        } else {
+            setIsLoading(false);
+        }
     }, [token]);
 
     const login = async (email: string, password: string) => {
         const response = await authApi.login(email, password);
-        // Don't just set token, handle the full flow
         if (response.data.token) {
             await handleLoginSuccess(response.data.token);
         }
@@ -112,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
+        delete api.defaults.headers.common['Authorization'];
     };
 
     const refreshUser = async () => {
@@ -122,9 +130,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         localStorage.setItem('token', newToken);
         setToken(newToken);
-        // Explicitly fetch user with the new token to ensure state is ready
-        // We know token is set in state, but fetchUser relies on 'token' state or param?
-        // Let's pass the token explicitly to fetchUser or rely on local storage being updated for axios interceptors
+
+        // Force update axios header immediately
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+
         await fetchUser(newToken);
         setIsLoading(false);
     };
