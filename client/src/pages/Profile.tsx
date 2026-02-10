@@ -7,7 +7,7 @@ import { userApi, paymentApi } from '../api';
 import { Button, Input, Card, Modal } from '../components/ui';
 
 // ─── Sub-page IDs ───
-type SubPage = null | 'edit-profile' | 'bank-accounts' | 'virtual-account' | 'security' | 'help-support' | 'privacy-policy';
+type SubPage = null | 'edit-profile' | 'bank-accounts' | 'virtual-account' | 'security' | 'help-support' | 'privacy-policy' | 'notifications';
 
 export const ProfilePage = () => {
     const { user, refreshUser } = useAuth();
@@ -33,6 +33,10 @@ export const ProfilePage = () => {
         photoUrl: ''
     });
 
+    const [notificationSettings, setNotificationSettings] = useState({
+        fund: true, game: true, investment: true, login: true, push: true
+    });
+
     useEffect(() => {
         if (user) {
             setFormData(prev => ({
@@ -40,8 +44,12 @@ export const ProfilePage = () => {
                 name: user.name || prev.name,
                 phone: user.phone || prev.phone,
                 address: user.address || prev.address,
+                address: user.address || prev.address,
                 username: user.username || prev.username,
             }));
+            if (user.notificationSettings) {
+                setNotificationSettings(prev => ({ ...prev, ...user.notificationSettings }));
+            }
         }
     }, [user]);
 
@@ -417,6 +425,58 @@ export const ProfilePage = () => {
     // ═══════════════════════════════════════════
     // SUB-PAGE: Help & Support
     // ═══════════════════════════════════════════
+    // SUB-PAGE: Notifications
+    // ═══════════════════════════════════════════
+    if (activePage === 'notifications') {
+        const toggleNotification = async (key: string) => {
+            const newSettings = { ...notificationSettings, [key]: !notificationSettings[key as keyof typeof notificationSettings] };
+            setNotificationSettings(newSettings);
+            try {
+                await userApi.updateProfile({ notificationSettings: newSettings });
+                refreshUser();
+            } catch (error) {
+                addToast('error', 'Failed to update settings');
+            }
+        };
+
+        const settings = [
+            { id: 'fund', label: 'Fund Alerts', desc: 'Get notified when funds are added or removed.' },
+            { id: 'game', label: 'Game Play Alerts', desc: 'Updates on your game status and winnings.' },
+            { id: 'investment', label: 'Investment Alerts', desc: 'Notifications about your investment maturity.' },
+            { id: 'login', label: 'Login Alerts', desc: 'Get notified of new login attempts.' },
+            { id: 'push', label: 'Push Notifications', desc: 'Receive push notifications on this device.' },
+        ];
+
+        return (
+            <div className="max-w-lg mx-auto animate-fade-in">
+                <BackButton label="Back to Profile" />
+                <Card>
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="p-2 bg-amber-500/10 rounded-lg"><Bell size={18} className="text-amber-500" /></div>
+                        <h3 className="font-bold text-white text-lg">Notification Settings</h3>
+                    </div>
+                    <div className="divide-y divide-slate-800/50">
+                        {settings.map(setting => (
+                            <div key={setting.id} className="py-4 flex items-center justify-between">
+                                <div className="pr-4">
+                                    <div className="text-sm font-medium text-white">{setting.label}</div>
+                                    <div className="text-xs text-slate-500 mt-0.5">{setting.desc}</div>
+                                </div>
+                                <button
+                                    onClick={() => toggleNotification(setting.id)}
+                                    className={`w-11 h-6 rounded-full transition-colors relative ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'bg-amber-500' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    // ═══════════════════════════════════════════
     if (activePage === 'help-support') {
         const faqs = [
             { q: 'How do I fund my wallet?', a: 'You can fund your wallet by transferring to your virtual bank account, or via bank transfer from the Deposit page.' },
@@ -599,13 +659,13 @@ export const ProfilePage = () => {
             {/* ─── Group 2: Security ─── */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
                 <MenuItem icon={Lock} label="Security & PIN" value={user?.transactionPin ? 'Active' : 'Set PIN'} onClick={() => setActivePage('security')} />
-                <MenuItem icon={Bell} label="Notifications" value="On" onClick={() => { }} />
+                <MenuItem icon={Bell} label="Notifications" value="On" onClick={() => setActivePage('notifications')} />
             </div>
 
             {/* ─── Group 3: Support & Legal ─── */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
                 <MenuItem icon={HelpCircle} label="Help & Support" onClick={() => setActivePage('help-support')} />
-                <MenuItem icon={Star} label="Rate Treasure Box" onClick={() => { }} />
+
                 <MenuItem icon={FileText} label="Privacy Policy" onClick={() => setActivePage('privacy-policy')} />
             </div>
 
@@ -617,7 +677,7 @@ export const ProfilePage = () => {
             {/* ─── App Version Footer ─── */}
             <div className="text-center py-4 space-y-1">
                 <p className="text-xs text-slate-600 font-medium">Treasure Box</p>
-                <p className="text-[10px] text-slate-700">Version 1.0.0 • Made with ❤️ in Nigeria</p>
+                <p className="text-[10px] text-slate-700">Version 1.0.0 • by <a href="https://www.burstbrainconcepts.site/" target="_blank" rel="noreferrer" className="hover:text-amber-500 transition-colors">Burst Brain Concept</a></p>
             </div>
         </div>
     );

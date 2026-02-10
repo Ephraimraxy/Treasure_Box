@@ -430,7 +430,7 @@ export const QuizPage = () => {
                             <Brain size={22} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-white">Quiz Arena</h1>
+                            <h1 className="text-xl font-bold text-white">Mendula Quiz Arena</h1>
                             <p className="text-xs text-slate-400">Test your knowledge, earn rewards</p>
                         </div>
                     </div>

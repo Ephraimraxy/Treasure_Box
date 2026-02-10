@@ -50,6 +50,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 bankDetails: true,
                 virtualAccount: true,
                 transactionPin: true,
+                notificationSettings: true,
                 _count: {
                     select: { referrals: true }
                 }
@@ -81,7 +82,8 @@ router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
             phone: z.string().optional(),
             address: z.string().optional(),
             username: z.string().optional(),
-            photoUrl: z.string().optional()
+            photoUrl: z.string().optional(),
+            notificationSettings: z.any().optional()
         });
 
         const data = schema.parse(req.body);

@@ -58,6 +58,7 @@ model User {
   virtualAccount  VirtualAccount?
   quizParticipations QuizParticipant[]
   researchRequests ResearchRequest[]
+  notificationSettings Json?       // { fund: boolean, game: boolean, investment: boolean, login: boolean, push: boolean }
 }
 
 model BankDetail {
