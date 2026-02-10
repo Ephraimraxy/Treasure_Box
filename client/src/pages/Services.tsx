@@ -20,6 +20,47 @@ const services = [
     { id: 'bvn_retrieval', name: 'BVN Retrieval', icon: Search, color: 'text-teal-400', bg: 'bg-teal-500/10' },
 ];
 
+const dataPlans = {
+    'MTN': [
+        { id: 'MTN_500MB', name: '500MB (30 Days)', price: 500 },
+        { id: 'MTN_1GB', name: '1GB (30 Days)', price: 1000 },
+        { id: 'MTN_2GB', name: '2GB (30 Days)', price: 2000 },
+        { id: 'MTN_5GB', name: '5GB (30 Days)', price: 3500 },
+        { id: 'MTN_10GB', name: '10GB (30 Days)', price: 6000 },
+    ],
+    'AIRTEL': [
+        { id: 'AIRTEL_750MB', name: '750MB (14 Days)', price: 500 },
+        { id: 'AIRTEL_1.5GB', name: '1.5GB (30 Days)', price: 1000 },
+        { id: 'AIRTEL_3GB', name: '3GB (30 Days)', price: 1500 },
+        { id: 'AIRTEL_4.5GB', name: '4.5GB (30 Days)', price: 2000 },
+    ],
+    'GLO': [
+        { id: 'GLO_1GB', name: '1GB (5 Days)', price: 300 },
+        { id: 'GLO_2.5GB', name: '2.5GB (2 Days)', price: 500 },
+        { id: 'GLO_5.8GB', name: '5.8GB (30 Days)', price: 2000 },
+        { id: 'GLO_7.7GB', name: '7.7GB (30 Days)', price: 2500 },
+    ],
+    '9MOBILE': [
+        { id: '9MOBILE_500MB', name: '500MB (30 Days)', price: 500 },
+        { id: '9MOBILE_1.5GB', name: '1.5GB (30 Days)', price: 1000 },
+        { id: '9MOBILE_2GB', name: '2GB (30 Days)', price: 1200 },
+        { id: '9MOBILE_4.5GB', name: '4.5GB (30 Days)', price: 2000 },
+    ]
+};
+
+const electricityProviders = [
+    { id: 'IKEDC', name: 'Ikeja Electric (IKEDC)' },
+    { id: 'EKEDC', name: 'Eko Electric (EKEDC)' },
+    { id: 'AEDC', name: 'Abuja Electric (AEDC)' },
+    { id: 'IBEDC', name: 'Ibadan Electric (IBEDC)' },
+    { id: 'KEDCO', name: 'Kano Electric (KEDCO)' },
+    { id: 'PHED', name: 'Port Harcourt Electric (PHED)' },
+    { id: 'JED', name: 'Jos Electric (JED)' },
+    { id: 'KAEDCO', name: 'Kaduna Electric (KAEDCO)' },
+    { id: 'EEDC', name: 'Enugu Electric (EEDC)' },
+    { id: 'BEDC', name: 'Benin Electric (BEDC)' },
+];
+
 export const ServicesPage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
@@ -32,17 +73,51 @@ export const ServicesPage = () => {
     const [verificationResult, setVerificationResult] = useState<any>(null);
     const [showResultModal, setShowResultModal] = useState(false);
 
+    // New State for Plans/Providers
+    const [selectedProvider, setSelectedProvider] = useState('');
+    const [selectedPlan, setSelectedPlan] = useState<any>(null);
+
     const handleServiceClick = (service: any) => {
         setSelectedService(service);
         setAmount('');
         setIdentifier('');
         setDetails('');
         setPin('');
+        setSelectedProvider('');
+        setSelectedPlan(null);
+    };
+
+    const handlePlanSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const planId = e.target.value;
+        if (!selectedProvider) return;
+
+        const plans = (dataPlans as any)[selectedProvider];
+        const plan = plans?.find((p: any) => p.id === planId);
+
+        setSelectedPlan(plan);
+        if (plan) setAmount(plan.price.toString());
     };
 
     const handlePayment = async () => {
-        if (!amount || !identifier || !pin) {
+        if (!identifier || !pin) {
             addToast('error', 'Please fill all required fields');
+            return;
+        }
+
+        // Specific Validation for Data
+        if (selectedService.id === 'data' && (!selectedProvider || !selectedPlan)) {
+            addToast('error', 'Please select a provider and plan');
+            return;
+        }
+
+        // Specific Validation for Power
+        if (selectedService.id === 'power' && !selectedProvider) {
+            addToast('error', 'Please select an electricity provider');
+            return;
+        }
+
+        if (!amount && !selectedPlan) { // Amount is auto-set for plans, but manual otherwise
+            addToast('error', 'Please enter amount');
             return;
         }
 
@@ -61,7 +136,13 @@ export const ServicesPage = () => {
             const response = await transactionApi.payUtility({
                 type: selectedService.id.toUpperCase(),
                 amount: parseFloat(amount),
-                meta: { identifier, details, serviceName: selectedService.name },
+                meta: {
+                    identifier,
+                    details,
+                    serviceName: selectedService.name,
+                    provider: selectedProvider,
+                    plan: selectedPlan ? selectedPlan.id : undefined
+                },
                 pin
             });
 
@@ -98,6 +179,7 @@ export const ServicesPage = () => {
         if (id.includes('airtime') || id.includes('data') || id === 'bvn_retrieval') return "Phone Number";
         if (id.includes('nin')) return "NIN Number";
         if (id.includes('bvn')) return "BVN Number";
+        if (id === 'power') return "Meter Number";
         return "Smart Card / Meter No.";
     };
 
@@ -174,13 +256,70 @@ export const ServicesPage = () => {
                         </div>
 
                         <div className="space-y-4">
+                            {/* Data/Airtime Provider Selection */}
+                            {(selectedService.id === 'data' || selectedService.id === 'airtime') && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-300">Select Network</label>
+                                    <select
+                                        value={selectedProvider}
+                                        onChange={(e) => {
+                                            setSelectedProvider(e.target.value);
+                                            setSelectedPlan(null);
+                                            setAmount('');
+                                        }}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 appearance-none"
+                                    >
+                                        <option value="">Select Network Provider</option>
+                                        <option value="MTN">MTN</option>
+                                        <option value="AIRTEL">Airtel</option>
+                                        <option value="GLO">Glo</option>
+                                        <option value="9MOBILE">9mobile</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Electricity Provider Selection */}
+                            {selectedService.id === 'power' && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-300">Select Provider</label>
+                                    <select
+                                        value={selectedProvider}
+                                        onChange={(e) => setSelectedProvider(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 appearance-none"
+                                    >
+                                        <option value="">Select Disco</option>
+                                        {electricityProviders.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Data Plan Selection */}
+                            {selectedService.id === 'data' && selectedProvider && (
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-300">Select Data Plan</label>
+                                    <select
+                                        onChange={handlePlanSelect}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 appearance-none"
+                                    >
+                                        <option value="">Select Plan</option>
+                                        {(dataPlans as any)[selectedProvider]?.map((plan: any) => (
+                                            <option key={plan.id} value={plan.id}>{plan.name} - ₦{plan.price}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <Input
-                                label="Amount"
+                                label={selectedService.id === 'data' ? "Amount (Auto)" : "Amount"}
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 icon={<span>₦</span>}
                                 placeholder="0.00"
+                                readOnly={!!selectedPlan} // Read-only if plan selected
+                                className={selectedPlan ? "opacity-70 cursor-not-allowed" : ""}
                             />
 
                             <Input

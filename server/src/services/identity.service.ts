@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resolveBVN } from './paystack.service';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const USE_REAL_VERIFICATION = process.env.ENABLE_REAL_IDENTITY_CHECK === 'true';
@@ -9,7 +10,7 @@ interface VerificationResult {
     message?: string;
 }
 
-export type IdentityType = 'bvn' | 'nin' | 'nin_modification' | 'nin_validation' | 'nin_personalization' | 'bvn_modification' | 'bvn_retrieval';
+export type IdentityType = 'bvn' | 'nin' | 'nin_modification' | 'nin_validation' | 'nin_personalization' | 'bvn_modification' | 'bvn_validation' | 'bvn_retrieval';
 
 export const verifyIdentityNumber = async (type: IdentityType, value: string, details?: string): Promise<VerificationResult> => {
     // 0. Handle Retrieval (Phone Number)
@@ -44,9 +45,29 @@ export const verifyIdentityNumber = async (type: IdentityType, value: string, de
     // 3. Real Verification (If Enabled) for standard Verify/Validate
     if (USE_REAL_VERIFICATION && PAYSTACK_SECRET_KEY) {
         try {
-            // Note: Paystack BVN/NIN resolution endpoints vary by account permissions.
-            // This is a generic implementation structure for the Identity API.
-            console.log(`[IdentityService] Real check requested for ${type}:${value} - Implementation requires specific provider endpoint.`);
+            console.log(`[IdentityService] Real check requested for ${type}:${value}`);
+
+            if (type === 'bvn' || type === 'bvn_validation') {
+                const result = await resolveBVN(value);
+                if (result.success) {
+                    return {
+                        success: true,
+                        message: 'Verification successful',
+                        data: {
+                            firstName: result.data.first_name,
+                            lastName: result.data.last_name,
+                            dob: result.data.dob,
+                            phone: result.data.mobile,
+                            valid: true
+                        }
+                    };
+                } else {
+                    return { success: false, message: result.message || 'BVN Resolution failed' };
+                }
+            }
+
+            // Fallback for other types (NIN) to simulation until provider added
+            console.log(`[IdentityService] No real provider configured for ${type}, utilizing simulation.`);
             return simulateVerification(type, value);
 
         } catch (error: any) {

@@ -119,7 +119,23 @@ export const verifyWebhookSignature = (payload: string, signature: string): bool
     return hash === signature;
 };
 
+// ... existing code ...
+
 // Generate unique reference
 export const generateReference = (prefix: string = 'TB'): string => {
     return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 };
+
+// Resolve BVN (requires activation on Paystack Dashboard)
+export const resolveBVN = async (bvn: string) => {
+    try {
+        const response = await paystackApi.get(`/bank/resolve_bvn/${bvn}`);
+        return { success: true, data: response.data.data };
+    } catch (error: any) {
+        console.error("BVN Resolution Error", error.response?.data);
+        return { success: false, message: error.response?.data?.message || 'Could not resolve BVN' };
+    }
+};
+
+// Validate Account (NUBAN) - already exists as verifyAccountNumber but exporting clearer alias if needed
+export const resolveNuban = verifyAccountNumber;
