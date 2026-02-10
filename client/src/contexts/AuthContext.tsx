@@ -34,6 +34,13 @@ interface User {
     _count?: {
         referrals: number;
     };
+    notificationSettings?: {
+        fund: boolean;
+        game: boolean;
+        investment: boolean;
+        login: boolean;
+        push: boolean;
+    };
 }
 
 interface AuthContextType {

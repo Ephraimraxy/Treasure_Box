@@ -44,7 +44,6 @@ export const ProfilePage = () => {
                 name: user.name || prev.name,
                 phone: user.phone || prev.phone,
                 address: user.address || prev.address,
-                address: user.address || prev.address,
                 username: user.username || prev.username,
             }));
             if (user.notificationSettings) {
