@@ -205,8 +205,8 @@ export const FeaturedCarousel = () => {
                                     className="w-full h-full object-cover"
                                     loading="lazy"
                                 />
-                                <div className={`absolute inset-0 bg-gradient-to-br ${slide.color}`} />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                                {/* <div className={`absolute inset-0 bg-gradient-to-br ${slide.color}`} /> */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
                                 {/* Decorative glow */}
                                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
                                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
