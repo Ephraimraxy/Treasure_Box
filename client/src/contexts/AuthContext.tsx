@@ -6,6 +6,8 @@ interface User {
     email: string;
     name?: string;
     username?: string;
+    phone?: string;
+    address?: string;
     bvn?: string;
     nin?: string;
     role: 'USER' | 'ADMIN';
@@ -22,6 +24,12 @@ interface User {
         accountNumber: string;
         accountName: string;
     };
+    bankDetails?: {
+        id: string;
+        bankName: string;
+        accountNumber: string;
+        accountName: string;
+    }[];
     _count?: {
         referrals: number;
     };

@@ -57,6 +57,7 @@ export const userApi = {
     getProfile: () => api.get('/users/me'),
     updateProfile: (data: any) => api.patch('/users/me', data),
     updateBankDetails: (data: any) => api.post('/users/bank-details', data),
+    deleteBankDetail: (id: string) => api.delete(`/users/bank-details/${id}`),
     getNotifications: () => api.get('/users/me/notifications'),
     markNotificationsRead: () => api.patch('/users/me/notifications/read'),
     submitKYC: (data: { photoUrl: string }) => api.post('/users/kyc', data),
@@ -79,7 +80,7 @@ export const transactionApi = {
         return api.get(`/transactions?${params.toString()}`);
     },
     deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
-    withdraw: (amount: number, pin: string) => api.post('/transactions/withdraw', { amount, pin }),
+    withdraw: (amount: number, pin: string, bankDetailId?: string) => api.post('/transactions/withdraw', { amount, pin, bankDetailId }),
     payUtility: (data: any) => api.post('/transactions/utility', data),
 };
 

@@ -52,6 +52,7 @@ export const DashboardPage = () => {
     const [amount, setAmount] = useState('');
     const [duration, setDuration] = useState(7);
     const [withdrawPin, setWithdrawPin] = useState('');
+    const [selectedBankId, setSelectedBankId] = useState('');
 
     // Loading States
     const [actionLoading, setActionLoading] = useState(false); // Shared for deposit/withdraw/invest submit
@@ -162,12 +163,14 @@ export const DashboardPage = () => {
 
         setActionLoading(true);
         try {
-            await transactionApi.withdraw(amt, withdrawPin);
+            const bankId = selectedBankId || undefined;
+            await transactionApi.withdraw(amt, withdrawPin, bankId);
             addToast('success', 'Withdrawal request submitted');
             await refreshUser();
             setActiveAction(null);
             setAmount('');
             setWithdrawPin('');
+            setSelectedBankId('');
         } catch (error: any) {
             if (error.response?.data?.error?.includes('bank account')) {
                 addToast('error', 'Please link your bank account in Profile first');
@@ -557,9 +560,36 @@ export const DashboardPage = () => {
                         </div>
                     )}
 
-                    {/* Withdrawal PIN */}
+                    {/* Withdrawal PIN & Bank Selection */}
                     {activeAction === 'withdraw' && (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
+                            {/* Bank Account Selector */}
+                            {(user?.bankDetails && user.bankDetails.length > 1) && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Select Bank Account</label>
+                                    <select
+                                        value={selectedBankId}
+                                        onChange={(e) => setSelectedBankId(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-amber-500 outline-none appearance-none"
+                                    >
+                                        <option value="">-- Select an account --</option>
+                                        {user.bankDetails.map((b: any) => (
+                                            <option key={b.id} value={b.id}>{b.accountName} - {b.bankName} ({b.accountNumber})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            {(user?.bankDetails && user.bankDetails.length === 1) && (
+                                <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
+                                    <div className="text-xs text-slate-400">Withdrawing to</div>
+                                    <div className="text-sm font-medium text-white">{user.bankDetails[0].accountName} - {user.bankDetails[0].bankName}</div>
+                                </div>
+                            )}
+                            {(!user?.bankDetails || user.bankDetails.length === 0) && (
+                                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-sm text-red-400">
+                                    No bank account linked. Please add one in your <button onClick={() => { setActiveAction(null); navigate('/profile'); }} className="underline text-amber-400 hover:text-amber-300">Profile</button>.
+                                </div>
+                            )}
                             <Input
                                 label="Transaction PIN"
                                 type="password"

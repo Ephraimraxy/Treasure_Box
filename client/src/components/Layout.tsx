@@ -9,7 +9,6 @@ const userNavItems = [
     { to: '/quiz', icon: Brain, label: 'Quiz' },
     { to: '/services', icon: LayoutGrid, label: 'Services' },
     { to: '/referrals', icon: Users, label: 'Referrals' },
-    { to: '/history', icon: History, label: 'Activity' },
     { to: '/profile', icon: User, label: 'Profile' },
 ];
 

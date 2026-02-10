@@ -146,9 +146,11 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res, next) =
             return res.status(400).json({ error: 'Investment has not matured yet' });
         }
 
-        if (!investment.user.bankDetails) {
+        if (!investment.user.bankDetails || investment.user.bankDetails.length === 0) {
             return res.status(400).json({ error: 'Please save your bank details first' });
         }
+
+        const primaryBank = investment.user.bankDetails[0];
 
         const totalRate = investment.baseRate + investment.bonusRate;
         const payoutAmount = investment.principal * (1 + totalRate / 100);
@@ -169,9 +171,9 @@ router.post('/:id/withdraw', authenticate, async (req: AuthRequest, res, next) =
                     status: 'PENDING',
                     description: `Matured Investment Withdrawal Request`,
                     meta: {
-                        bankName: investment.user.bankDetails.bankName,
-                        accountNumber: investment.user.bankDetails.accountNumber,
-                        accountName: investment.user.bankDetails.accountName
+                        bankName: primaryBank.bankName,
+                        accountNumber: primaryBank.accountNumber,
+                        accountName: primaryBank.accountName
                     }
                 }
             })

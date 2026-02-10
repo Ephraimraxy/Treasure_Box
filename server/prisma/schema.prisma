@@ -54,14 +54,14 @@ model User {
   transactions    Transaction[]
   investments     Investment[]
   notifications   Notification[]
-  bankDetails     BankDetail?
+  bankDetails     BankDetail[]
   virtualAccount  VirtualAccount?
   quizParticipations QuizParticipant[]
 }
 
 model BankDetail {
   id            String @id @default(cuid())
-  userId        String @unique
+  userId        String
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   bankName      String
   accountNumber String

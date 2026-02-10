@@ -59,14 +59,10 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 // Withdraw Funds
 router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
     try {
-        const { amount, pin, bankDetails } = z.object({
+        const { amount, pin, bankDetailId } = z.object({
             amount: z.number().positive(),
             pin: z.string().length(4),
-            bankDetails: z.object({
-                bankName: z.string(),
-                accountNumber: z.string(),
-                accountName: z.string()
-            }).optional()
+            bankDetailId: z.string().optional()
         }).parse(req.body);
 
         const user = await prisma.user.findUnique({
@@ -90,19 +86,19 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
         const minWithdrawal = settings?.minWithdrawal || 1000;
         if (amount < minWithdrawal) return res.status(400).json({ error: `Minimum withdrawal is ₦${minWithdrawal}` });
 
-        // Ensure Bank Details
-        if (!user.bankDetails && !bankDetails) {
-            return res.status(400).json({ error: 'Bank details required' });
-        }
+        // Resolve bank details
+        let selectedBank: { bankName: string; accountNumber: string; accountName: string } | null = null;
 
-        // Save bank details if provided and not set
-        if (!user.bankDetails && bankDetails) {
-            await prisma.bankDetail.create({
-                data: {
-                    userId: user.id,
-                    ...bankDetails
-                }
-            });
+        if (bankDetailId) {
+            const found = user.bankDetails.find(b => b.id === bankDetailId);
+            if (!found) return res.status(400).json({ error: 'Selected bank account not found' });
+            selectedBank = found;
+        } else if (user.bankDetails.length === 1) {
+            selectedBank = user.bankDetails[0];
+        } else if (user.bankDetails.length > 1) {
+            return res.status(400).json({ error: 'Multiple bank accounts linked. Please select one.' });
+        } else {
+            return res.status(400).json({ error: 'No bank account linked. Please add one in your Profile.' });
         }
 
         // Deduct balance and create transaction
@@ -119,7 +115,11 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
                 status: 'PENDING',
                 description: 'Withdrawal Request',
                 meta: {
-                    bankDetails: user.bankDetails || bankDetails
+                    bankDetails: {
+                        bankName: selectedBank!.bankName,
+                        accountNumber: selectedBank!.accountNumber,
+                        accountName: selectedBank!.accountName
+                    }
                 }
             }
         });

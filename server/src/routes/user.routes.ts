@@ -293,13 +293,28 @@ router.post('/bank-details', authenticate, async (req: AuthRequest, res, next) =
         const { bankName, accountNumber, accountName } = schema.parse(req.body);
         const userId = req.user!.id;
 
-        const bankDetails = await prisma.bankDetail.upsert({
-            where: { userId },
-            update: { bankName, accountNumber, accountName },
-            create: { userId, bankName, accountNumber, accountName }
+        const bankDetails = await prisma.bankDetail.create({
+            data: { userId, bankName, accountNumber, accountName }
         });
 
         res.json({ message: 'Bank details saved successfully', bankDetails });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Delete Bank Detail
+router.delete('/bank-details/:id', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.id;
+
+        const bankDetail = await prisma.bankDetail.findUnique({ where: { id } });
+        if (!bankDetail) return res.status(404).json({ error: 'Bank detail not found' });
+        if (bankDetail.userId !== userId) return res.status(403).json({ error: 'Unauthorized' });
+
+        await prisma.bankDetail.delete({ where: { id } });
+        res.json({ message: 'Bank detail deleted' });
     } catch (error) {
         next(error);
     }
