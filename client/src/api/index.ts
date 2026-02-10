@@ -70,7 +70,7 @@ export const userApi = {
 
 // Transaction API
 export const transactionApi = {
-    getAll: () => api.get('/transactions'),
+    getAll: (page?: number, limit?: number, type?: string) => api.get(`/transactions?page=${page || 1}&limit=${limit || 20}&type=${type || 'all'}`),
     deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
     withdraw: (amount: number, pin: string) => api.post('/transactions/withdraw', { amount, pin }),
     payUtility: (data: any) => api.post('/transactions/utility', data),

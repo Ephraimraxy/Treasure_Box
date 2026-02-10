@@ -79,11 +79,11 @@ export const DashboardPage = () => {
         const fetchData = async () => {
             try {
                 const [txRes, invRes, settingsRes] = await Promise.all([
-                    transactionApi.getAll(),
+                    transactionApi.getAll(1, 5),
                     investmentApi.getAll(),
                     userApi.getSettings()
                 ]);
-                setTransactions(txRes.data.slice(0, 5));
+                setTransactions(txRes.data.data);
                 setInvestments(invRes.data);
                 setSettings(settingsRes.data);
             } catch (error) {
@@ -105,10 +105,10 @@ export const DashboardPage = () => {
         try {
             await refreshUser();
             const [txRes, invRes] = await Promise.all([
-                transactionApi.getAll(),
+                transactionApi.getAll(1, 5),
                 investmentApi.getAll()
             ]);
-            setTransactions(txRes.data.slice(0, 5));
+            setTransactions(txRes.data.data);
             setInvestments(invRes.data);
             addToast('success', 'Dashboard updated');
         } catch (error) {

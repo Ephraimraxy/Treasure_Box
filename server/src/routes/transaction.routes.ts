@@ -11,6 +11,45 @@ const prisma = new PrismaClient();
 
 // ... existing code ...
 
+// Get User Transactions
+router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const skip = (page - 1) * limit;
+        const type = req.query.type as string;
+
+        const where: any = { userId: req.user!.id };
+        if (type && type !== 'all') {
+            if (type === 'deposit') where.type = 'DEPOSIT';
+            else if (type === 'withdrawal') where.type = 'WITHDRAWAL';
+            else if (type === 'investment') where.type = { contains: 'INVESTMENT' };
+        }
+
+        const [transactions, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: skip
+            }),
+            prisma.transaction.count({ where })
+        ]);
+
+        res.json({
+            data: transactions,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Utility payment (simulated)
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
     try {

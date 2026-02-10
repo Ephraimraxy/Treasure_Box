@@ -17,11 +17,20 @@ export const HistoryPage = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'deposit' | 'withdrawal' | 'investment'>('all');
 
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 20;
+
     useEffect(() => {
         const fetchTransactions = async () => {
+            setLoading(true);
             try {
-                const response = await transactionApi.getAll();
-                setTransactions(response.data);
+                const response = await transactionApi.getAll(page, limit, filter);
+                // Handle new response structure { data, meta }
+                const { data, meta } = response.data;
+                setTransactions(data);
+                setTotalPages(meta.totalPages);
             } catch (error) {
                 console.error('Failed to fetch transactions:', error);
             } finally {
@@ -29,15 +38,15 @@ export const HistoryPage = () => {
             }
         };
         fetchTransactions();
-    }, []);
+    }, [page, filter]); // Re-fetch when page or filter changes
 
-    const filteredTransactions = transactions.filter(tx => {
-        if (filter === 'all') return true;
-        if (filter === 'deposit') return tx.type === 'DEPOSIT';
-        if (filter === 'withdrawal') return tx.type === 'WITHDRAWAL';
-        if (filter === 'investment') return tx.type.includes('INVESTMENT');
-        return true;
-    });
+    // Reset page when filter changes
+    const handleFilterChange = (newFilter: typeof filter) => {
+        if (newFilter !== filter) {
+            setFilter(newFilter);
+            setPage(1);
+        }
+    };
 
     const getTypeIcon = (type: string) => {
         if (type.includes('DEBIT') || type === 'WITHDRAWAL' || type === 'UTILITY_BILL') {
@@ -46,29 +55,21 @@ export const HistoryPage = () => {
         return <ArrowDownRight className="text-emerald-400" size={18} />;
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Spinner />
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-4 animate-fade-in pb-20"> {/* pb-20 for mobile nav clearance */}
             <div className="flex items-center justify-between">
                 <h1 className="text-lg font-bold text-white">Transaction History</h1>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {(['all', 'deposit', 'withdrawal', 'investment'] as const).map((f) => (
                     <button
                         key={f}
-                        onClick={() => setFilter(f)}
+                        onClick={() => handleFilterChange(f)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize whitespace-nowrap ${filter === f
-                                ? 'bg-amber-500 text-slate-900'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-amber-500 text-slate-900'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                             }`}
                     >
                         {f === 'all' ? 'All' : f}
@@ -77,44 +78,71 @@ export const HistoryPage = () => {
             </div>
 
             {/* Transaction List */}
-            {filteredTransactions.length === 0 ? (
+            {loading ? (
+                <div className="flex items-center justify-center h-64">
+                    <Spinner />
+                </div>
+            ) : transactions.length === 0 ? (
                 <Card className="text-center py-12">
                     <Receipt className="mx-auto text-slate-600 mb-4" size={48} />
                     <p className="text-slate-500">No transactions found</p>
                 </Card>
             ) : (
                 <div className="space-y-3">
-                    {filteredTransactions.map((tx) => (
-                        <Card key={tx.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-3 bg-slate-900 rounded-xl">
+                    {transactions.map((tx) => (
+                        <Card key={tx.id} className="flex items-center justify-between p-3">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
                                     {getTypeIcon(tx.type)}
                                 </div>
                                 <div>
                                     <div className="text-sm font-medium text-white">{tx.description}</div>
                                     <div className="text-xs text-slate-500">
-                                        {new Date(tx.createdAt).toLocaleString()} • {tx.type.replace(/_/g, ' ')}
+                                        {new Date(tx.createdAt).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <div className={`font-bold ${tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' || tx.type === 'UTILITY_BILL'
-                                        ? 'text-red-400'
-                                        : 'text-emerald-400'
+                                    ? 'text-red-400'
+                                    : 'text-emerald-400'
                                     }`}>
                                     {tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' || tx.type === 'UTILITY_BILL' ? '-' : '+'}
                                     <FormatCurrency amount={tx.amount} />
                                 </div>
-                                <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded inline-block mt-1 ${tx.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
-                                        tx.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' :
-                                            tx.status === 'REJECTED' ? 'bg-red-500/20 text-red-400' :
-                                                'bg-slate-500/20 text-slate-400'
+                                <div className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${tx.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    tx.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' :
+                                        tx.status === 'REJECTED' ? 'bg-red-500/20 text-red-400' :
+                                            'bg-slate-500/20 text-slate-400'
                                     }`}>
                                     {tx.status}
                                 </div>
                             </div>
                         </Card>
                     ))}
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="px-3 py-1 bg-slate-800 rounded text-slate-300 disabled:opacity-50 text-sm"
+                    >
+                        Prev
+                    </button>
+                    <span className="px-3 py-1 text-slate-500 text-sm">
+                        Page {page} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="px-3 py-1 bg-slate-800 rounded text-slate-300 disabled:opacity-50 text-sm"
+                    >
+                        Next
+                    </button>
                 </div>
             )}
         </div>
