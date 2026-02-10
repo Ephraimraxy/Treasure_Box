@@ -26,7 +26,7 @@ const webhookMiddleware = express.raw({ type: 'application/json' });
 app.use('/api/payments/webhook', webhookMiddleware);
 app.use('/api/payment/webhook', webhookMiddleware); // Alias for typo in Paystack dashboard
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 
 // Health Check

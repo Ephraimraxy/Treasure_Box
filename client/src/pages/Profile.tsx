@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Building2, Shield, Camera, Lock, Search, CheckCircle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userApi, paymentApi } from '../api';
@@ -8,7 +9,14 @@ import { Button, Input, Card, Modal } from '../components/ui';
 export const ProfilePage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); // Add hook
+
+    // Separate loading states
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [bankLoading, setBankLoading] = useState(false);
+    const [virtualAccountLoading, setVirtualAccountLoading] = useState(false);
+    const [pinLoading, setPinLoading] = useState(false);
+
     const [formData, setFormData] = useState({
         name: user?.name || '',
         phone: '',
@@ -94,7 +102,7 @@ export const ProfilePage = () => {
             return;
         }
 
-        setLoading(true);
+        setPinLoading(true);
         try {
             if (pinMode === 'set') {
                 if (!pinData.password) {
@@ -106,7 +114,7 @@ export const ProfilePage = () => {
             } else {
                 if (!pinData.oldPin) {
                     addToast('error', 'Please enter your current PIN');
-                    setLoading(false);
+                    setPinLoading(false);
                     return;
                 }
                 await userApi.changePin(pinData.oldPin, pinData.newPin);
@@ -117,20 +125,21 @@ export const ProfilePage = () => {
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Operation failed');
         } finally {
-            setLoading(false);
+            setPinLoading(false);
         }
     };
 
     const handleProfileUpdate = async () => {
-        setLoading(true);
+        setProfileLoading(true);
         try {
             await userApi.updateProfile(formData);
             await refreshUser();
             addToast('success', 'Profile updated successfully');
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Update failed');
+            console.error(error);
         } finally {
-            setLoading(false);
+            setProfileLoading(false);
         }
     };
 
@@ -143,18 +152,20 @@ export const ProfilePage = () => {
             addToast('error', 'Please verify your account first');
             return;
         }
-        setLoading(true);
+        setBankLoading(true);
         try {
             await userApi.updateBankDetails({
                 bankName: bankData.bankName,
                 accountNumber: bankData.accountNumber,
                 accountName: bankData.accountName,
             });
+            await refreshUser(); // Refresh user to update local state if needed
             addToast('success', 'Bank details updated successfully');
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Update failed');
+            console.error(error);
         } finally {
-            setLoading(false);
+            setBankLoading(false);
         }
     };
 
@@ -247,8 +258,8 @@ export const ProfilePage = () => {
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         placeholder="Your address"
                     />
-                    <Button onClick={handleProfileUpdate} disabled={loading} className="w-full">
-                        {loading ? 'Updating...' : 'Update Profile'}
+                    <Button onClick={handleProfileUpdate} disabled={profileLoading} className="w-full">
+                        {profileLoading ? 'Updating...' : 'Update Profile'}
                     </Button>
                 </div>
             </Card>
@@ -351,10 +362,10 @@ export const ProfilePage = () => {
                     <Button
                         onClick={handleBankUpdate}
                         variant="secondary"
-                        disabled={loading || !accountVerified}
+                        disabled={bankLoading || !accountVerified}
                         className="w-full"
                     >
-                        {loading ? 'Saving...' : 'Save Bank Details'}
+                        {bankLoading ? 'Saving...' : 'Save Bank Details'}
                     </Button>
                 </div>
             </Card>
@@ -411,7 +422,7 @@ export const ProfilePage = () => {
                         {user?.kycVerified ? (
                             <Button
                                 onClick={async () => {
-                                    setLoading(true);
+                                    setVirtualAccountLoading(true);
                                     try {
                                         await paymentApi.createVirtualAccount();
                                         await refreshUser();
@@ -419,13 +430,13 @@ export const ProfilePage = () => {
                                     } catch (error: any) {
                                         addToast('error', error.response?.data?.error || 'Failed to create account');
                                     } finally {
-                                        setLoading(false);
+                                        setVirtualAccountLoading(false);
                                     }
                                 }}
-                                disabled={loading}
+                                disabled={virtualAccountLoading}
                                 className="w-full"
                             >
-                                {loading ? 'Creating Account...' : 'Generate Virtual Account'}
+                                {virtualAccountLoading ? 'Creating Account...' : 'Generate Virtual Account'}
                             </Button>
                         ) : (
                             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
@@ -511,8 +522,8 @@ export const ProfilePage = () => {
                         onChange={(e) => setPinData({ ...pinData, confirmPin: e.target.value })}
                         placeholder="Confirm 4-digit PIN"
                     />
-                    <Button onClick={handlePinSubmit} disabled={loading} className="w-full">
-                        {loading ? 'Processing...' : 'Save PIN'}
+                    <Button onClick={handlePinSubmit} disabled={pinLoading} className="w-full">
+                        {pinLoading ? 'Processing...' : 'Save PIN'}
                     </Button>
                 </div>
             </Modal>
@@ -529,7 +540,7 @@ export const ProfilePage = () => {
                             <p className="text-sm text-slate-400 mb-4">
                                 Verify your identity to unlock higher limits and access all features.
                             </p>
-                            <Button variant="primary" onClick={() => window.location.href = '/kyc'}>
+                            <Button variant="primary" onClick={() => navigate('/kyc')}>
                                 Start Verification
                             </Button>
                         </div>
