@@ -21,7 +21,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Unlock premium investment plans with guaranteed returns. Start with just ₦20,000 and watch your money grow daily.',
         cta: 'Invest Now',
         image: '/carousel/investment.png',
-        color: 'from-amber-600/95 via-yellow-600/90 to-orange-600/85',
+        color: 'from-amber-600/40 via-yellow-600/30 to-orange-600/20',
         icon: <TrendingUp size={20} className="text-amber-300" />,
         badge: '🔥 HOT'
     },
@@ -31,7 +31,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Share your unique referral link and earn ₦500 instantly for every friend who joins Treasure Box.',
         cta: 'Share & Earn',
         image: '/carousel/referral.png',
-        color: 'from-blue-600/95 via-indigo-600/90 to-violet-600/85',
+        color: 'from-blue-600/40 via-indigo-600/30 to-violet-600/20',
         icon: <Gift size={20} className="text-blue-300" />,
         badge: '💰 BONUS',
         link: '/referrals'
@@ -42,7 +42,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Buy airtime, data, and pay electricity bills from your wallet in seconds. Zero hassle, instant delivery.',
         cta: 'Pay Now',
         image: '/carousel/utilities.png',
-        color: 'from-emerald-600/95 via-teal-600/90 to-cyan-600/85',
+        color: 'from-emerald-600/40 via-teal-600/30 to-cyan-600/20',
         icon: <Zap size={20} className="text-emerald-300" />,
         badge: '⚡ FAST',
         link: '/services'
@@ -53,7 +53,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Bank-grade encryption, transaction PIN security, and full KYC verification to keep your assets safe.',
         cta: 'Learn More',
         image: '/carousel/security.png',
-        color: 'from-purple-600/95 via-fuchsia-600/90 to-pink-600/85',
+        color: 'from-purple-600/40 via-fuchsia-600/30 to-pink-600/20',
         icon: <Shield size={20} className="text-purple-300" />,
         link: '/profile'
     },
@@ -63,7 +63,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Get your own dedicated virtual bank account for instant deposits. Fund your wallet 24/7 via bank transfer.',
         cta: 'Get Account',
         image: '/carousel/virtual-account.png',
-        color: 'from-rose-600/95 via-red-600/90 to-orange-600/85',
+        color: 'from-rose-600/40 via-red-600/30 to-orange-600/20',
         icon: <Sparkles size={20} className="text-rose-300" />,
         badge: '✨ NEW',
         link: '/profile'
@@ -74,7 +74,7 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Professional assistance for students and researchers. Get help with thesis, projects, and academic papers.',
         cta: 'Explore Services',
         image: '/carousel/research.png',
-        color: 'from-indigo-600/95 via-violet-600/90 to-purple-600/85',
+        color: 'from-indigo-600/40 via-violet-600/30 to-purple-600/20',
         icon: <GraduationCap size={20} className="text-indigo-300" />,
         link: '/research-services'
     },
@@ -84,17 +84,17 @@ const FEATURED_SLIDES: Slide[] = [
         description: 'Validate and update your NIN and BVN records securely. Official integration for seamless identity management.',
         cta: 'Verify ID',
         image: '/carousel/identity.png',
-        color: 'from-orange-600/95 via-amber-600/90 to-yellow-600/85',
+        color: 'from-orange-600/40 via-amber-600/30 to-yellow-600/20',
         icon: <Fingerprint size={20} className="text-orange-300" />,
         link: '/services/payment/nin_validation'
     },
     {
         id: '8',
-        title: 'Daily Quiz Rewards',
+        title: 'Mendula Quiz Arena',
         description: 'Test your knowledge and earn rewards! Participate in our daily quiz challenges to win cash prizes.',
         cta: 'Play & Win',
         image: '/carousel/quiz.png',
-        color: 'from-cyan-600/95 via-sky-600/90 to-blue-600/85',
+        color: 'from-cyan-600/40 via-sky-600/30 to-blue-600/20',
         icon: <BrainCircuit size={20} className="text-cyan-300" />,
         badge: '🎮 FUN',
         link: '/quiz'
@@ -202,7 +202,7 @@ export const FeaturedCarousel = () => {
                                 <img
                                     src={slide.image}
                                     alt=""
-                                    className="w-full h-full object-cover opacity-40"
+                                    className="w-full h-full object-cover"
                                     loading="lazy"
                                 />
                                 <div className={`absolute inset-0 bg-gradient-to-br ${slide.color}`} />

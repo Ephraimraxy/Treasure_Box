@@ -105,12 +105,21 @@ export const Layout = ({ children }: LayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-3 ml-auto">
-                        <button className="relative p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-                            <Bell size={20} />
-                        </button>
-                        <Button variant="ghost" onClick={handleLogout} className="md:hidden p-2">
-                            <LogOut size={20} />
-                        </Button>
+                        {user?.photoUrl || user?.kycPhotoUrl ? (
+                            <img
+                                src={user.photoUrl || user.kycPhotoUrl}
+                                alt="Profile"
+                                className="w-9 h-9 rounded-full object-cover border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                onClick={() => navigate('/profile')}
+                            />
+                        ) : (
+                            <div
+                                className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                onClick={() => navigate('/profile')}
+                            >
+                                <User size={20} className="text-slate-400" />
+                            </div>
+                        )}
                     </div>
                 </div>
 
