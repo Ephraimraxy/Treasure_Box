@@ -70,7 +70,14 @@ export const userApi = {
 
 // Transaction API
 export const transactionApi = {
-    getAll: (page?: number, limit?: number, type?: string) => api.get(`/transactions?page=${page || 1}&limit=${limit || 20}&type=${type || 'all'}`),
+    getAll: (page?: number, limit?: number, type?: string, search?: string) => {
+        const params = new URLSearchParams();
+        params.set('page', String(page || 1));
+        params.set('limit', String(limit || 20));
+        if (type) params.set('type', type);
+        if (search) params.set('search', search);
+        return api.get(`/transactions?${params.toString()}`);
+    },
     deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
     withdraw: (amount: number, pin: string) => api.post('/transactions/withdraw', { amount, pin }),
     payUtility: (data: any) => api.post('/transactions/utility', data),

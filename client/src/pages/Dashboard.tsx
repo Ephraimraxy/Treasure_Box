@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Shield, Clock, DollarSign, Activity, Eye, EyeOff, RefreshCw, Plus, ArrowUpRight, ArrowDownLeft, Copy, Flag, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Shield, Clock, DollarSign, Activity, Eye, EyeOff, RefreshCw, Plus, ArrowUpRight, ArrowDownLeft, Copy, Flag, Info, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
@@ -37,6 +38,7 @@ const MIN_INVESTMENT = 20000;
 export const DashboardPage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
+    const navigate = useNavigate();
 
     // Data State
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -460,9 +462,17 @@ export const DashboardPage = () => {
 
                 {/* Recent Transactions */}
                 <Card>
-                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                        <Clock size={18} className="text-slate-400" /> Recent Activity
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-white flex items-center gap-2">
+                            <Clock size={18} className="text-slate-400" /> Recent Activity
+                        </h3>
+                        <button
+                            onClick={() => navigate('/history')}
+                            className="flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 transition-colors font-medium"
+                        >
+                            View All <ChevronRight size={14} />
+                        </button>
+                    </div>
                     <div className="space-y-2">
                         {transactions.length === 0 ? (
                             <p className="text-slate-500 text-sm text-center py-4">No transactions yet</p>

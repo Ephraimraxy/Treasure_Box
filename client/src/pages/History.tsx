@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { transactionApi } from '../api';
 import { Card, FormatCurrency, Spinner } from '../components/ui';
-import { ArrowUpRight, ArrowDownRight, Receipt } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Receipt, Search, X } from 'lucide-react';
 
 interface Transaction {
     id: string;
@@ -22,12 +22,24 @@ export const HistoryPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const limit = 20;
 
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(1); // Reset to page 1 on new search
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     useEffect(() => {
         const fetchTransactions = async () => {
             setLoading(true);
             try {
-                const response = await transactionApi.getAll(page, limit, filter);
-                // Handle new response structure { data, meta }
+                const response = await transactionApi.getAll(page, limit, filter, debouncedSearch || undefined);
                 const { data, meta } = response.data;
                 setTransactions(data);
                 setTotalPages(meta.totalPages);
@@ -38,9 +50,8 @@ export const HistoryPage = () => {
             }
         };
         fetchTransactions();
-    }, [page, filter]); // Re-fetch when page or filter changes
+    }, [page, filter, debouncedSearch]);
 
-    // Reset page when filter changes
     const handleFilterChange = (newFilter: typeof filter) => {
         if (newFilter !== filter) {
             setFilter(newFilter);
@@ -56,9 +67,29 @@ export const HistoryPage = () => {
     };
 
     return (
-        <div className="space-y-4 animate-fade-in pb-20"> {/* pb-20 for mobile nav clearance */}
+        <div className="space-y-4 animate-fade-in pb-20">
             <div className="flex items-center justify-between">
                 <h1 className="text-lg font-bold text-white">Transaction History</h1>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search transactions..."
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-800/80 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-all"
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    >
+                        <X size={14} />
+                    </button>
+                )}
             </div>
 
             {/* Filter Tabs */}
@@ -85,7 +116,9 @@ export const HistoryPage = () => {
             ) : transactions.length === 0 ? (
                 <Card className="text-center py-12">
                     <Receipt className="mx-auto text-slate-600 mb-4" size={48} />
-                    <p className="text-slate-500">No transactions found</p>
+                    <p className="text-slate-500">
+                        {debouncedSearch ? `No results for "${debouncedSearch}"` : 'No transactions found'}
+                    </p>
                 </Card>
             ) : (
                 <div className="space-y-3">
@@ -129,17 +162,17 @@ export const HistoryPage = () => {
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="px-3 py-1 bg-slate-800 rounded text-slate-300 disabled:opacity-50 text-sm"
+                        className="px-4 py-2 bg-slate-800 rounded-lg text-slate-300 disabled:opacity-50 text-sm font-medium hover:bg-slate-700 transition-colors"
                     >
-                        Prev
+                        Previous
                     </button>
-                    <span className="px-3 py-1 text-slate-500 text-sm">
-                        Page {page} of {totalPages}
+                    <span className="px-4 py-2 text-slate-500 text-sm font-medium">
+                        {page} / {totalPages}
                     </span>
                     <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages}
-                        className="px-3 py-1 bg-slate-800 rounded text-slate-300 disabled:opacity-50 text-sm"
+                        className="px-4 py-2 bg-slate-800 rounded-lg text-slate-300 disabled:opacity-50 text-sm font-medium hover:bg-slate-700 transition-colors"
                     >
                         Next
                     </button>

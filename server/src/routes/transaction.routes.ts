@@ -18,12 +18,17 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         const limit = parseInt(req.query.limit as string) || 20;
         const skip = (page - 1) * limit;
         const type = req.query.type as string;
+        const search = req.query.search as string;
 
         const where: any = { userId: req.user!.id };
         if (type && type !== 'all') {
             if (type === 'deposit') where.type = 'DEPOSIT';
             else if (type === 'withdrawal') where.type = 'WITHDRAWAL';
             else if (type === 'investment') where.type = { contains: 'INVESTMENT' };
+        }
+
+        if (search && search.trim()) {
+            where.description = { contains: search.trim(), mode: 'insensitive' };
         }
 
         const [transactions, total] = await Promise.all([
