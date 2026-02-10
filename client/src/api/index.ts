@@ -122,4 +122,37 @@ export const adminApi = {
         api.patch(`/admin/users/${id}/suspend`, { suspend, reason }),
 };
 
+// Quiz API
+export const quizApi = {
+    getCourses: () => api.get('/quiz/courses'),
+    // Solo
+    startSolo: (levelId: string, entryAmount: number, pin: string) =>
+        api.post('/quiz/solo/start', { levelId, entryAmount, pin }),
+    submitSolo: (gameId: string, answers: any[], totalTime: number) =>
+        api.post('/quiz/solo/submit', { gameId, answers, totalTime }),
+    // Duel
+    createDuel: (levelId: string, entryAmount: number, pin: string) =>
+        api.post('/quiz/duel/create', { levelId, entryAmount, pin }),
+    joinDuel: (matchCode: string, pin: string) =>
+        api.post('/quiz/duel/join', { matchCode, pin }),
+    submitDuel: (gameId: string, answers: any[], totalTime: number) =>
+        api.post('/quiz/duel/submit', { gameId, answers, totalTime }),
+    getDuelStatus: (gameId: string) =>
+        api.get(`/quiz/duel/${gameId}/status`),
+    // League
+    createLeague: (levelId: string, entryAmount: number, maxPlayers: number, pin: string) =>
+        api.post('/quiz/league/create', { levelId, entryAmount, maxPlayers, pin }),
+    joinLeague: (matchCode: string, pin: string) =>
+        api.post('/quiz/league/join', { matchCode, pin }),
+    startLeague: (gameId: string) =>
+        api.post('/quiz/league/start', { gameId }),
+    submitLeague: (gameId: string, answers: any[], totalTime: number) =>
+        api.post('/quiz/league/submit', { gameId, answers, totalTime }),
+    getLeagueStatus: (gameId: string) =>
+        api.get(`/quiz/league/${gameId}/status`),
+    // History
+    getHistory: (page?: number, limit?: number) =>
+        api.get(`/quiz/history?page=${page || 1}&limit=${limit || 20}`),
+};
+
 export default api;

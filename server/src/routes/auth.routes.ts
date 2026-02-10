@@ -251,7 +251,10 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     try {
         const { email, password } = loginSchema.parse(req.body);
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email },
+            include: { bankDetails: true }
+        });
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -317,7 +320,11 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
                 id: user.id,
                 email: user.email,
                 name: user.name,
+                username: user.username,
+                phone: user.phone,
+                address: user.address,
                 role: user.role,
+                bankDetails: user.bankDetails,
                 emailVerified: true
             }
         });

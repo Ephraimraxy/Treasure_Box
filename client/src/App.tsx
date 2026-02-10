@@ -16,7 +16,7 @@ import {
     VerifyEmailPage
 } from './pages/Auth';
 import { DashboardPage } from './pages/Dashboard';
-import { WalletPage } from './pages/Wallet';
+import { QuizPage } from './pages/Quiz';
 import { HistoryPage } from './pages/History';
 import { ReferralsPage } from './pages/Referrals';
 import { ServicesPage } from './pages/Services';
@@ -74,7 +74,7 @@ const AppContent = () => {
 
                 {/* User Routes */}
                 <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                <Route path="/quiz" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
                 <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />

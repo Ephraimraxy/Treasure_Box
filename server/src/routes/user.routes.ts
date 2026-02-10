@@ -36,6 +36,9 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 id: true,
                 email: true,
                 name: true,
+                username: true,
+                phone: true,
+                address: true,
                 kycStatus: true,
                 kycVerified: true,
                 kycPhotoUrl: true,
@@ -43,6 +46,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 referralCode: true,
                 balance: true,
                 referralEarnings: true,
+                bankDetails: true,
                 virtualAccount: true,
                 transactionPin: true,
                 _count: {

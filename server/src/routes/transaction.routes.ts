@@ -55,6 +55,94 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     }
 });
 
+
+// Withdraw Funds
+router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { amount, pin, bankDetails } = z.object({
+            amount: z.number().positive(),
+            pin: z.string().length(4),
+            bankDetails: z.object({
+                bankName: z.string(),
+                accountNumber: z.string(),
+                accountName: z.string()
+            }).optional()
+        }).parse(req.body);
+
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            include: { bankDetails: true }
+        });
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.isSuspended) return res.status(403).json({ error: 'Account suspended' });
+
+        // Check PIN
+        if (!user.transactionPin) return res.status(400).json({ error: 'Transaction PIN not set' });
+        const validPin = await bcrypt.compare(pin, user.transactionPin);
+        if (!validPin) return res.status(401).json({ error: 'Invalid PIN' });
+
+        // Check Balance
+        if (user.balance < amount) return res.status(400).json({ error: 'Insufficient balance' });
+
+        // Check Settings (Min Withdrawal)
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+        const minWithdrawal = settings?.minWithdrawal || 1000;
+        if (amount < minWithdrawal) return res.status(400).json({ error: `Minimum withdrawal is ₦${minWithdrawal}` });
+
+        // Ensure Bank Details
+        if (!user.bankDetails && !bankDetails) {
+            return res.status(400).json({ error: 'Bank details required' });
+        }
+
+        // Save bank details if provided and not set
+        if (!user.bankDetails && bankDetails) {
+            await prisma.bankDetail.create({
+                data: {
+                    userId: user.id,
+                    ...bankDetails
+                }
+            });
+        }
+
+        // Deduct balance and create transaction
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { balance: { decrement: amount } }
+        });
+
+        const transaction = await prisma.transaction.create({
+            data: {
+                userId: user.id,
+                type: 'WITHDRAWAL',
+                amount,
+                status: 'PENDING',
+                description: 'Withdrawal Request',
+                meta: {
+                    bankDetails: user.bankDetails || bankDetails
+                }
+            }
+        });
+
+        // Notify Admins
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+        if (admins.length > 0) {
+            await prisma.notification.createMany({
+                data: admins.map(admin => ({
+                    userId: admin.id,
+                    title: 'New Withdrawal Request',
+                    message: `User ${user.name || user.email} requested withdrawal of ₦${amount.toLocaleString()}`,
+                    type: 'INFO'
+                }))
+            });
+        }
+
+        res.status(201).json({ message: 'Withdrawal request submitted', transaction });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Utility payment (simulated)
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
     try {

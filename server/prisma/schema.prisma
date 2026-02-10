@@ -56,6 +56,7 @@ model User {
   notifications   Notification[]
   bankDetails     BankDetail?
   virtualAccount  VirtualAccount?
+  quizParticipations QuizParticipant[]
 }
 
 model BankDetail {
@@ -140,6 +141,89 @@ model AuditLog {
   createdAt  DateTime @default(now())
 }
 
+// ── Quiz Economy Models ──────────────────────────────────
+
+model QuizCourse {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  icon        String?      // emoji or icon name
+  isActive    Boolean      @default(true)
+  modules     QuizModule[]
+  createdAt   DateTime     @default(now())
+}
+
+model QuizModule {
+  id          String       @id @default(cuid())
+  courseId    String
+  course      QuizCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isActive    Boolean      @default(true)
+  levels      QuizLevel[]
+  createdAt   DateTime     @default(now())
+  @@unique([courseId, name])
+}
+
+model QuizLevel {
+  id          String         @id @default(cuid())
+  moduleId    String
+  module      QuizModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  level       Int            // 1, 2, 3...
+  name        String         // "Beginner", "Intermediate", "Advanced"
+  questions   QuizQuestion[]
+  games       QuizGame[]
+  createdAt   DateTime       @default(now())
+  @@unique([moduleId, level])
+}
+
+model QuizQuestion {
+  id            String     @id @default(cuid())
+  levelId       String
+  level         QuizLevel  @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  question      String
+  optionA       String
+  optionB       String
+  correctOption String     // "A" or "B"
+  timeLimit     Int        @default(15) // seconds per question
+  createdAt     DateTime   @default(now())
+}
+
+model QuizGame {
+  id            String           @id @default(cuid())
+  mode          QuizGameMode     // SOLO, DUEL, LEAGUE
+  levelId       String
+  level         QuizLevel        @relation(fields: [levelId], references: [id])
+  entryAmount   Float
+  status        QuizGameStatus   @default(WAITING)
+  matchCode     String?          @unique
+  maxPlayers    Int              @default(1)
+  platformFee   Float            @default(0)
+  prizePool     Float            @default(0)
+  questionIds   Json?            // Array of question IDs for this game session
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  participants  QuizParticipant[]
+}
+
+model QuizParticipant {
+  id            String     @id @default(cuid())
+  gameId        String
+  game          QuizGame   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  score         Int        @default(0)
+  totalTime     Float      @default(0)  // total seconds taken
+  isWinner      Boolean    @default(false)
+  payout        Float      @default(0)
+  answers       Json?      // [{questionId, answer, correct, timeTaken}]
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  @@unique([gameId, userId])
+}
+
 enum Role {
   USER
   ADMIN
@@ -153,6 +237,8 @@ enum TransactionType {
   UTILITY_BILL
   AIRTIME_DEPOSIT
   REFERRAL_BONUS
+  QUIZ_ENTRY
+  QUIZ_WINNING
 }
 
 enum TransactionStatus {
@@ -181,4 +267,17 @@ enum KYCStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+enum QuizGameMode {
+  SOLO
+  DUEL
+  LEAGUE
+}
+
+enum QuizGameStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
