@@ -57,6 +57,7 @@ model User {
   bankDetails     BankDetail[]
   virtualAccount  VirtualAccount?
   quizParticipations QuizParticipant[]
+  researchRequests ResearchRequest[]
 }
 
 model BankDetail {
@@ -280,4 +281,51 @@ enum QuizGameStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+model ResearchRequest {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // User Info (Snapshot)
+  fullName        String
+  email           String
+  role            ResearchRole
+  institution     String?
+
+  // Research Details
+  serviceCategory String
+  specificService String
+  researchLevel   String
+  discipline      String
+  description     String         @db.Text
+  
+  // Timeline
+  preferredDate   DateTime?
+  urgency         String         // Normal / Urgent
+
+  // Attachments
+  attachmentUrl   String?
+
+  // Status
+  status          ResearchStatus @default(PENDING)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum ResearchRole {
+  STUDENT
+  ACADEMIC
+  RESEARCHER
+  INSTITUTION
+}
+
+enum ResearchStatus {
+  PENDING
+  REVIEWING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
 }

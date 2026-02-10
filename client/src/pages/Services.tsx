@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2, UserCheck, ShieldCheck, CheckCircle, FileText, UserCog, Search, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, X, Loader2, UserCheck, ShieldCheck, CheckCircle, FileText, UserCog, Search, Edit, GraduationCap, BookOpen, ExternalLink } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
@@ -64,6 +65,7 @@ const electricityProviders = [
 export const ServicesPage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
+    const navigate = useNavigate();
     const [selectedService, setSelectedService] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [identifier, setIdentifier] = useState(''); // Phone, Meter, IUC, NIN, BVN
@@ -184,57 +186,104 @@ export const ServicesPage = () => {
     };
 
     return (
-        <div className="space-y-4 animate-fade-in relative">
-            <h1 className="text-lg font-bold text-white">Other Services</h1>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {services.map((service) => (
-                    <button
-                        key={service.id}
-                        onClick={() => handleServiceClick(service)}
-                        className="bg-slate-800 border border-slate-700 hover:border-slate-500 p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95"
-                    >
-                        <div className={`p-4 rounded-full ${service.bg} ${service.color}`}>
-                            <service.icon size={32} />
-                        </div>
-                        <span className="font-bold text-white text-sm text-center">{service.name}</span>
-                    </button>
-                ))}
+        <div className="space-y-8 animate-fade-in relative pb-10">
+            {/* ─── Hero / Header ─── */}
+            <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                <h1 className="text-3xl font-bold text-white mb-2 relative z-10">Services Hub</h1>
+                <p className="text-slate-400 max-w-lg relative z-10">
+                    Access all your essential services in one place. Fast, secure, and reliable transactions.
+                </p>
             </div>
 
-            <Card className="bg-gradient-to-r from-amber-900/20 to-slate-800">
-                <div className="flex items-center gap-2">
-                    <div className="p-4 bg-amber-500/20 rounded-xl">
-                        <Zap className="text-amber-500" size={24} />
+            {/* ─── Research Services Promo ─── */}
+            <div
+                onClick={() => navigate('/research-services')}
+                className="group relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 cursor-pointer transition-all hover:scale-[1.01] hover:border-indigo-500/50"
+            >
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <GraduationCap size={120} />
+                </div>
+                <div className="p-8 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-4 border border-indigo-500/30">
+                        <BookOpen size={12} /> ACADEMIC SUPPORT
                     </div>
-                    <div>
-                        <h3 className="font-bold text-white">Quick & Easy Payments</h3>
-                        <p className="text-sm text-slate-400">
-                            Pay your utility bills directly from your wallet with instant confirmation.
-                        </p>
+                    <h2 className="text-2xl font-bold text-white mb-2">Research & Academic Services</h2>
+                    <p className="text-slate-400 max-w-xl mb-6">
+                        Professional support for students, researchers, and institutions. Get help with thesis writing, data analysis, and grant proposals.
+                    </p>
+                    <div className="flex items-center gap-2 text-indigo-400 font-bold group-hover:text-indigo-300 transition-colors">
+                        Explore Research Services <ExternalLink size={16} />
                     </div>
                 </div>
-            </Card>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <Card>
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-amber-500 mb-1">₦0</div>
-                        <div className="text-xs text-slate-400">Transaction Fee</div>
-                    </div>
-                </Card>
-                <Card>
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-emerald-500 mb-1">Instant</div>
-                        <div className="text-xs text-slate-400">Processing Time</div>
-                    </div>
-                </Card>
-                <Card>
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-blue-500 mb-1">24/7</div>
-                        <div className="text-xs text-slate-400">Availability</div>
-                    </div>
-                </Card>
+            {/* ─── Service Categories ─── */}
+
+            {/* 1. Telecommunication */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2">
+                    <Smartphone size={20} className="text-blue-400" />
+                    Telecommunication
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {services.filter(s => ['airtime', 'data', 'airtime_cash'].includes(s.id)).map((service) => (
+                        <button
+                            key={service.id}
+                            onClick={() => handleServiceClick(service)}
+                            className="bg-slate-900 border border-slate-700 hover:border-amber-500/50 p-6 rounded-2xl flex flex-col items-center gap-3 transition-all hover:bg-slate-800 active:scale-95 group"
+                        >
+                            <div className={`p-4 rounded-full ${service.bg} ${service.color} group-hover:scale-110 transition-transform`}>
+                                <service.icon size={28} />
+                            </div>
+                            <span className="font-bold text-white text-sm text-center">{service.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Utilities */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2">
+                    <Zap size={20} className="text-yellow-400" />
+                    Utilities
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {services.filter(s => ['power', 'cable'].includes(s.id)).map((service) => (
+                        <button
+                            key={service.id}
+                            onClick={() => handleServiceClick(service)}
+                            className="bg-slate-900 border border-slate-700 hover:border-amber-500/50 p-6 rounded-2xl flex flex-col items-center gap-3 transition-all hover:bg-slate-800 active:scale-95 group"
+                        >
+                            <div className={`p-4 rounded-full ${service.bg} ${service.color} group-hover:scale-110 transition-transform`}>
+                                <service.icon size={28} />
+                            </div>
+                            <span className="font-bold text-white text-sm text-center">{service.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 3. Identity Management */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2">
+                    <ShieldCheck size={20} className="text-emerald-400" />
+                    Identity Management
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {services.filter(s => s.id.includes('nin') || s.id.includes('bvn')).map((service) => (
+                        <button
+                            key={service.id}
+                            onClick={() => handleServiceClick(service)}
+                            className="bg-slate-900 border border-slate-700 hover:border-amber-500/50 p-6 rounded-2xl flex flex-col items-center gap-3 transition-all hover:bg-slate-800 active:scale-95 group"
+                        >
+                            <div className={`p-4 rounded-full ${service.bg} ${service.color} group-hover:scale-110 transition-transform`}>
+                                <service.icon size={28} />
+                            </div>
+                            <span className="font-bold text-white text-xs text-center">{service.name}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Payment Modal */}

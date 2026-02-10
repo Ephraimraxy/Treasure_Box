@@ -11,6 +11,7 @@ import investmentRoutes from './routes/investment.routes';
 import adminRoutes from './routes/admin.routes';
 import paymentRoutes from './routes/payment.routes';
 import quizRoutes from './routes/quiz.routes';
+import researchRoutes from './routes/research.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/payment', paymentRoutes); // Alias for singular path
 app.use('/api/quiz', quizRoutes);
+app.use('/api/research', researchRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

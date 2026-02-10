@@ -156,4 +156,10 @@ export const quizApi = {
         api.get(`/quiz/history?page=${page || 1}&limit=${limit || 20}`),
 };
 
+// Research API
+export const researchApi = {
+    submitRequest: (data: any) => api.post('/research/request', data),
+    getRequests: () => api.get('/research/requests'),
+};
+
 export default api;
