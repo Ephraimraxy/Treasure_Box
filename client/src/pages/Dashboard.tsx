@@ -57,6 +57,7 @@ export const DashboardPage = () => {
     // Loading States
     const [actionLoading, setActionLoading] = useState(false); // Shared for deposit/withdraw/invest submit
     const [accountLoading, setAccountLoading] = useState(false);
+    const [showPin, setShowPin] = useState(false);
 
     // Settings
     const [settings, setSettings] = useState({
@@ -426,6 +427,14 @@ export const DashboardPage = () => {
                 title={activeAction ? activeAction.charAt(0).toUpperCase() + activeAction.slice(1) : ''}
             >
                 <div className="space-y-4">
+                    <Input
+                        label="Amount (₦)"
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="Enter amount"
+                    />
+
                     {/* Deposit Info */}
                     {activeAction === 'deposit' && (
                         <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg flex items-start gap-2">
@@ -468,15 +477,24 @@ export const DashboardPage = () => {
                                     No bank account linked. Please add one in your <button onClick={() => { setActiveAction(null); navigate('/profile'); }} className="underline text-amber-400 hover:text-amber-300">Profile</button>.
                                 </div>
                             )}
-                            <Input
-                                label="Transaction PIN"
-                                type="password"
-                                maxLength={4}
-                                value={withdrawPin}
-                                onChange={(e) => setWithdrawPin(e.target.value.replace(/\D/g, ''))}
-                                placeholder="****"
-                                className="tracking-widest text-center"
-                            />
+                            <div className="relative">
+                                <Input
+                                    label="Transaction PIN"
+                                    type={showPin ? "text" : "password"}
+                                    maxLength={4}
+                                    value={withdrawPin}
+                                    onChange={(e) => setWithdrawPin(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="****"
+                                    className="tracking-widest text-center"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPin(!showPin)}
+                                    className="absolute right-4 top-[38px] text-slate-500 hover:text-white"
+                                >
+                                    {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                             <div className="flex justify-end">
                                 <button onClick={() => { setActiveAction(null); setPinModal({ open: true, mode: 'reset' }); }} className="text-xs text-slate-500 hover:text-amber-500">
                                     Forgot PIN?
