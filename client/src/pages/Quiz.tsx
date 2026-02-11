@@ -376,6 +376,24 @@ export const QuizPage = () => {
         }
     };
 
+    const continueGame = (game: any) => {
+        setGameId(game.id);
+        setMatchCode(game.matchCode);
+        setSelectedMode(game.mode);
+
+        if (game.mode === 'DUEL') {
+            setView('duel-waiting');
+        } else if (game.mode === 'LEAGUE') {
+            setLobbyStatus({
+                playerCount: game.currentPlayers,
+                maxPlayers: game.maxPlayers,
+                status: game.status,
+                participants: []
+            });
+            setView('league-lobby');
+        }
+    };
+
     const resetGame = () => {
         setView('courses');
         setSelectedCourse(null);
@@ -1237,8 +1255,16 @@ export const QuizPage = () => {
                                         </div>
                                     </div>
                                     {game.expiresAt && game.status === 'WAITING' && (
-                                        <div className="text-[10px] text-amber-500 flex items-center gap-1">
-                                            <Clock size={12} /> Expires: {new Date(game.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-[10px] text-amber-500 flex items-center gap-1">
+                                                <Clock size={12} /> Expires: {new Date(game.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                            <Button
+                                                onClick={() => continueGame(game)}
+                                                className="h-7 px-3 text-xs bg-slate-700 hover:bg-slate-600"
+                                            >
+                                                <Play size={12} className="mr-1" /> Continue
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
@@ -1249,6 +1275,8 @@ export const QuizPage = () => {
             </div>
         );
     }
+
+
 
     return null;
 };

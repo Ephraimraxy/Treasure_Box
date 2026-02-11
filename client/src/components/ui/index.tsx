@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 // Button Component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -36,22 +36,38 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     hint?: string;
 }
 
-export const Input = ({ label, icon, className = '', error, success, hint, ...props }: InputProps) => (
-    <div className="space-y-1.5 w-full">
-        {label && <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</label>}
-        <div className="relative">
-            <input
-                className={`w-full bg-slate-900 border ${error ? 'border-red-500/50 focus:border-red-500' : success ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-slate-700 focus:border-amber-500'} rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-600 transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${className}`}
-                {...props}
-            />
-            {icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">{icon}</div>}
-            {error && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none"><AlertCircle size={16} /></div>}
-            {success && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"><CheckCircle size={16} /></div>}
+export const Input = ({ label, icon, className = '', error, success, hint, type, ...props }: InputProps) => {
+    const [showPassword, setShowPassword] = React.useState(false);
+    const isPassword = type === 'password' || props.name?.toLowerCase().includes('pin');
+    const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
+    return (
+        <div className="space-y-1.5 w-full">
+            {label && <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</label>}
+            <div className="relative">
+                <input
+                    type={inputType}
+                    className={`w-full bg-slate-900 border ${error ? 'border-red-500/50 focus:border-red-500' : success ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-slate-700 focus:border-amber-500'} rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-600 transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
+                    {...props}
+                />
+                {icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">{icon}</div>}
+                {isPassword && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none p-1"
+                    >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                )}
+                {error && !isPassword && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none"><AlertCircle size={16} /></div>}
+                {success && !isPassword && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"><CheckCircle size={16} /></div>}
+            </div>
+            {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
+            {hint && !error && <p className="text-[10px] text-slate-500 font-medium">{hint}</p>}
         </div>
-        {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
-        {hint && !error && <p className="text-[10px] text-slate-500 font-medium">{hint}</p>}
-    </div>
-);
+    );
+};
 
 // Card Component
 interface CardProps {

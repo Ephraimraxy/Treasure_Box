@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, Mail, Lock, Users, User, ArrowLeft, ArrowRight, KeyRound, CheckCircle, Loader2 } from 'lucide-react';
+import { Box, Mail, Lock, Users, User, ArrowLeft, ArrowRight, KeyRound, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api';
@@ -24,25 +24,40 @@ export const AnimatedInput = ({
     autoFocus?: boolean;
     maxLength?: number;
     onKeyDown?: (e: React.KeyboardEvent) => void;
-}) => (
-    <div className="animate-slide-up">
-        <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                <Icon size={20} />
+}) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const isPassword = type === 'password';
+    const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
+    return (
+        <div className="animate-slide-up">
+            <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Icon size={20} />
+                </div>
+                <input
+                    type={inputType}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    autoFocus={autoFocus}
+                    maxLength={maxLength}
+                    onKeyDown={onKeyDown}
+                    className={`w-full bg-slate-900/50 border border-slate-700 rounded-xl py-4 pl-12 ${isPassword ? 'pr-12' : 'pr-4'} text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-lg`}
+                />
+                {isPassword && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                    >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                )}
             </div>
-            <input
-                type={type}
-                placeholder={placeholder}
-                value={value}
-                onChange={onChange}
-                autoFocus={autoFocus}
-                maxLength={maxLength}
-                onKeyDown={onKeyDown}
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-lg"
-            />
         </div>
-    </div>
-);
+    );
+};
 
 // Step Indicator
 const StepIndicator = ({ current, total }: { current: number; total: number }) => (
