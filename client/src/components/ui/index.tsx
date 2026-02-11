@@ -4,10 +4,11 @@ import { AlertCircle, CheckCircle, Info, X, AlertTriangle, Eye, EyeOff } from 'l
 // Button Component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+    size?: 'sm' | 'md' | 'lg';
     children: React.ReactNode;
 }
 
-export const Button = ({ children, variant = 'primary', className = '', ...props }: ButtonProps) => {
+export const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) => {
     const variants: Record<string, string> = {
         primary: "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-900 shadow-lg shadow-orange-500/20",
         secondary: "bg-slate-700 hover:bg-slate-600 text-white",
@@ -17,9 +18,15 @@ export const Button = ({ children, variant = 'primary', className = '', ...props
         success: "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/20"
     };
 
+    const sizes: Record<string, string> = {
+        sm: "px-2 py-1 text-[10px]",
+        md: "px-3 py-2 text-sm",
+        lg: "px-6 py-3 text-base"
+    };
+
     return (
         <button
-            className={`px-3 py-2 rounded-lg font-bold text-sm transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+            className={`${sizes[size]} rounded-lg font-bold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
             {...props}
         >
             {children}

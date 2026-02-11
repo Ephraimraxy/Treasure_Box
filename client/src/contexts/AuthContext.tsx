@@ -13,6 +13,7 @@ interface User {
     role: 'USER' | 'ADMIN';
     balance: number;
     referralCode: string;
+    referralEarnings: number;
     kycVerified: boolean;
     kycStatus?: 'PENDING' | 'VERIFIED' | 'FAILED';
     kycPhotoUrl?: string;
