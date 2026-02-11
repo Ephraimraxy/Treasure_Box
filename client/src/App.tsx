@@ -28,7 +28,8 @@ import {
     AdminWithdrawalsPage,
     AdminUsersPage,
     AdminAuditPage,
-    AdminSettingsPage
+    AdminSettingsPage,
+    AdminQuizPage
 } from './pages/Admin';
 import { KYCPage } from './pages/KYC';
 
@@ -95,6 +96,7 @@ const AppContent = () => {
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>} />
+                <Route path="/admin/quiz" element={<ProtectedRoute adminOnly><AdminQuizPage /></ProtectedRoute>} />
                 <Route path="/admin/withdrawals" element={<ProtectedRoute adminOnly><AdminWithdrawalsPage /></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>} />
                 <Route path="/admin/audit" element={<ProtectedRoute adminOnly><AdminAuditPage /></ProtectedRoute>} />

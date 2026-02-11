@@ -14,6 +14,7 @@ const userNavItems = [
 
 const adminNavItems = [
     { to: '/admin', icon: BarChart3, label: 'Overview' },
+    { to: '/admin/quiz', icon: Brain, label: 'Quiz Games' },
     { to: '/admin/withdrawals', icon: ArrowUpDown, label: 'Approvals' },
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/settings', icon: Settings, label: 'System' },

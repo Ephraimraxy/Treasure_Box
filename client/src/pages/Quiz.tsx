@@ -41,7 +41,7 @@ interface GameResult {
     gameComplete?: boolean;
 }
 
-type View = 'courses' | 'modules' | 'levels' | 'mode' | 'amount' | 'playing' | 'results' | 'history' | 'duel-join' | 'duel-waiting' | 'league-setup' | 'league-join' | 'league-lobby';
+type View = 'courses' | 'modules' | 'levels' | 'mode' | 'amount' | 'playing' | 'results' | 'history' | 'my-codes' | 'duel-join' | 'duel-waiting' | 'league-setup' | 'league-join' | 'league-lobby';
 
 // ═══════════════════════════════════════════════
 //  MAIN QUIZ PAGE COMPONENT
@@ -83,6 +83,7 @@ export const QuizPage = () => {
     const [gameHistory, setGameHistory] = useState<any[]>([]);
     const [historyPage, setHistoryPage] = useState(1);
     const [historyMeta, setHistoryMeta] = useState<any>({});
+    const [myCodes, setMyCodes] = useState<any[]>([]);
 
     // UI state
     const [loading, setLoading] = useState(false);
@@ -360,6 +361,21 @@ export const QuizPage = () => {
         }
     };
 
+    const fetchMyCodes = async () => {
+        setLoading(true);
+        try {
+            const res = await quizApi.getMyCodes();
+            setMyCodes(res.data);
+            if (res.data.length === 0) {
+                // optional: add toast or just show empty state
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to load codes');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const resetGame = () => {
         setView('courses');
         setSelectedCourse(null);
@@ -396,6 +412,7 @@ export const QuizPage = () => {
         else if (view === 'league-setup') setView('mode');
         else if (view === 'league-join') setView('mode');
         else if (view === 'history') setView('courses');
+        else if (view === 'my-codes') setView('courses');
         else resetGame();
     };
 
@@ -439,6 +456,12 @@ export const QuizPage = () => {
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
                     >
                         <History size={14} /> History
+                    </button>
+                    <button
+                        onClick={() => { fetchMyCodes(); setView('my-codes'); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors ml-2"
+                    >
+                        <Hash size={14} /> My Codes
                     </button>
                 </div>
 
@@ -1157,6 +1180,71 @@ export const QuizPage = () => {
                             </div>
                         )}
                     </>
+                )}
+            </div>
+        );
+    }
+
+    // MY CODES VIEW
+    if (view === 'my-codes') {
+        return (
+            <div className="space-y-4">
+                {renderHeader('My Created Games', 'Active and pending game codes')}
+
+                {loading ? (
+                    <div className="flex justify-center py-12"><Spinner /></div>
+                ) : myCodes.length === 0 ? (
+                    <Card className="p-8 text-center">
+                        <Brain size={32} className="text-slate-600 mx-auto mb-3" />
+                        <p className="text-sm text-slate-400">No active game codes</p>
+                        <p className="text-xs text-slate-500 mt-1">Create a Duel or Leauge match to see it here</p>
+                    </Card>
+                ) : (
+                    <div className="space-y-3">
+                        {myCodes.map((game: any) => (
+                            <Card key={game.id} className="p-4 relative overflow-hidden group">
+                                <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${game.mode === 'DUEL' ? 'bg-orange-500/20 text-orange-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                                                {game.mode}
+                                            </span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${game.status === 'WAITING' ? 'bg-amber-500/20 text-amber-400' :
+                                                game.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400' :
+                                                    game.status === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
+                                                        'bg-slate-700 text-slate-400'}`}>
+                                                {game.status}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm font-bold text-white mt-1">{game.course}</div>
+                                        <div className="text-xs text-slate-500">{game.module} • {game.level}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-mono font-bold text-white tracking-wider">{game.matchCode}</div>
+                                        <button onClick={() => copyToClipboard(game.matchCode)} className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 justify-end ml-auto mt-1">
+                                            {copied ? <Check size={12} /> : <Copy size={12} />} Copy Code
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                                    <div className="flex items-center gap-4 text-xs">
+                                        <div className="text-slate-400">
+                                            Entry: <span className="text-white font-bold">₦{game.entryAmount.toLocaleString()}</span>
+                                        </div>
+                                        <div className="text-slate-400">
+                                            Players: <span className="text-white font-bold">{game.currentPlayers}/{game.maxPlayers}</span>
+                                        </div>
+                                    </div>
+                                    {game.expiresAt && game.status === 'WAITING' && (
+                                        <div className="text-[10px] text-amber-500 flex items-center gap-1">
+                                            <Clock size={12} /> Expires: {new Date(game.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
                 )}
             </div>
         );

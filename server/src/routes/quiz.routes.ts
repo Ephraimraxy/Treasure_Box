@@ -8,6 +8,56 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // ═══════════════════════════════════════════════
+//  AUTO-EXPIRY HELPER
+// ═══════════════════════════════════════════════
+
+async function expireStaleGames() {
+    const now = new Date();
+    const staleGames = await prisma.quizGame.findMany({
+        where: {
+            status: 'WAITING',
+            expiresAt: { not: null, lte: now }
+        },
+        include: { participants: true }
+    });
+
+    for (const game of staleGames) {
+        await prisma.$transaction(async (tx) => {
+            // Refund all participants
+            for (const p of game.participants) {
+                await tx.user.update({
+                    where: { id: p.userId },
+                    data: { balance: { increment: game.entryAmount } }
+                });
+                await tx.transaction.create({
+                    data: {
+                        userId: p.userId,
+                        type: 'QUIZ_WINNING',
+                        amount: game.entryAmount,
+                        status: 'SUCCESS',
+                        description: `${game.mode} Match Expired - Refund`
+                    }
+                });
+                await tx.notification.create({
+                    data: {
+                        userId: p.userId,
+                        title: 'Match Expired ⏰',
+                        message: `Your ${game.mode.toLowerCase()} match (${game.matchCode}) expired with no opponent. ₦${game.entryAmount.toLocaleString()} has been refunded.`,
+                        type: 'INFO'
+                    }
+                });
+            }
+            // Mark game as expired
+            await tx.quizGame.update({
+                where: { id: game.id },
+                data: { status: 'EXPIRED', endedAt: now }
+            });
+        });
+    }
+    return staleGames.length;
+}
+
+// ═══════════════════════════════════════════════
 //  QUIZ CONTENT ENDPOINTS
 // ═══════════════════════════════════════════════
 
@@ -378,6 +428,7 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
 
             // Create game with match code
             const matchCode = generateMatchCode();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24hrs
             const game = await prisma.quizGame.create({
                 data: {
                     mode: 'DUEL',
@@ -387,6 +438,7 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
                     matchCode,
                     maxPlayers: 2,
                     questionIds,
+                    expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
                     }
@@ -418,6 +470,9 @@ router.post('/duel/join', authenticate, async (req: AuthRequest, res, next) => {
         const { matchCode, pin } = req.body;
 
         if (!matchCode) return res.status(400).json({ error: 'Match code is required' });
+
+        // Auto-expire stale games before attempting to join
+        await expireStaleGames();
 
         const result = await prisma.$transaction(async (prisma) => {
             // Lock/Fetch game state inside tx
@@ -754,6 +809,7 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
             });
 
             const matchCode = generateMatchCode();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24hrs
             const game = await prisma.quizGame.create({
                 data: {
                     mode: 'LEAGUE',
@@ -763,6 +819,7 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
                     matchCode,
                     maxPlayers,
                     questionIds,
+                    expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
                     }
@@ -797,6 +854,9 @@ router.post('/league/join', authenticate, async (req: AuthRequest, res, next) =>
         const { matchCode, pin } = req.body;
 
         if (!matchCode) return res.status(400).json({ error: 'Match code is required' });
+
+        // Auto-expire stale games before attempting to join
+        await expireStaleGames();
 
         const result = await prisma.$transaction(async (prisma) => {
             const game = await prisma.quizGame.findUnique({
@@ -1189,6 +1249,61 @@ router.get('/league/:gameId/status', authenticate, async (req: AuthRequest, res,
     }
 });
 
+
+// ═══════════════════════════════════════════════
+//  MY CODES (User's created game codes)
+// ═══════════════════════════════════════════════
+
+router.get('/my-codes', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        // Auto-expire stale games
+        await expireStaleGames();
+
+        // Find games where this user is the creator (first participant by createdAt)
+        const participations = await prisma.quizParticipant.findMany({
+            where: { userId: req.user!.id },
+            include: {
+                game: {
+                    include: {
+                        participants: {
+                            orderBy: { createdAt: 'asc' },
+                            take: 1,
+                            select: { userId: true }
+                        },
+                        _count: { select: { participants: true } },
+                        level: {
+                            include: { module: { include: { course: true } } }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Filter to only games this user created (they are the first participant)
+        const myCodes = participations
+            .filter(p => p.game.mode !== 'SOLO' && p.game.participants[0]?.userId === req.user!.id)
+            .map(p => ({
+                id: p.game.id,
+                mode: p.game.mode,
+                matchCode: p.game.matchCode,
+                status: p.game.status,
+                entryAmount: p.game.entryAmount,
+                maxPlayers: p.game.maxPlayers,
+                currentPlayers: p.game._count.participants,
+                course: p.game.level.module.course.name,
+                module: p.game.level.module.name,
+                level: p.game.level.name,
+                expiresAt: p.game.expiresAt,
+                createdAt: p.game.createdAt,
+                endedAt: p.game.endedAt
+            }));
+
+        res.json(myCodes);
+    } catch (error) {
+        next(error);
+    }
+});
 
 // ═══════════════════════════════════════════════
 //  GAME HISTORY

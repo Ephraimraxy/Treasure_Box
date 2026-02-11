@@ -121,6 +121,15 @@ export const adminApi = {
     deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
     toggleSuspension: (id: string, suspend: boolean, reason?: string) =>
         api.patch(`/admin/users/${id}/suspend`, { suspend, reason }),
+    getQuizGames: (page?: number, status?: string, mode?: string) => {
+        const params = new URLSearchParams();
+        params.set('page', String(page || 1));
+        if (status) params.set('status', status);
+        if (mode) params.set('mode', mode);
+        return api.get(`/admin/quiz/games?${params.toString()}`);
+    },
+    getQuizHistory: (page?: number) =>
+        api.get(`/admin/quiz/history?page=${page || 1}`),
 };
 
 // Quiz API
@@ -154,6 +163,7 @@ export const quizApi = {
     // History
     getHistory: (page?: number, limit?: number) =>
         api.get(`/quiz/history?page=${page || 1}&limit=${limit || 20}`),
+    getMyCodes: () => api.get('/quiz/my-codes'),
 };
 
 // Research API

@@ -318,7 +318,10 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
             activeInvestments,
             pendingWithdrawals,
             quizFeeAgg,
-            systemWinAgg
+            systemWinAgg,
+            pendingQuizPoolAgg,
+            activeQuizGames,
+            totalCompletedGames
         ] = await Promise.all([
             prisma.user.count(),
             prisma.user.aggregate({ _sum: { balance: true } }),
@@ -334,7 +337,16 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
                     status: 'COMPLETED',
                     participants: { none: { isWinner: true } }
                 }
-            })
+            }),
+            // Pending Quiz Pool: total entry amounts locked in WAITING games
+            prisma.quizGame.aggregate({
+                _sum: { entryAmount: true },
+                where: { status: 'WAITING' }
+            }),
+            // Active quiz games (WAITING + IN_PROGRESS)
+            prisma.quizGame.count({ where: { status: { in: ['WAITING', 'IN_PROGRESS'] } } }),
+            // Total completed games
+            prisma.quizGame.count({ where: { status: 'COMPLETED' } })
         ]);
 
         const quizFees = quizFeeAgg._sum.platformFee || 0;
@@ -354,7 +366,125 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
                     systemWins,
                     investmentProfit
                 }
+            },
+            quizStats: {
+                pendingPool: pendingQuizPoolAgg._sum.entryAmount || 0,
+                activeGames: activeQuizGames,
+                completedGames: totalCompletedGames
             }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  QUIZ ADMIN ENDPOINTS
+// ═══════════════════════════════════════════════
+
+// Get all quiz games (admin view)
+router.get('/quiz/games', async (req: AuthRequest, res, next) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const skip = (page - 1) * limit;
+        const status = req.query.status as string;
+        const mode = req.query.mode as string;
+
+        const where: any = {};
+        if (status) where.status = status;
+        if (mode) where.mode = mode;
+
+        const [games, total] = await Promise.all([
+            prisma.quizGame.findMany({
+                where,
+                include: {
+                    participants: {
+                        include: {
+                            user: { select: { id: true, email: true, username: true, name: true } }
+                        },
+                        orderBy: { createdAt: 'asc' }
+                    },
+                    level: {
+                        include: { module: { include: { course: true } } }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip
+            }),
+            prisma.quizGame.count({ where })
+        ]);
+
+        res.json({
+            data: games.map(g => ({
+                id: g.id,
+                mode: g.mode,
+                matchCode: g.matchCode,
+                status: g.status,
+                entryAmount: g.entryAmount,
+                platformFee: g.platformFee,
+                prizePool: g.prizePool,
+                maxPlayers: g.maxPlayers,
+                currentPlayers: g.participants.length,
+                creator: g.participants[0] ? {
+                    username: g.participants[0].user.username || g.participants[0].user.name,
+                    email: g.participants[0].user.email
+                } : null,
+                participants: g.participants.map(p => ({
+                    username: p.user.username || p.user.name,
+                    email: p.user.email,
+                    score: p.score,
+                    isWinner: p.isWinner,
+                    payout: p.payout,
+                    completed: !!p.completedAt
+                })),
+                course: g.level.module.course.name,
+                module: g.level.module.name,
+                level: g.level.name,
+                expiresAt: g.expiresAt,
+                createdAt: g.createdAt,
+                endedAt: g.endedAt
+            })),
+            meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Get full quiz transaction history (admin view)
+router.get('/quiz/history', async (req: AuthRequest, res, next) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 30;
+        const skip = (page - 1) * limit;
+
+        const [transactions, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where: { type: { in: ['QUIZ_ENTRY', 'QUIZ_WINNING'] } },
+                include: {
+                    user: { select: { email: true, username: true, name: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip
+            }),
+            prisma.transaction.count({ where: { type: { in: ['QUIZ_ENTRY', 'QUIZ_WINNING'] } } })
+        ]);
+
+        res.json({
+            data: transactions.map(t => ({
+                id: t.id,
+                type: t.type,
+                amount: t.amount,
+                status: t.status,
+                description: t.description,
+                userName: t.user.username || t.user.name,
+                userEmail: t.user.email,
+                createdAt: t.createdAt
+            })),
+            meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
         });
     } catch (error) {
         next(error);

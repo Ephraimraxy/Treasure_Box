@@ -17,6 +17,42 @@ interface Stats {
             investmentProfit: number;
         }
     };
+    quizStats?: {
+        pendingPool: number;
+        activeGames: number;
+        completedGames: number;
+    };
+}
+
+interface QuizGame {
+    id: string;
+    mode: 'SOLO' | 'DUEL' | 'LEAGUE';
+    matchCode?: string;
+    status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
+    entryAmount: number;
+    platformFee: number;
+    prizePool: number;
+    maxPlayers: number;
+    currentPlayers: number;
+    creator?: { username: string; email: string };
+    participants: { username: string; email: string; score: number; isWinner: boolean; payout: number }[];
+    course: string;
+    module: string;
+    level: string;
+    expiresAt?: string;
+    createdAt: string;
+    endedAt?: string;
+}
+
+interface QuizHistory {
+    id: string;
+    type: string;
+    amount: number;
+    status: string;
+    description: string;
+    userName: string;
+    userEmail: string;
+    createdAt: string;
 }
 
 interface Withdrawal {
@@ -128,8 +164,34 @@ export const AdminDashboardPage = () => {
                             <Clock className="text-amber-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Pending</div>
+                            <div className="text-xs text-slate-400">Pending Withdrawals</div>
                             <div className="text-lg font-bold text-white">{stats?.pendingWithdrawals || 0}</div>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-pink-900/40 to-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-pink-500/20 rounded-xl">
+                            <Activity className="text-pink-500" size={24} />
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-400">Quiz Pool (Locked)</div>
+                            <div className="text-lg font-bold text-white">
+                                <FormatCurrency amount={stats?.quizStats?.pendingPool || 0} />
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-cyan-900/40 to-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-cyan-500/20 rounded-xl">
+                            <TrendingUp className="text-cyan-500" size={24} />
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-400">Active Games</div>
+                            <div className="text-lg font-bold text-white">{stats?.quizStats?.activeGames || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -642,6 +704,228 @@ export const AdminAuditPage = () => {
                             </div>
                         </Card>
                     ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════
+//  ADMIN QUIZ PAGE
+// ═══════════════════════════════════════════════
+
+export const AdminQuizPage = () => {
+    const [view, setView] = useState<'games' | 'history'>('games');
+    const [games, setGames] = useState<QuizGame[]>([]);
+    const [history, setHistory] = useState<QuizHistory[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [meta, setMeta] = useState<any>({});
+    const [filterStatus, setFilterStatus] = useState('');
+
+    useEffect(() => {
+        if (view === 'games') fetchGames();
+        else fetchHistory();
+    }, [view, page, filterStatus]);
+
+    const fetchGames = async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getQuizGames(page, filterStatus);
+            setGames(res.data.data);
+            setMeta(res.data.meta);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getQuizHistory(page);
+            setHistory(res.data.data);
+            setMeta(res.data.meta);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Quiz Management</h2>
+                <div className="flex bg-slate-800 rounded-lg p-1">
+                    <button
+                        onClick={() => { setView('games'); setPage(1); }}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'games' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        Active Games
+                    </button>
+                    <button
+                        onClick={() => { setView('history'); setPage(1); }}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        Full History
+                    </button>
+                </div>
+            </div>
+
+            {view === 'games' && (
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 outline-none"
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="WAITING">Waiting</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="EXPIRED">Expired</option>
+                        </select>
+                    </div>
+
+                    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                                    <tr>
+                                        <th className="p-4">Game Info</th>
+                                        <th className="p-4">Creator</th>
+                                        <th className="p-4">Status</th>
+                                        <th className="p-4">Pool / Fee</th>
+                                        <th className="p-4">Participants</th>
+                                        <th className="p-4">Age</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800">
+                                    {loading ? (
+                                        <tr><td colSpan={6} className="p-8 text-center"><Spinner /></td></tr>
+                                    ) : games.length === 0 ? (
+                                        <tr><td colSpan={6} className="p-8 text-center text-slate-500">No games found</td></tr>
+                                    ) : (
+                                        games.map(game => (
+                                            <tr key={game.id} className="hover:bg-slate-800/30">
+                                                <td className="p-4">
+                                                    <div className="font-bold text-white text-sm">{game.mode}</div>
+                                                    <div className="text-xs text-slate-500 font-mono">{game.matchCode || '-'}</div>
+                                                    <div className="text-[10px] text-slate-400">{game.level}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    {game.creator ? (
+                                                        <>
+                                                            <div className="text-sm text-white">{game.creator.username}</div>
+                                                            <div className="text-xs text-slate-500">{game.creator.email}</div>
+                                                        </>
+                                                    ) : <span className="text-slate-500">-</span>}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold
+                                                        ${game.status === 'WAITING' ? 'bg-amber-500/20 text-amber-500' :
+                                                            game.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-500' :
+                                                                game.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
+                                                                    game.status === 'EXPIRED' ? 'bg-red-500/20 text-red-500' :
+                                                                        'bg-slate-700 text-slate-400'}`}>
+                                                        {game.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm font-medium text-white"><FormatCurrency amount={game.entryAmount * game.currentPlayers} /></div>
+                                                    <div className="text-xs text-indigo-400">Fee: <FormatCurrency amount={game.platformFee} /></div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-300">{game.currentPlayers} / {game.maxPlayers}</div>
+                                                </td>
+                                                <td className="p-4 text-xs text-slate-500">
+                                                    {new Date(game.createdAt).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {view === 'history' && (
+                <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                                <tr>
+                                    <th className="p-4">Date</th>
+                                    <th className="p-4">User</th>
+                                    <th className="p-4">Type</th>
+                                    <th className="p-4">Amount</th>
+                                    <th className="p-4">Description</th>
+                                    <th className="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                                {loading ? (
+                                    <tr><td colSpan={6} className="p-8 text-center"><Spinner /></td></tr>
+                                ) : history.length === 0 ? (
+                                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">No history found</td></tr>
+                                ) : (
+                                    history.map(item => (
+                                        <tr key={item.id} className="hover:bg-slate-800/30">
+                                            <td className="p-4 text-xs text-slate-400">
+                                                {new Date(item.createdAt).toLocaleString()}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="text-sm text-white">{item.userName}</div>
+                                                <div className="text-xs text-slate-500">{item.userEmail}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.type === 'QUIZ_WINNING' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-700 text-slate-400'}`}>
+                                                    {item.type.replace('QUIZ_', '')}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 font-bold text-white">
+                                                <FormatCurrency amount={item.amount} />
+                                            </td>
+                                            <td className="p-4 text-sm text-slate-300 truncate max-w-xs" title={item.description}>
+                                                {item.description}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="text-xs text-emerald-500 font-bold">{item.status}</span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {meta.totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                    <Button
+                        variant="ghost"
+                        disabled={page === 1}
+                        onClick={() => setPage(p => p - 1)}
+                    >
+                        Previous
+                    </Button>
+                    <span className="flex items-center text-sm text-slate-400">
+                        Page {page} of {meta.totalPages}
+                    </span>
+                    <Button
+                        variant="ghost"
+                        disabled={page === meta.totalPages}
+                        onClick={() => setPage(p => p + 1)}
+                    >
+                        Next
+                    </Button>
                 </div>
             )}
         </div>
