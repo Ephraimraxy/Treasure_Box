@@ -89,6 +89,7 @@ export const investmentApi = {
     getAll: () => api.get('/investments'),
     create: (amount: number, durationDays: number, bonusRate?: number) =>
         api.post('/investments', { amount, durationDays, bonusRate }),
+    withdraw: (id: string) => api.post(`/investments/${id}/withdraw`),
 };
 
 // Payment API (Paystack)

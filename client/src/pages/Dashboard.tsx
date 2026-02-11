@@ -182,31 +182,6 @@ export const DashboardPage = () => {
         }
     };
 
-    const handleInvest = async () => {
-        const amt = parseFloat(amount);
-        if (amt < MIN_INVESTMENT) {
-            addToast('error', `Minimum investment is ₦${MIN_INVESTMENT.toLocaleString()}`);
-            return;
-        }
-        if (amt > (user?.balance || 0)) {
-            addToast('error', 'Insufficient funds');
-            return;
-        }
-        setActionLoading(true);
-        try {
-            await investmentApi.create(amt, duration);
-            addToast('success', 'Investment created successfully!');
-            await refreshUser();
-            const invRes = await investmentApi.getAll();
-            setInvestments(invRes.data);
-            setActiveAction(null);
-            setAmount('');
-        } catch (error: any) {
-            addToast('error', error.response?.data?.error || 'Investment failed');
-        } finally {
-            setActionLoading(false);
-        }
-    };
 
     // --- PIN Handlers ---
 
@@ -255,8 +230,6 @@ export const DashboardPage = () => {
         }
     };
 
-    const investmentPlan = DURATIONS.find(d => d.days === duration);
-    const estimatedReturn = investmentPlan ? parseFloat(amount || '0') * (1 + investmentPlan.baseRate / 100) : 0;
 
     if (loading) {
         return <div className="flex items-center justify-center h-64"><Spinner /></div>;
@@ -388,7 +361,7 @@ export const DashboardPage = () => {
                     </button>
 
                     <button
-                        onClick={() => { setActiveAction('invest'); setAmount(''); }}
+                        onClick={() => navigate('/investments')}
                         className="flex items-center gap-3 p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all group text-left"
                     >
                         <div className="p-2 bg-amber-500 text-slate-900 rounded-lg group-hover:scale-110 transition-transform">
@@ -495,44 +468,6 @@ export const DashboardPage = () => {
                         </div>
                     )}
 
-                    {/* Investment Options */}
-                    {activeAction === 'invest' && (
-                        <div className="space-y-3">
-                            <label className="text-sm text-slate-300">Select Duration</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {DURATIONS.map((d) => (
-                                    <button
-                                        key={d.days}
-                                        onClick={() => setDuration(d.days)}
-                                        className={`p-2.5 rounded-lg border transition-all text-sm ${duration === d.days
-                                            ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold'
-                                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                                            }`}
-                                    >
-                                        {d.days} Days ({d.baseRate}%)
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Amount Input */}
-                    <Input
-                        label="Amount"
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="0.00"
-                        icon={<span>₦</span>}
-                    />
-
-                    {/* Investment Estimate */}
-                    {activeAction === 'invest' && amount && parseFloat(amount) >= MIN_INVESTMENT && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg flex justify-between items-center">
-                            <span className="text-xs text-emerald-400">Estimated Return</span>
-                            <span className="text-xl font-bold text-emerald-400"><FormatCurrency amount={estimatedReturn} /></span>
-                        </div>
-                    )}
 
                     {/* Withdrawal PIN & Bank Selection */}
                     {activeAction === 'withdraw' && (
@@ -585,7 +520,7 @@ export const DashboardPage = () => {
                     )}
 
                     <Button
-                        onClick={activeAction === 'deposit' ? handleDeposit : activeAction === 'withdraw' ? handleWithdraw : handleInvest}
+                        onClick={activeAction === 'deposit' ? handleDeposit : handleWithdraw}
                         disabled={actionLoading || !amount || (activeAction === 'withdraw' && !withdrawPin)}
                         className="w-full"
                     >

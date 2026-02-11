@@ -23,6 +23,7 @@ import { ServicesPage } from './pages/Services';
 import { ServicePaymentPage } from './pages/ServicePayment';
 import { ResearchServicesPage } from './pages/ResearchServices';
 import { ProfilePage } from './pages/Profile';
+import { InvestmentsPage } from './pages/Investments';
 import {
     AdminDashboardPage,
     AdminWithdrawalsPage,
@@ -91,6 +92,7 @@ const AppContent = () => {
                 <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
                 <Route path="/services/payment/:type" element={<ProtectedRoute><ServicePaymentPage /></ProtectedRoute>} />
                 <Route path="/research-services" element={<ProtectedRoute><ResearchServicesPage /></ProtectedRoute>} />
+                <Route path="/investments" element={<ProtectedRoute><InvestmentsPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
 
