@@ -24,6 +24,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         if (type && type !== 'all') {
             if (type === 'deposit') where.type = 'DEPOSIT';
             else if (type === 'withdrawal') where.type = 'WITHDRAWAL';
+            else if (type === 'referral') where.type = 'REFERRAL_BONUS';
             else if (type === 'investment') where.type = { contains: 'INVESTMENT' };
         }
 
