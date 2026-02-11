@@ -101,12 +101,32 @@ export const createCustomer = async (email: string, firstName: string, lastName:
     }
 };
 
+// Update existing Paystack Customer (ensure phone/name are synced)
+export const updateCustomer = async (customerCode: string, data: { first_name?: string; last_name?: string; phone?: string }) => {
+    try {
+        const response = await paystackApi.put(`/customer/${customerCode}`, data);
+        return response.data;
+    } catch (error: any) {
+        console.error("Update Customer Error", error.response?.data || error.message);
+        throw error;
+    }
+};
+
 // Create Dedicated Virtual Account
-export const createDedicatedAccount = async (customerCode: string, preferredBank?: string) => {
-    const response = await paystackApi.post('/dedicated_account', {
+export const createDedicatedAccount = async (
+    customerCode: string,
+    preferredBank?: string,
+    phone?: string,
+    country: string = 'NG'
+) => {
+    const payload: any = {
         customer: customerCode,
-        preferred_bank: preferredBank // e.g., "wema-bank"
-    });
+        preferred_bank: preferredBank, // e.g., "wema-bank"
+    };
+    if (phone) payload.phone = phone;
+    if (country) payload.country = country;
+
+    const response = await paystackApi.post('/dedicated_account', payload);
     return response.data;
 };
 

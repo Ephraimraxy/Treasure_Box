@@ -158,10 +158,17 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
                 transactionMeta.transferCode = transfer.data.transfer_code;
 
             } catch (error: any) {
-                console.error("Automated Withdrawal Error", error.response?.data || error);
+                // Log only safe info — never dump full Axios error (leaks secret keys in headers)
+                console.error("Automated Withdrawal Error", error.response?.data || error.message);
 
                 // Refund user
                 await prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } });
+
+                // Return the actual Paystack error message if available
+                const paystackMessage = error.response?.data?.message;
+                if (paystackMessage) {
+                    return res.status(400).json({ error: paystackMessage });
+                }
                 return res.status(500).json({ error: 'Withdrawal failed. Please try again or contact support.' });
             }
         }

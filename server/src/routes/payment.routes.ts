@@ -352,16 +352,21 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
                 data: { paystackCustomerCode: customerCode }
             });
         } else {
-            // Optional: Update existing customer if needed to reflect new name? 
-            // Paystack allows updating customer. For now, we assume if code exists, we use it.
-            // But if they changed username, we might want to update it. 
-            // However, Paystack Virtual Account might already be tied to the customer name at creation.
-            // Supporting name update on existing customer might be complex. Sticking to creation logic for now.
+            // Update existing Paystack customer to ensure phone/name are synced
+            try {
+                await paystackService.updateCustomer(customerCode, {
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: phone
+                });
+            } catch (updateErr: any) {
+                // Non-fatal: log but continue — customer might still work
+                console.error('Customer update warning:', updateErr.response?.data?.message || updateErr.message);
+            }
         }
 
         // 2. Create Dedicated Account
-        // Note: In production, you might want to let user choose bank, or default to 'wema-bank' or 'titan-paystack'
-        const dva = await paystackService.createDedicatedAccount(customerCode!, 'wema-bank');
+        const dva = await paystackService.createDedicatedAccount(customerCode!, 'wema-bank', phone);
 
         // 3. Save Virtual Account
         const savedAccount = await prisma.virtualAccount.create({
@@ -379,7 +384,8 @@ router.post('/virtual-account', authenticate, async (req: AuthRequest, res, next
         });
 
     } catch (error: any) {
-        console.error('Virtual Account Creation Error:', error);
+        // Log only safe info — never dump full Axios error (leaks secret keys in headers)
+        console.error('Virtual Account Creation Error:', error.response?.data || error.message);
         // Handle specific Paystack errors
         if (error.response?.data?.message) {
             return res.status(400).json({ error: error.response.data.message });
