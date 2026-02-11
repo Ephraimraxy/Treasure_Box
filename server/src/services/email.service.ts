@@ -137,7 +137,7 @@ export const sendWelcomeEmail = async (email: string, name?: string) => {
             .logo-icon { background: linear-gradient(135deg, #f59e0b, #ea580c); width: 60px; height: 60px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; }
             h1 { color: #fff; text-align: center; margin-bottom: 20px; }
             p { color: #94a3b8; line-height: 1.6; }
-            .feature { background: #0f172a; border-radius: 8px; padding: 15px; margin: 10px 0; }
+            .feature { background: #0f172a; border-radius: 8px; padding: 15px; margin: 10px 0; color: #fff; }
             .feature-title { color: #f59e0b; font-weight: bold; }
             .button { display: block; background: linear-gradient(135deg, #f59e0b, #ea580c); color: #0f172a !important; text-decoration: none; padding: 16px 32px; border-radius: 12px; text-align: center; font-weight: bold; margin: 30px 0; }
             .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; }
@@ -225,7 +225,7 @@ export const sendLoginAlertEmail = async (email: string, date: string, ip: strin
             .container { max-width: 500px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 40px; }
             h1 { color: #fff; text-align: center; margin-bottom: 20px; }
             p { color: #94a3b8; line-height: 1.6; }
-            .details { background: #0f172a; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #334155; }
+            .details { background: #0f172a; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #334155; color: #fff; }
             .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; }
             .warning { color: #f59e0b; font-size: 13px; margin-top: 15px; }
           </style>
