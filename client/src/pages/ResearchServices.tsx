@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     GraduationCap, BookOpen, Scroll, Building2, FileText, CheckCircle,
-    ChevronDown, ChevronUp, Upload, Shield, AlertCircle, Loader2
+    ChevronDown, ChevronUp, Upload, Shield, AlertCircle, Loader2, History, Plus, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -80,10 +80,13 @@ export const ResearchServicesPage = () => {
     const navigate = useNavigate();
 
     // -- State --
+    const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
     const [step, setStep] = useState<'role' | 'form' | 'success'>('role');
     const [selectedRole, setSelectedRole] = useState<string>('');
     const [expandedCategory, setExpandedCategory] = useState<string | null>('writing');
     const [loading, setLoading] = useState(false);
+    const [myRequests, setMyRequests] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -100,6 +103,18 @@ export const ResearchServicesPage = () => {
     });
 
     // -- Handlers --
+
+    const fetchHistory = async () => {
+        setHistoryLoading(true);
+        try {
+            const res = await researchApi.getRequests();
+            setMyRequests(res.data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     const handleRoleSelect = (roleId: string) => {
         setSelectedRole(roleId);
@@ -133,6 +148,7 @@ export const ResearchServicesPage = () => {
                 ...formData
             });
             setStep('success');
+            fetchHistory(); // Refresh history
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Submission failed');
@@ -144,12 +160,26 @@ export const ResearchServicesPage = () => {
     // -- Renderers --
 
     const renderHero = () => (
-        <div className="text-center py-10 px-4 relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 mb-8">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Research Services</h1>
-            <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                Professional academic and research support for students, scholars, researchers, and institutions.
-            </p>
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 mb-8 p-1">
+            <div className="flex gap-1">
+                <button
+                    onClick={() => setActiveTab('new')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl transition-all ${activeTab === 'new' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                >
+                    <Plus size={20} />
+                    <span className="font-bold">New Request</span>
+                </button>
+                <button
+                    onClick={() => {
+                        setActiveTab('history');
+                        fetchHistory();
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl transition-all ${activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                >
+                    <History size={20} />
+                    <span className="font-bold">My Requests</span>
+                </button>
+            </div>
         </div>
     );
 
@@ -402,12 +432,69 @@ export const ResearchServicesPage = () => {
         </div>
     );
 
+    const renderHistory = () => (
+        <div className="space-y-4 animate-fade-in">
+            <h2 className="text-xl font-bold text-white mb-6">Service Request History</h2>
+            {historyLoading ? (
+                <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" size={40} /></div>
+            ) : myRequests.length === 0 ? (
+                <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800">
+                    <History className="mx-auto text-slate-700 mb-4" size={48} />
+                    <p className="text-slate-500 font-medium">No research requests found.</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {myRequests.map((req) => (
+                        <Card key={req.id} className="border-slate-800 bg-slate-900 hover:border-slate-700 transition-colors">
+                            <div className="flex flex-col md:flex-row justify-between gap-4">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.status === 'PENDING' ? 'bg-amber-500/20 text-amber-500' :
+                                            req.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
+                                                req.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-500' :
+                                                    'bg-blue-500/20 text-blue-500'
+                                            }`}>
+                                            {req.status}
+                                        </div>
+                                        <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <h3 className="text-white font-bold">{req.specificService}</h3>
+                                    <p className="text-sm text-slate-400 line-clamp-2">{req.description}</p>
+                                </div>
+                                <div className="md:text-right space-y-2">
+                                    <div className="text-sm font-medium text-slate-300">₦{(req.quoteAmount || 0).toLocaleString()}</div>
+                                    {req.deliveryUrl && (
+                                        <a href={req.deliveryUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm font-bold">
+                                            Download Deliverable <ExternalLink size={14} />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                            {req.adminNotes && (
+                                <div className="mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700 text-xs text-slate-400">
+                                    <span className="font-bold text-slate-200 block mb-1">Admin Response:</span>
+                                    {req.adminNotes}
+                                </div>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-20">
             {renderHero()}
-            {step === 'role' && renderRoleSelection()}
-            {step === 'form' && renderForm()}
-            {step === 'success' && renderSuccess()}
+            {activeTab === 'new' ? (
+                <>
+                    {step === 'role' && renderRoleSelection()}
+                    {step === 'form' && renderForm()}
+                    {step === 'success' && renderSuccess()}
+                </>
+            ) : (
+                renderHistory()
+            )}
 
             <div className="text-center text-xs text-slate-500 mt-12 pb-4">
                 © {new Date().getFullYear()} Research Office. All rights reserved.

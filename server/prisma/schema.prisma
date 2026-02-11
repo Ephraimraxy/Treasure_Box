@@ -316,6 +316,12 @@ model ResearchRequest {
   // Status
   status          ResearchStatus @default(PENDING)
   
+  // Admin & Payout Fields
+  adminNotes      String?        @db.Text
+  quoteAmount     Float?         @default(0)
+  isPaid          Boolean        @default(false)
+  deliveryUrl     String?        // Final deliverable link
+
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }

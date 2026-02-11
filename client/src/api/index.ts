@@ -131,6 +131,8 @@ export const adminApi = {
     },
     getQuizHistory: (page?: number) =>
         api.get(`/admin/quiz/history?page=${page || 1}`),
+    getResearchRequests: () => api.get('/research/admin/requests'),
+    updateResearchRequest: (id: string, data: any) => api.patch(`/research/admin/requests/${id}`, data),
 };
 
 // Quiz API

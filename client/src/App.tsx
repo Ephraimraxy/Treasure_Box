@@ -30,7 +30,8 @@ import {
     AdminUsersPage,
     AdminAuditPage,
     AdminSettingsPage,
-    AdminQuizPage
+    AdminQuizPage,
+    AdminResearchPage
 } from './pages/Admin';
 import { KYCPage } from './pages/KYC';
 
@@ -103,6 +104,7 @@ const AppContent = () => {
                 <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>} />
                 <Route path="/admin/audit" element={<ProtectedRoute adminOnly><AdminAuditPage /></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>} />
+                <Route path="/admin/research" element={<ProtectedRoute adminOnly><AdminResearchPage /></ProtectedRoute>} />
 
                 {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />

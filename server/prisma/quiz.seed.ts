@@ -30,6 +30,106 @@ interface CourseSeed {
 
 const QUIZ_DATA: CourseSeed[] = [
     {
+        name: 'Faculty of Law',
+        description: 'Comprehensive study of legal systems, jurisprudence, and Nigerian Law.',
+        icon: '⚖️',
+        modules: [
+            {
+                name: 'Jurisprudence & Legal Theory',
+                description: 'Theoretical study of law.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            },
+            {
+                name: 'Criminal Law',
+                description: 'Laws relating to crime and punishment.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            }
+        ]
+    },
+    {
+        name: 'Faculty of Health Sciences',
+        description: 'Medicine, Pharmacy, Nursing, and Medical Laboratory Sciences.',
+        icon: '🏥',
+        modules: [
+            {
+                name: 'Human Anatomy',
+                description: 'Study of the structure of the human body.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            },
+            {
+                name: 'Medical Biochemistry',
+                description: 'Chemical processes within and relating to living organisms.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            }
+        ]
+    },
+    {
+        name: 'Faculty of Engineering',
+        description: 'Civil, Mechanical, Electrical, and Computer Engineering.',
+        icon: '⚙️',
+        modules: [
+            {
+                name: 'Computer Engineering',
+                description: 'Design and analysis of computer systems.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            },
+            {
+                name: 'Electrical Engineering',
+                description: 'Electricity, electronics, and electromagnetism.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            }
+        ]
+    },
+    {
+        name: 'Faculty of Science',
+        description: 'Biological Sciences, Chemistry, Physics, and Mathematics.',
+        icon: '🧪',
+        modules: [
+            {
+                name: 'Computer Science',
+                description: 'Theory and engineering of computers.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            },
+            {
+                name: 'Mathematics',
+                description: 'Logic of shape, quantity, and arrangement.',
+                levels: [
+                    { level: 1, name: '100 Level', questions: [] },
+                    { level: 2, name: '200 Level', questions: [] },
+                    { level: 3, name: '300-400 Level', questions: [] }
+                ]
+            }
+        ]
+    },
+    {
         name: 'General Knowledge',
         description: 'Test your knowledge on various topics',
         icon: '🧠',

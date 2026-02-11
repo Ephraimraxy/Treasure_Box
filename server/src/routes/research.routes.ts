@@ -77,4 +77,55 @@ router.get('/requests', authenticate, async (req: AuthRequest, res, next) => {
     }
 });
 
+// --- ADMIN ENDPOINTS ---
+
+// Admin: Get all research requests
+router.get('/admin/requests', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        if (req.user!.role !== 'ADMIN') return res.status(403).json({ error: 'Admin only' });
+
+        const requests = await prisma.researchRequest.findMany({
+            include: { user: { select: { id: true, name: true, email: true, username: true } } },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(requests);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Admin: Update research request status or add quote/delivery
+router.patch('/admin/requests/:id', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        if (req.user!.role !== 'ADMIN') return res.status(403).json({ error: 'Admin only' });
+
+        const { id } = req.params;
+        const { status, adminNotes, quoteAmount, deliveryUrl } = req.body;
+
+        const request = await prisma.researchRequest.update({
+            where: { id },
+            data: {
+                status,
+                adminNotes,
+                quoteAmount: quoteAmount ? parseFloat(quoteAmount) : undefined,
+                deliveryUrl
+            }
+        });
+
+        // Notify user of update
+        await prisma.notification.create({
+            data: {
+                userId: request.userId,
+                title: 'Research Request Update',
+                message: `Your research request status has been updated to: ${status}`,
+                type: 'INFO'
+            }
+        });
+
+        res.json(request);
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default router;

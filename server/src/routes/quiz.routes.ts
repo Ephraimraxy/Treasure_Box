@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { QuizService, GeneratedQuestion } from '../services/quiz.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -131,39 +132,15 @@ router.post('/solo/start', authenticate, async (req: AuthRequest, res, next) => 
             const isPinValid = await bcrypt.compare(pin, user.transactionPin);
             if (!isPinValid) throw new Error('Invalid PIN');
 
-            // Check level exists and has questions
+            // Check level exists
             const level = await prisma.quizLevel.findUnique({
                 where: { id: levelId },
-                include: { _count: { select: { questions: true } } }
+                include: { module: { include: { course: true } } }
             });
             if (!level) throw new Error('Level not found');
-            if (level._count.questions < 5) throw new Error('Not enough questions in this level');
 
-            // Get random questions (function uses prisma, so we can pass tx prisma if needed, but simpler to keep read outside or just use global prisma for read is 'okay', but for strict consistency use tx. Note: getRandomQuestions is a helper. Let's inline or accept prisma arg?
-            // Actually, for questions read it's fine to be outside or global. 
-            // But let's keep reads inside if possible for snapshot consistency, though less critical here.
-            // Using global prisma inside tx callback is bad practice. We should use `prisma` (tx).
-            // I'll reimplement random fetch using `prisma` (tx).
-
-            const questions = await prisma.quizQuestion.findMany({
-                where: { levelId },
-                select: {
-                    id: true,
-                    question: true,
-                    optionA: true,
-                    optionB: true,
-                    correctOption: true,
-                    timeLimit: true
-                }
-            });
-
-            // Shuffle
-            const shuffled = questions.sort(() => Math.random() - 0.5);
-            const selected = shuffled.slice(0, 10);
-
-            if (selected.length < 5) throw new Error('Not enough questions available');
-
-            const questionIds = selected.map(q => q.id);
+            // GENERATE AI QUESTIONS (Unpredictable, Encrypted, Admin-Proof)
+            const questions = await QuizService.generateQuestions(req.user!.id, levelId, 10);
 
             // Debit user
             await prisma.user.update({
@@ -178,7 +155,7 @@ router.post('/solo/start', authenticate, async (req: AuthRequest, res, next) => 
                     type: 'QUIZ_ENTRY',
                     amount: entryAmount,
                     status: 'SUCCESS',
-                    description: `Solo Challenge Entry - ${level.name}`
+                    description: `AI Arena Entry - ${level.module.course.name} [${level.name}]`
                 }
             });
 
@@ -190,7 +167,7 @@ router.post('/solo/start', authenticate, async (req: AuthRequest, res, next) => 
                     entryAmount,
                     status: 'IN_PROGRESS',
                     maxPlayers: 1,
-                    questionIds: questionIds,
+                    questionIds: JSON.stringify(questions), // Store full encrypted question data
                     startedAt: new Date(),
                     participants: {
                         create: {
@@ -200,10 +177,10 @@ router.post('/solo/start', authenticate, async (req: AuthRequest, res, next) => 
                 }
             });
 
-            return { game, questions: selected };
+            return { game, questions };
         });
 
-        // Return questions WITHOUT correct answers
+        // Return questions WITHOUT hashes (client only gets question/options)
         const safeQuestions = result.questions.map(q => ({
             id: q.id,
             question: q.question,
@@ -251,18 +228,19 @@ router.post('/solo/submit', authenticate, async (req: AuthRequest, res, next) =>
         if (!participant) return res.status(403).json({ error: 'You are not in this game' });
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
-        // Score the answers (Read-only, can be outside transaction or inside. Inside ensures question consistency if valid)
-        const questionIds = answers.map((a: any) => a.questionId);
-        const questions = await prisma.quizQuestion.findMany({
-            where: { id: { in: questionIds } }
-        });
-
+        // Score the answers using AI Encryption Verification
+        const questionsJson = game.questionIds as string;
+        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
         const questionMap = new Map(questions.map(q => [q.id, q]));
+
         let score = 0;
         const gradedAnswers = answers.map((a: any) => {
             const question = questionMap.get(a.questionId);
-            const isCorrect = question?.correctOption === a.answer;
+            if (!question) return { questionId: a.questionId, answer: a.answer, correct: false, timeTaken: a.timeTaken || 0 };
+
+            const isCorrect = QuizService.verifyAnswer(a.questionId, a.answer, question.correctOptionHash);
             if (isCorrect) score++;
+
             return {
                 questionId: a.questionId,
                 answer: a.answer,
@@ -271,7 +249,7 @@ router.post('/solo/submit', authenticate, async (req: AuthRequest, res, next) =>
             };
         });
 
-        const totalQuestions = answers.length;
+        const totalQuestions = questions.length;
         const isPerfect = score === totalQuestions;
 
         // Transaction for writes
@@ -394,22 +372,15 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
             const isPinValid = await bcrypt.compare(pin, user.transactionPin);
             if (!isPinValid) throw new Error('Invalid PIN');
 
+            // Check level exists
             const level = await prisma.quizLevel.findUnique({
                 where: { id: levelId },
-                include: { _count: { select: { questions: true } } }
+                include: { module: { include: { course: true } } }
             });
             if (!level) throw new Error('Level not found');
-            if (level._count.questions < 5) throw new Error('Not enough questions');
 
-            // Get questions
-            const questions = await prisma.quizQuestion.findMany({
-                where: { levelId },
-                select: { id: true, question: true, optionA: true, optionB: true, correctOption: true, timeLimit: true }
-            });
-            const shuffled = questions.sort(() => Math.random() - 0.5);
-            const selected = shuffled.slice(0, 10);
-            if (selected.length < 5) throw new Error('Not enough questions');
-            const questionIds = selected.map(q => q.id);
+            // GENERATE AI QUESTIONS
+            const questions = await QuizService.generateQuestions(req.user!.id, levelId, 10);
 
             // Debit creator
             await prisma.user.update({
@@ -422,7 +393,7 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
                     type: 'QUIZ_ENTRY',
                     amount: entryAmount,
                     status: 'SUCCESS',
-                    description: `Duel Match Entry - ${level.name}`
+                    description: `AI Duel Entry - ${level.module.course.name}`
                 }
             });
 
@@ -437,7 +408,7 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
                     status: 'WAITING',
                     matchCode,
                     maxPlayers: 2,
-                    questionIds,
+                    questionIds: JSON.stringify(questions),
                     expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
@@ -522,13 +493,19 @@ router.post('/duel/join', authenticate, async (req: AuthRequest, res, next) => {
             });
 
             // Return questions for response
-            const questionIds = game.questionIds as string[];
-            const questions = await prisma.quizQuestion.findMany({
-                where: { id: { in: questionIds } },
-                select: { id: true, question: true, optionA: true, optionB: true, timeLimit: true }
-            });
+            const questionsJson = game.questionIds as string;
+            const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
 
-            return { game, questions };
+            // Remove hashes from client response
+            const safeQuestions = questions.map(q => ({
+                id: q.id,
+                question: q.question,
+                optionA: q.optionA,
+                optionB: q.optionB,
+                timeLimit: q.timeLimit
+            }));
+
+            return { game, questions: safeQuestions };
         });
 
         res.json({
@@ -571,16 +548,16 @@ router.post('/duel/submit', authenticate, async (req: AuthRequest, res, next) =>
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
         // Grade answers
-        const questionIds = answers.map((a: any) => a.questionId);
-        const questions = await prisma.quizQuestion.findMany({
-            where: { id: { in: questionIds } }
-        });
+        const questionsJson = game.questionIds as string;
+        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
         const questionMap = new Map(questions.map(q => [q.id, q]));
 
         let score = 0;
         const gradedAnswers = answers.map((a: any) => {
             const q = questionMap.get(a.questionId);
-            const correct = q?.correctOption === a.answer;
+            if (!q) return { questionId: a.questionId, answer: a.answer, correct: false, timeTaken: a.timeTaken || 0 };
+
+            const correct = QuizService.verifyAnswer(a.questionId, a.answer, q.correctOptionHash);
             if (correct) score++;
             return { questionId: a.questionId, answer: a.answer, correct, timeTaken: a.timeTaken || 0 };
         });
@@ -599,7 +576,7 @@ router.post('/duel/submit', authenticate, async (req: AuthRequest, res, next) =>
             // Update participant
             await prisma.quizParticipant.update({
                 where: { id: participant.id },
-                data: { score, totalTime: totalTime || 0, answers: gradedAnswers, completedAt: new Date() }
+                data: { score, totalTime: totalTime || 0, answers: JSON.stringify(gradedAnswers), completedAt: new Date() }
             });
 
             // Check if both players have submitted
@@ -776,22 +753,15 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
             const isPinValid = await bcrypt.compare(pin, user.transactionPin);
             if (!isPinValid) throw new Error('Invalid PIN');
 
+            // Check level exists
             const level = await prisma.quizLevel.findUnique({
                 where: { id: levelId },
-                include: { _count: { select: { questions: true } } }
+                include: { module: { include: { course: true } } }
             });
             if (!level) throw new Error('Level not found');
-            if (level._count.questions < 5) throw new Error('Not enough questions');
 
-            // Get questions
-            const questions = await prisma.quizQuestion.findMany({
-                where: { levelId },
-                select: { id: true, question: true, optionA: true, optionB: true, correctOption: true, timeLimit: true }
-            });
-            const shuffled = questions.sort(() => Math.random() - 0.5);
-            const selected = shuffled.slice(0, 15);
-            if (selected.length < 5) throw new Error('Not enough questions');
-            const questionIds = selected.map(q => q.id);
+            // GENERATE AI QUESTIONS
+            const questions = await QuizService.generateQuestions(req.user!.id, levelId, 11); // 1 extra for tie-breaker potential
 
             // Debit creator
             await prisma.user.update({
@@ -804,12 +774,12 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
                     type: 'QUIZ_ENTRY',
                     amount: entryAmount,
                     status: 'SUCCESS',
-                    description: `League Arena Entry - ${level.name}`
+                    description: `AI League Entry - ${level.module.course.name}`
                 }
             });
 
             const matchCode = generateMatchCode();
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24hrs
+            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48hrs
             const game = await prisma.quizGame.create({
                 data: {
                     mode: 'LEAGUE',
@@ -818,14 +788,13 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
                     status: 'WAITING',
                     matchCode,
                     maxPlayers,
-                    questionIds,
+                    questionIds: JSON.stringify(questions),
                     expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
                     }
                 }
             });
-
             return { game, matchCode };
         });
 
@@ -958,16 +927,20 @@ router.post('/league/start', authenticate, async (req: AuthRequest, res, next) =
             data: { status: 'IN_PROGRESS', startedAt: new Date() }
         });
 
-        // Return questions
-        const questionIds = game.questionIds as string[];
-        const questions = await prisma.quizQuestion.findMany({
-            where: { id: { in: questionIds } },
-            select: { id: true, question: true, optionA: true, optionB: true, timeLimit: true }
-        });
+        // Return questions (Safe version)
+        const questionsJson = game.questionIds as string;
+        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+        const safeQuestions = questions.map(q => ({
+            id: q.id,
+            question: q.question,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            timeLimit: q.timeLimit
+        }));
 
         res.json({
             gameId: game.id,
-            questions,
+            questions: safeQuestions,
             playerCount: game.participants.length,
             message: 'League started!'
         });
@@ -995,17 +968,17 @@ router.post('/league/submit', authenticate, async (req: AuthRequest, res, next) 
         if (!participant) return res.status(403).json({ error: 'Not in this game' });
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
-        // Grade
-        const questionIds = answers.map((a: any) => a.questionId);
-        const questions = await prisma.quizQuestion.findMany({
-            where: { id: { in: questionIds } }
-        });
+        // Grade using AI verification
+        const questionsJson = game.questionIds as string;
+        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
         const qMap = new Map(questions.map(q => [q.id, q]));
 
         let score = 0;
         const graded = answers.map((a: any) => {
             const q = qMap.get(a.questionId);
-            const correct = q?.correctOption === a.answer;
+            if (!q) return { questionId: a.questionId, answer: a.answer, correct: false, timeTaken: a.timeTaken || 0 };
+
+            const correct = QuizService.verifyAnswer(a.questionId, a.answer, q.correctOptionHash);
             if (correct) score++;
             return { questionId: a.questionId, answer: a.answer, correct, timeTaken: a.timeTaken || 0 };
         });
@@ -1024,7 +997,7 @@ router.post('/league/submit', authenticate, async (req: AuthRequest, res, next) 
             // Update participant
             await prisma.quizParticipant.update({
                 where: { id: participant.id },
-                data: { score, totalTime: totalTime || 0, answers: graded, completedAt: new Date() }
+                data: { score, totalTime: totalTime || 0, answers: JSON.stringify(graded), completedAt: new Date() }
             });
 
             // Check if all done

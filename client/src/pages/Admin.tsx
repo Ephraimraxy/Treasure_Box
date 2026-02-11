@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2 } from 'lucide-react';
 import { adminApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
@@ -1093,5 +1093,252 @@ export const AdminSettingsPage = () => {
                 </Button>
             </div>
         </div >
+    );
+};
+
+// ═══════════════════════════════════════════════
+//  RESEARCH TYPES
+// ═══════════════════════════════════════════════
+
+interface ResearchRequest {
+    id: string;
+    userId: string;
+    fullName: string;
+    email: string;
+    role: string;
+    institution?: string;
+    serviceCategory: string;
+    specificService: string;
+    researchLevel: string;
+    discipline: string;
+    description: string;
+    preferredDate?: string;
+    urgency: string;
+    attachmentUrl?: string;
+    status: string;
+    adminNotes?: string;
+    quoteAmount?: number;
+    deliveryUrl?: string;
+    createdAt: string;
+    user: {
+        username: string;
+        email: string;
+    }
+}
+
+// ═══════════════════════════════════════════════
+//  ADMIN RESEARCH MANAGEMENT
+// ═══════════════════════════════════════════════
+
+export const AdminResearchPage = () => {
+    const [requests, setRequests] = useState<ResearchRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedRequest, setSelectedRequest] = useState<ResearchRequest | null>(null);
+    const [updateModalOpen, setUpdateModalOpen] = useState(false);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const { addToast } = useToast();
+
+    // Update Form State
+    const [updateForm, setUpdateForm] = useState({
+        status: '',
+        adminNotes: '',
+        quoteAmount: '0',
+        deliveryUrl: ''
+    });
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getResearchRequests();
+            setRequests(res.data);
+        } catch (error) {
+            console.error(error);
+            addToast('error', 'Failed to fetch research requests');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    const handleUpdateClick = (req: ResearchRequest) => {
+        setSelectedRequest(req);
+        setUpdateForm({
+            status: req.status,
+            adminNotes: req.adminNotes || '',
+            quoteAmount: (req.quoteAmount || 0).toString(),
+            deliveryUrl: req.deliveryUrl || ''
+        });
+        setUpdateModalOpen(true);
+    };
+
+    const handleSaveUpdate = async () => {
+        if (!selectedRequest) return;
+        setUpdateLoading(true);
+        try {
+            await adminApi.updateResearchRequest(selectedRequest.id, {
+                ...updateForm,
+                quoteAmount: parseFloat(updateForm.quoteAmount)
+            });
+            addToast('success', 'Request updated successfully');
+            setUpdateModalOpen(false);
+            fetchRequests();
+        } catch (error) {
+            console.error(error);
+            addToast('error', 'Update failed');
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+
+    if (loading) return <div className="flex justify-center p-20"><Spinner /></div>;
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-white mb-1">Research Services Management</h1>
+                    <p className="text-slate-400 text-sm">Review, quote, and deliver academic research requests.</p>
+                </div>
+                <Button onClick={fetchRequests} variant="secondary" className="gap-2">
+                    <Activity size={16} /> Refresh
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+                {requests.length === 0 ? (
+                    <Card className="text-center py-20 border-slate-800 bg-slate-900">
+                        <FileText className="mx-auto text-slate-700 mb-4" size={48} />
+                        <p className="text-slate-500">No research requests found.</p>
+                    </Card>
+                ) : (
+                    requests.map((req) => (
+                        <Card key={req.id} className="border-slate-800 bg-slate-900 border-l-4 border-l-indigo-500">
+                            <div className="flex flex-col md:flex-row justify-between gap-6">
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.status === 'PENDING' ? 'bg-amber-500/20 text-amber-500' :
+                                                req.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
+                                                    req.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-500' :
+                                                        'bg-blue-500/20 text-blue-500'
+                                            }`}>
+                                            {req.status}
+                                        </div>
+                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.urgency === 'Urgent' ? 'bg-rose-500/20 text-rose-500' : 'bg-slate-800 text-slate-400'
+                                            }`}>
+                                            {req.urgency}
+                                        </div>
+                                        <span className="text-[10px] text-slate-500">{new Date(req.createdAt).toLocaleString()}</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-bold text-lg">{req.specificService}</h3>
+                                        <div className="flex items-center gap-2 text-xs text-indigo-400 font-medium">
+                                            <Users size={12} /> {req.fullName} • {req.user.username || req.email}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-400 leading-relaxed bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 italic">
+                                        "{req.description}"
+                                    </p>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">Category</div>
+                                            <div className="text-xs text-slate-300">{req.serviceCategory}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">Discipline</div>
+                                            <div className="text-xs text-slate-300">{req.discipline}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">Role</div>
+                                            <div className="text-xs text-slate-300">{req.role}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">Preferred Date</div>
+                                            <div className="text-xs text-slate-300">{req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="md:w-64 space-y-4 md:border-l md:border-slate-800 md:pl-6 flex flex-col justify-between">
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-950 rounded-xl p-4 border border-slate-800">
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Quote Amount</div>
+                                            <div className="text-xl font-bold text-white font-mono">₦{req.quoteAmount?.toLocaleString()}</div>
+                                        </div>
+                                        {req.attachmentUrl && (
+                                            <a href={req.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-amber-500 hover:text-amber-400 font-bold p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 transition-colors">
+                                                <Download size={14} /> View Supporting Doc
+                                            </a>
+                                        )}
+                                    </div>
+                                    <Button onClick={() => handleUpdateClick(req)} className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2">
+                                        <Edit3 size={16} /> Manage Request
+                                    </Button>
+                                </div>
+                            </div>
+                            {req.adminNotes && (
+                                <div className="mt-4 p-3 bg-slate-800 text-xs text-slate-300 rounded border border-slate-700">
+                                    <span className="font-bold text-slate-500 block mb-1">ADMIN NOTES</span>
+                                    {req.adminNotes}
+                                </div>
+                            )}
+                        </Card>
+                    ))
+                )}
+            </div>
+
+            <Modal isOpen={updateModalOpen} onClose={() => setUpdateModalOpen(false)} title="Manage Research Request">
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Update Status</label>
+                        <select
+                            value={updateForm.status}
+                            onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"
+                        >
+                            <option value="PENDING">Pending Review</option>
+                            <option value="REVIEWING">Reviewing</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+
+                    <Input
+                        label="Service Quote (₦)"
+                        type="number"
+                        value={updateForm.quoteAmount}
+                        onChange={(e) => setUpdateForm({ ...updateForm, quoteAmount: e.target.value })}
+                        placeholder="Cost of service"
+                    />
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Admin Feedback / Notes</label>
+                        <textarea
+                            value={updateForm.adminNotes}
+                            onChange={(e) => setUpdateForm({ ...updateForm, adminNotes: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 min-h-[100px]"
+                            placeholder="Response to user..."
+                        />
+                    </div>
+
+                    <Input
+                        label="Delivery / Download URL"
+                        value={updateForm.deliveryUrl}
+                        onChange={(e) => setUpdateForm({ ...updateForm, deliveryUrl: e.target.value })}
+                        placeholder="Link to final document/result"
+                    />
+
+                    <div className="flex gap-3 pt-4 border-t border-slate-800 mt-4">
+                        <Button variant="secondary" onClick={() => setUpdateModalOpen(false)} className="flex-1">Cancel</Button>
+                        <Button onClick={handleSaveUpdate} disabled={updateLoading} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+                            {updateLoading ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+        </div>
     );
 };

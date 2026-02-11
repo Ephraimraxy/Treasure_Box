@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box } from 'lucide-react';
+import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui';
 
@@ -18,6 +18,7 @@ const adminNavItems = [
     { to: '/admin/withdrawals', icon: ArrowUpDown, label: 'Approvals' },
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/settings', icon: Settings, label: 'System' },
+    { to: '/admin/research', icon: Search, label: 'Research' },
     { to: '/admin/audit', icon: FileClock, label: 'Audit Logs' },
 ];
 
