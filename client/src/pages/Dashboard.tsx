@@ -402,32 +402,6 @@ export const DashboardPage = () => {
                 </div>
             </div>
 
-            {/* Secondary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-slate-900/50 border-slate-800">
-                    <div className="text-xs text-slate-400 mb-1">Total Invested</div>
-                    <div className="text-lg font-bold text-white"><FormatCurrency amount={totalInvested} /></div>
-                </Card>
-                <Card className="bg-slate-900/50 border-slate-800">
-                    <div className="text-xs text-slate-400 mb-1">Active Plans</div>
-                    <div className="text-lg font-bold text-white">{activeInvestments.length}</div>
-                </Card>
-                <Card className="bg-slate-900/50 border-slate-800">
-                    <div className="text-xs text-slate-400 mb-1">Referral Code</div>
-                    <div className="text-lg font-bold text-white font-mono flex items-center justify-between">
-                        {user?.referralCode}
-                        <button onClick={() => { navigator.clipboard.writeText(user?.referralCode || ''); addToast('info', 'Copied'); }} className="text-slate-500 hover:text-white">
-                            <Copy size={14} />
-                        </button>
-                    </div>
-                </Card>
-                <Card className="bg-slate-900/50 border-slate-800">
-                    <div className="text-xs text-slate-400 mb-1">KYC Status</div>
-                    <div className={`text-lg font-bold ${user?.kycVerified ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        {user?.kycVerified ? 'Verified' : 'Pending'}
-                    </div>
-                </Card>
-            </div>
 
             {/* Featured Carousel */}
             <FeaturedCarousel />
