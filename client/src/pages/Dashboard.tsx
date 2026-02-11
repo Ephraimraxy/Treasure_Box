@@ -98,8 +98,6 @@ export const DashboardPage = () => {
         fetchData();
     }, []);
 
-    const activeInvestments = investments.filter(i => i.status === 'ACTIVE');
-    const totalInvested = activeInvestments.reduce((sum, i) => sum + i.principal, 0);
 
     // --- Action Handlers ---
 
@@ -379,37 +377,8 @@ export const DashboardPage = () => {
             {/* Featured Carousel */}
             <FeaturedCarousel />
 
-            {/* Content Section: Transactions & Investments */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Active Investments List */}
-                <Card>
-                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                        <Activity size={18} className="text-amber-500" /> Active Investments
-                    </h3>
-                    <div className="space-y-2">
-                        {activeInvestments.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-4">No active investments</p>
-                        ) : (
-                            activeInvestments.map(inv => {
-                                const maturity = new Date(inv.maturityDate);
-                                const daysLeft = Math.max(0, Math.ceil((maturity.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-                                return (
-                                    <div key={inv.id} className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex justify-between items-center">
-                                        <div>
-                                            <div className="font-bold text-white"><FormatCurrency amount={inv.principal} /></div>
-                                            <div className="text-xs text-slate-400">{inv.durationDays} days @ {(inv.baseRate + inv.bonusRate)}%</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs font-bold text-amber-500">{daysLeft}d left</div>
-                                            <div className="text-[10px] text-slate-500">{maturity.toLocaleDateString()}</div>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        )}
-                    </div>
-                </Card>
-
+            {/* Content Section: Recent Transactions */}
+            <div className="max-w-3xl mx-auto w-full">
                 {/* Recent Transactions */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
