@@ -167,7 +167,7 @@ router.post('/solo/start', authenticate, async (req: AuthRequest, res, next) => 
                     entryAmount,
                     status: 'IN_PROGRESS',
                     maxPlayers: 1,
-                    questionIds: JSON.stringify(questions), // Store full encrypted question data
+                    questionIds: questions as any, // Store full encrypted question data
                     startedAt: new Date(),
                     participants: {
                         create: {
@@ -229,8 +229,7 @@ router.post('/solo/submit', authenticate, async (req: AuthRequest, res, next) =>
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
         // Score the answers using AI Encryption Verification
-        const questionsJson = game.questionIds as string;
-        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+        const questions = game.questionIds as any as GeneratedQuestion[];
         const questionMap = new Map(questions.map(q => [q.id, q]));
 
         let score = 0;
@@ -408,7 +407,7 @@ router.post('/duel/create', authenticate, async (req: AuthRequest, res, next) =>
                     status: 'WAITING',
                     matchCode,
                     maxPlayers: 2,
-                    questionIds: JSON.stringify(questions),
+                    questionIds: questions as any,
                     expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
@@ -493,8 +492,7 @@ router.post('/duel/join', authenticate, async (req: AuthRequest, res, next) => {
             });
 
             // Return questions for response
-            const questionsJson = game.questionIds as string;
-            const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+            const questions = game.questionIds as any as GeneratedQuestion[];
 
             // Remove hashes from client response
             const safeQuestions = questions.map(q => ({
@@ -548,8 +546,7 @@ router.post('/duel/submit', authenticate, async (req: AuthRequest, res, next) =>
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
         // Grade answers
-        const questionsJson = game.questionIds as string;
-        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+        const questions = game.questionIds as any as GeneratedQuestion[];
         const questionMap = new Map(questions.map(q => [q.id, q]));
 
         let score = 0;
@@ -576,7 +573,7 @@ router.post('/duel/submit', authenticate, async (req: AuthRequest, res, next) =>
             // Update participant
             await prisma.quizParticipant.update({
                 where: { id: participant.id },
-                data: { score, totalTime: totalTime || 0, answers: JSON.stringify(gradedAnswers), completedAt: new Date() }
+                data: { score, totalTime: totalTime || 0, answers: gradedAnswers as any, completedAt: new Date() }
             });
 
             // Check if both players have submitted
@@ -788,7 +785,7 @@ router.post('/league/create', authenticate, async (req: AuthRequest, res, next) 
                     status: 'WAITING',
                     matchCode,
                     maxPlayers,
-                    questionIds: JSON.stringify(questions),
+                    questionIds: questions as any,
                     expiresAt,
                     participants: {
                         create: { userId: req.user!.id }
@@ -928,8 +925,7 @@ router.post('/league/start', authenticate, async (req: AuthRequest, res, next) =
         });
 
         // Return questions (Safe version)
-        const questionsJson = game.questionIds as string;
-        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+        const questions = game.questionIds as any as GeneratedQuestion[];
         const safeQuestions = questions.map(q => ({
             id: q.id,
             question: q.question,
@@ -969,8 +965,7 @@ router.post('/league/submit', authenticate, async (req: AuthRequest, res, next) 
         if (participant.completedAt) return res.status(400).json({ error: 'Already submitted' });
 
         // Grade using AI verification
-        const questionsJson = game.questionIds as string;
-        const questions: GeneratedQuestion[] = JSON.parse(questionsJson);
+        const questions = game.questionIds as any as GeneratedQuestion[];
         const qMap = new Map(questions.map(q => [q.id, q]));
 
         let score = 0;
@@ -997,7 +992,7 @@ router.post('/league/submit', authenticate, async (req: AuthRequest, res, next) 
             // Update participant
             await prisma.quizParticipant.update({
                 where: { id: participant.id },
-                data: { score, totalTime: totalTime || 0, answers: JSON.stringify(graded), completedAt: new Date() }
+                data: { score, totalTime: totalTime || 0, answers: graded as any, completedAt: new Date() }
             });
 
             // Check if all done
