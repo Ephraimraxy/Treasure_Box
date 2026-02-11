@@ -36,14 +36,14 @@ async function expireStaleGames() {
                         type: 'QUIZ_WINNING',
                         amount: game.entryAmount,
                         status: 'SUCCESS',
-                        description: `${game.mode} Match Expired - Refund`
+                        description: `${game.mode} Match Expired (System) - Refund`
                     }
                 });
                 await tx.notification.create({
                     data: {
                         userId: p.userId,
                         title: 'Match Expired ⏰',
-                        message: `Your ${game.mode.toLowerCase()} match (${game.matchCode}) expired with no opponent. ₦${game.entryAmount.toLocaleString()} has been refunded.`,
+                        message: `The ${game.mode.toLowerCase()} match (${game.matchCode}) has expired. ₦${game.entryAmount.toLocaleString()} has been refunded to your wallet.`,
                         type: 'INFO'
                     }
                 });
@@ -57,6 +57,79 @@ async function expireStaleGames() {
     }
     return staleGames.length;
 }
+
+// Cancel a quiz (Creator only, before it starts)
+router.post('/:gameId/cancel', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { gameId } = req.params;
+
+        const result = await prisma.$transaction(async (tx) => {
+            const game = await tx.quizGame.findUnique({
+                where: { id: gameId },
+                include: {
+                    participants: {
+                        orderBy: { createdAt: 'asc' }
+                    }
+                }
+            });
+
+            if (!game) throw new Error('Game not found');
+            if (game.status !== 'WAITING') throw new Error('Only waiting games can be cancelled');
+            if (game.mode === 'SOLO') throw new Error('Solo games cannot be cancelled this way');
+
+            // Find creator (first participant)
+            const creator = game.participants[0];
+            if (!creator || creator.userId !== req.user!.id) {
+                throw new Error('Only the creator can cancel this match');
+            }
+
+            // Refund all participants
+            for (const p of game.participants) {
+                await tx.user.update({
+                    where: { id: p.userId },
+                    data: { balance: { increment: game.entryAmount } }
+                });
+                await tx.transaction.create({
+                    data: {
+                        userId: p.userId,
+                        type: 'QUIZ_WINNING',
+                        amount: game.entryAmount,
+                        status: 'SUCCESS',
+                        description: `Quiz Cancelled by Creator - Refund`
+                    }
+                });
+                await tx.notification.create({
+                    data: {
+                        userId: p.userId,
+                        title: 'Match Cancelled 🚫',
+                        message: p.userId === req.user!.id
+                            ? `You cancelled the match (${game.matchCode}). ₦${game.entryAmount.toLocaleString()} has been refunded.`
+                            : `The creator cancelled the match (${game.matchCode}). ₦${game.entryAmount.toLocaleString()} has been refunded.`,
+                        type: 'INFO'
+                    }
+                });
+            }
+
+            await tx.quizGame.update({
+                where: { id: game.id },
+                data: { status: 'CANCELLED', endedAt: new Date() }
+            });
+
+            return { matchCode: game.matchCode, refundAmount: game.entryAmount };
+        });
+
+        res.json({
+            message: 'Match cancelled and refunds processed',
+            matchCode: result.matchCode,
+            refunded: result.refundAmount
+        });
+    } catch (error: any) {
+        if (['Game not found', 'Only waiting games can be cancelled', 'Solo games cannot be cancelled this way', 'Only the creator can cancel this match'].includes(error.message)) {
+            return res.status(400).json({ error: error.message });
+        }
+        next(error);
+    }
+});
 
 // ═══════════════════════════════════════════════
 //  QUIZ CONTENT ENDPOINTS

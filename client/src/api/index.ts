@@ -167,6 +167,7 @@ export const quizApi = {
     getHistory: (page?: number, limit?: number) =>
         api.get(`/quiz/history?page=${page || 1}&limit=${limit || 20}`),
     getMyCodes: () => api.get('/quiz/my-codes'),
+    cancelQuiz: (gameId: string) => api.post(`/quiz/${gameId}/cancel`),
 };
 
 // Research API

@@ -376,6 +376,24 @@ export const QuizPage = () => {
         }
     };
 
+    const cancelMatch = async (id: string) => {
+        if (!window.confirm('Are you sure you want to cancel this match? You will be refunded instantly.')) return;
+        setLoading(true);
+        try {
+            await quizApi.cancelQuiz(id);
+            if (view === 'my-codes') {
+                fetchMyCodes();
+            } else {
+                resetGame();
+            }
+            refreshUser();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to cancel match');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const continueGame = (game: any) => {
         setGameId(game.id);
         setMatchCode(game.matchCode);
@@ -899,7 +917,10 @@ export const QuizPage = () => {
                         </div>
                     )}
                 </Card>
-                <Button onClick={resetGame} variant="ghost" className="w-full text-red-400">Cancel Match</Button>
+                <div className="flex gap-2">
+                    <Button onClick={resetGame} variant="ghost" className="flex-1 text-slate-400">Close</Button>
+                    <Button onClick={() => cancelMatch(gameId)} variant="ghost" className="flex-1 text-red-400 border border-red-500/20 hover:bg-red-500/10">Cancel Match</Button>
+                </div>
             </div>
         );
     }
@@ -950,7 +971,10 @@ export const QuizPage = () => {
                     </Button>
                 )}
                 {error && <p className="text-red-400 text-xs text-center">{error}</p>}
-                <Button onClick={resetGame} variant="ghost" className="w-full text-red-400">Leave Lobby</Button>
+                <div className="flex gap-2">
+                    <Button onClick={resetGame} variant="ghost" className="flex-1 text-slate-400">Close</Button>
+                    <Button onClick={() => cancelMatch(gameId)} variant="ghost" className="flex-1 text-red-400 border border-red-500/20 hover:bg-red-500/10">Cancel League</Button>
+                </div>
             </div>
         );
     }
@@ -1255,10 +1279,17 @@ export const QuizPage = () => {
                                         </div>
                                     </div>
                                     {game.expiresAt && game.status === 'WAITING' && (
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-[10px] text-amber-500 flex items-center gap-1">
-                                                <Clock size={12} /> Expires: {new Date(game.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-[10px] text-amber-500 flex items-center gap-1 mr-2">
+                                                <Clock size={12} /> {new Date(game.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
+                                            <Button
+                                                onClick={() => cancelMatch(game.id)}
+                                                variant="ghost"
+                                                className="h-7 px-2 text-[10px] text-red-400 hover:bg-red-500/10 border border-red-500/20"
+                                            >
+                                                Cancel
+                                            </Button>
                                             <Button
                                                 onClick={() => continueGame(game)}
                                                 className="h-7 px-3 text-xs bg-slate-700 hover:bg-slate-600"
