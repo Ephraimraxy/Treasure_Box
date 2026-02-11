@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Phone, MapPin, Building2, Shield, Camera, Lock, Search, CheckCircle, Loader2, Plus, Trash2, CreditCard, ChevronRight, ArrowLeft, HelpCircle, Bell, Fingerprint, FileText, LogOut, Mail, MessageCircle, Star, ExternalLink, Globe, Info, Moon, ChevronDown } from 'lucide-react';
+import { User, Users, Phone, MapPin, Building2, Shield, Camera, Lock, Search, CheckCircle, Loader2, Plus, Trash2, CreditCard, ChevronRight, ArrowLeft, HelpCircle, Bell, Fingerprint, FileText, LogOut, Mail, MessageCircle, Star, ExternalLink, Globe, Info, Moon, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -658,6 +658,7 @@ export const ProfilePage = () => {
                 <MenuItem icon={CreditCard} label="Bank Accounts" value={`${linkedBanks.length}`} onClick={() => setActivePage('bank-accounts')} />
                 <MenuItem icon={Building2} label="Virtual Account" value={user?.virtualAccount ? 'Active' : 'Setup'} onClick={() => setActivePage('virtual-account')} />
                 <MenuItem icon={Fingerprint} label="KYC Verification" value={user?.kycVerified ? 'Verified' : 'Pending'} onClick={() => navigate('/kyc')} />
+                <MenuItem icon={Users} label="Referrals" onClick={() => navigate('/referrals')} />
             </div>
 
             {/* ─── Group 2: Security ─── */}
