@@ -1,14 +1,14 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Box, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell } from 'lucide-react';
+import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui';
 
 const userNavItems = [
-    { to: '/', icon: Box, label: 'Home' },
+    { to: '/', icon: Home, label: 'Home' },
     { to: '/quiz', icon: Brain, label: 'Quiz' },
     { to: '/services', icon: LayoutGrid, label: 'Services' },
-    { to: '/referrals', icon: Users, label: 'Referrals' },
+    { to: '/investments', icon: Box, label: 'Box' },
     { to: '/profile', icon: User, label: 'Profile' },
 ];
 
