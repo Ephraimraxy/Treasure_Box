@@ -61,13 +61,112 @@ router.get('/withdrawals/pending', async (req: AuthRequest, res, next) => {
 });
 
 // Approve withdrawal
+// Approve withdrawal
 router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
     try {
         const { id } = req.params;
 
-        const transaction = await prisma.transaction.update({
+        const transaction = await prisma.transaction.findUnique({
             where: { id },
-            data: { status: 'SUCCESS' }
+            include: {
+                user: {
+                    include: { bankDetails: true }
+                }
+            }
+        });
+
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        if (transaction.status !== 'PENDING') {
+            return res.status(400).json({ error: 'Transaction is not pending' });
+        }
+
+        // Initialize Paystack Transfer
+        // 1. Get Bank Details (from meta or user's bank details)
+        // Meta should have 'bankDetails' snapshot from creation time
+        const meta = transaction.meta as any;
+        let bankDetails = meta?.bankDetails;
+
+        // Fallback to finding matching bank detail if meta missing (legacy)
+        if (!bankDetails && transaction.user.bankDetails.length > 0) {
+            // Unsafe assumption but better than failing?
+            // Actually, we should check if we can reconstruct it.
+            // For now, let's assume meta has it as per transaction.routes.ts logic
+            bankDetails = {
+                accountNumber: transaction.user.bankDetails[0].accountNumber,
+                bankName: transaction.user.bankDetails[0].bankName,
+                // We need bank code!
+                bankCode: transaction.user.bankDetails[0].bankCode
+            };
+        }
+
+        if (!bankDetails || !bankDetails.accountNumber || !bankDetails.bankName) {
+            return res.status(400).json({ error: 'Missing bank details for transfer' });
+        }
+
+        // If bankCode is missing, we must resolve it or fail.
+        // Paystack needs bank_code.
+        // If the bank detail entry in DB has it, use it.
+        // If meta doesn't have it, we are stuck unless we look it up.
+        // We will try to find the full bank detail object from the user's list that matches the account number.
+        const fullBankDetail = transaction.user.bankDetails.find(b => b.accountNumber === bankDetails.accountNumber);
+
+        let bankCode = fullBankDetail?.bankCode || (bankDetails as any).bankCode;
+
+        if (!bankCode) {
+            // Try to assume it's missing and we can't process automated transfer.
+            // Allow manual approval (mark success without transfer) if we can't transfer?
+            // "make it transfer request" implies automation.
+            return res.status(400).json({ error: 'Bank Code missing. Cannot process automated transfer. Reject and ask user to re-add bank.' });
+        }
+
+        // 2. Create Transfer Recipient
+        const { createTransferRecipient, initiateTransfer } = await import('../services/paystack.service');
+
+        let recipientCode;
+        try {
+            const recipient = await createTransferRecipient(
+                bankDetails.accountName || transaction.user.name,
+                bankDetails.accountNumber,
+                bankCode
+            );
+            recipientCode = recipient.data.recipient_code;
+        } catch (error: any) {
+            console.error("Recipient Create Error", error.response?.data);
+            return res.status(400).json({ error: 'Failed to create transfer recipient: ' + (error.response?.data?.message || error.message) });
+        }
+
+        // 3. Initiate Transfer
+        const reference = `WDR_APPR_${Date.now()}`;
+        let transferData;
+
+        try {
+            const transfer = await initiateTransfer(
+                transaction.amount,
+                recipientCode,
+                reference,
+                'Withdrawal from Treasure Box (Approved)'
+            );
+            transferData = transfer.data;
+        } catch (error: any) {
+            console.error("Transfer Error", error.response?.data);
+            return res.status(400).json({ error: 'Transfer failed: ' + (error.response?.data?.message || error.message) });
+        }
+
+        // Success - Update Transaction
+        await prisma.transaction.update({
+            where: { id },
+            data: {
+                status: 'SUCCESS',
+                meta: {
+                    ...meta,
+                    paystackReference: reference,
+                    transferCode: transferData.transfer_code,
+                    approvedBy: req.user!.email
+                }
+            }
         });
 
         // If linked to an investment, mark as processed
@@ -83,7 +182,7 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
             data: {
                 adminEmail: req.user!.email,
                 action: 'APPROVE_WITHDRAWAL',
-                details: `Approved withdrawal #${id} for ₦${transaction.amount}`
+                details: `Approved & Transferred withdrawal #${id} for ₦${transaction.amount}`
             }
         });
 
@@ -92,12 +191,12 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
             data: {
                 userId: transaction.userId,
                 title: 'Withdrawal Approved',
-                message: `Your withdrawal of ₦${transaction.amount.toLocaleString()} has been approved.`,
+                message: `Your withdrawal of ₦${transaction.amount.toLocaleString()} has been approved and sent to your bank.`,
                 type: 'SUCCESS'
             }
         });
 
-        res.json({ message: 'Withdrawal approved', transaction });
+        res.json({ message: 'Withdrawal approved and funds transferred', transaction });
     } catch (error) {
         next(error);
     }

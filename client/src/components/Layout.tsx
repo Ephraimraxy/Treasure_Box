@@ -172,18 +172,18 @@ export const Layout = ({ children }: LayoutProps) => {
 
                 {/* Mobile Bottom Nav */}
                 <div className="md:hidden fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-800 pb-safe z-30">
-                    <div className="flex justify-around items-center py-1.5">
+                    <div className="flex overflow-x-auto items-center py-2 px-4 gap-6 no-scrollbar">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}
                                 end={item.to === '/' || item.to === '/admin'}
                                 className={({ isActive }) =>
-                                    `flex flex-col items-center p-2 rounded-lg ${isActive ? 'text-amber-500' : 'text-slate-500'}`
+                                    `flex flex-col items-center min-w-[60px] p-2 rounded-lg shrink-0 transition-colors ${isActive ? 'text-amber-500' : 'text-slate-500'}`
                                 }
                             >
-                                <item.icon size={18} />
-                                <span className="text-[9px] mt-0.5 font-medium">{item.label}</span>
+                                <item.icon size={20} />
+                                <span className="text-[10px] mt-1 font-medium whitespace-nowrap">{item.label}</span>
                             </NavLink>
                         ))}
                     </div>
