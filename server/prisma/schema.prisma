@@ -58,7 +58,29 @@ model User {
   virtualAccount  VirtualAccount?
   quizParticipations QuizParticipant[]
   researchRequests ResearchRequest[]
-  notificationSettings Json?       // { fund: boolean, game: boolean, investment: boolean, login: boolean, push: boolean }
+  notificationSettings Json?       // Deprecated? Or keep for backward compat? Prefer 'preferences' now.
+  preferences     Json?           // { theme: string, notifications: { ... } }
+
+  disputes        Dispute[]
+}
+
+model Dispute {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject       String
+  message       String        @db.Text
+  snapshotUrl   String?       // Local path or Base64 (if small) - likely path to /uploads/filename
+  status        DisputeStatus @default(OPEN)
+  adminReply    String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  CLOSED
 }
 
 model BankDetail {

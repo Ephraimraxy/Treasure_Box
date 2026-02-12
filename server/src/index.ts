@@ -36,6 +36,13 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+import disputeRoutes from './routes/dispute.routes';
+
+// ... midddleware ...
+
+// Static Uploads
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -46,6 +53,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/payment', paymentRoutes); // Alias for singular path
 app.use('/api/quiz', quizRoutes);
 app.use('/api/research', researchRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

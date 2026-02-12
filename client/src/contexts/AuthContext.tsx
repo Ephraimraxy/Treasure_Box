@@ -32,15 +32,19 @@ interface User {
         accountNumber: string;
         accountName: string;
     }[];
+    notificationSettings?: {
+        fund?: boolean;
+        game?: boolean;
+        investment?: boolean;
+        login?: boolean;
+        push?: boolean;
+    };
+    preferences?: {
+        theme?: string;
+        notifications?: any;
+    };
     _count?: {
         referrals: number;
-    };
-    notificationSettings?: {
-        fund: boolean;
-        game: boolean;
-        investment: boolean;
-        login: boolean;
-        push: boolean;
     };
 }
 

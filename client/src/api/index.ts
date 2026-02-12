@@ -176,4 +176,14 @@ export const researchApi = {
     getRequests: () => api.get('/research/requests'),
 };
 
+// Dispute API
+export const disputeApi = {
+    create: (data: { subject: string; message: string; snapshot?: string | null }) =>
+        api.post('/disputes', data),
+    getMyDisputes: () => api.get('/disputes'),
+    getAll: () => api.get('/disputes/all'),
+    resolve: (id: string, reply: string, status: 'RESOLVED' | 'CLOSED') =>
+        api.put(`/disputes/${id}/resolve`, { reply, status }),
+};
+
 export default api;

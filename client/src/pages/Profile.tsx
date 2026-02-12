@@ -7,7 +7,7 @@ import { userApi, paymentApi } from '../api';
 import { Button, Input, Card, Modal } from '../components/ui';
 
 // ─── Sub-page IDs ───
-type SubPage = null | 'edit-profile' | 'bank-accounts' | 'virtual-account' | 'security' | 'help-support' | 'privacy-policy' | 'notifications';
+type SubPage = null | 'edit-profile' | 'bank-accounts' | 'virtual-account' | 'security' | 'help-support' | 'privacy-policy' | 'notifications' | 'appearance';
 
 export const ProfilePage = () => {
     const { user, refreshUser } = useAuth();
@@ -662,10 +662,11 @@ export const ProfilePage = () => {
 
             </div>
 
-            {/* ─── Group 2: Security ─── */}
+            {/* ─── Group 2: Security & App ─── */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
                 <MenuItem icon={Lock} label="Security & PIN" value={user?.transactionPin ? 'Active' : 'Set PIN'} onClick={() => setActivePage('security')} />
                 <MenuItem icon={Bell} label="Notifications" value="On" onClick={() => setActivePage('notifications')} />
+                <MenuItem icon={Moon} label="Appearance" value="Theme" onClick={() => setActivePage('appearance')} />
             </div>
 
             {/* ─── Group 3: Support & Legal ─── */}

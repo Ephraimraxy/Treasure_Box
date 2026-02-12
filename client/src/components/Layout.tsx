@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box, Search } from 'lucide-react';
+import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box, Search, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui';
 
@@ -19,6 +19,7 @@ const adminNavItems = [
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/settings', icon: Settings, label: 'System' },
     { to: '/admin/research', icon: Search, label: 'Research' },
+    { to: '/admin/disputes', icon: AlertCircle, label: 'Disputes' },
     { to: '/admin/audit', icon: FileClock, label: 'Audit Logs' },
 ];
 
@@ -34,6 +35,22 @@ export const Layout = ({ children }: LayoutProps) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const navItems = user?.role === 'ADMIN' ? adminNavItems : userNavItems;
+
+    // Apply Theme
+    React.useEffect(() => {
+        if (user?.preferences?.theme) {
+            const themes: Record<string, string> = {
+                amber: '245 158 11',
+                blue: '59 130 246',
+                emerald: '16 185 129',
+                rose: '244 63 94',
+                purple: '168 85 247',
+                cyan: '6 182 212',
+            };
+            const color = themes[user.preferences.theme] || themes.amber;
+            document.documentElement.style.setProperty('--color-primary', color);
+        }
+    }, [user]);
 
     const handleLogout = () => {
         logout();
@@ -113,6 +130,13 @@ export const Layout = ({ children }: LayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-3 ml-auto">
+                        <div
+                            className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer mr-2"
+                            onClick={() => navigate('/dispute')}
+                            title="Report Issue"
+                        >
+                            <AlertCircle size={20} className="text-rose-500" />
+                        </div>
                         {user?.photoUrl || user?.kycPhotoUrl ? (
                             <img
                                 src={user.photoUrl || user.kycPhotoUrl}

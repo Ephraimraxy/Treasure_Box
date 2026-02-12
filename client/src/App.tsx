@@ -34,7 +34,9 @@ import {
     AdminQuizPage,
     AdminResearchPage
 } from './pages/Admin';
+import { AdminDisputesPage } from './pages/AdminDisputes';
 import { KYCPage } from './pages/KYC';
+import { DisputePage } from './pages/Dispute';
 
 
 // Styles
@@ -98,6 +100,7 @@ const AppContent = () => {
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/transfer" element={<ProtectedRoute><TransferPage /></ProtectedRoute>} />
                 <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
+                <Route path="/dispute" element={<ProtectedRoute><DisputePage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>} />
@@ -107,6 +110,7 @@ const AppContent = () => {
                 <Route path="/admin/audit" element={<ProtectedRoute adminOnly><AdminAuditPage /></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>} />
                 <Route path="/admin/research" element={<ProtectedRoute adminOnly><AdminResearchPage /></ProtectedRoute>} />
+                <Route path="/admin/disputes" element={<ProtectedRoute adminOnly><AdminDisputesPage /></ProtectedRoute>} />
 
                 {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
