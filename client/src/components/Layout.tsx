@@ -130,27 +130,35 @@ export const Layout = ({ children }: LayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-3 ml-auto">
-                        <div
-                            className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer mr-2"
-                            onClick={() => navigate('/dispute')}
-                            title="Report Issue"
-                        >
-                            <AlertCircle size={20} className="text-rose-500" />
-                        </div>
-                        {user?.photoUrl || user?.kycPhotoUrl ? (
-                            <img
-                                src={user.photoUrl || user.kycPhotoUrl}
-                                alt="Profile"
-                                className="w-9 h-9 rounded-full object-cover border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
-                                onClick={() => navigate('/profile')}
-                            />
+                        {user?.role === 'ADMIN' ? (
+                            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-400 hover:bg-red-500/10 gap-2">
+                                <LogOut size={16} /> <span className="hidden md:inline">Sign Out</span>
+                            </Button>
                         ) : (
-                            <div
-                                className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
-                                onClick={() => navigate('/profile')}
-                            >
-                                <User size={20} className="text-slate-400" />
-                            </div>
+                            <>
+                                <div
+                                    className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer mr-2"
+                                    onClick={() => navigate('/dispute')}
+                                    title="Report Issue"
+                                >
+                                    <AlertCircle size={20} className="text-rose-500" />
+                                </div>
+                                {user?.photoUrl || user?.kycPhotoUrl ? (
+                                    <img
+                                        src={user.photoUrl || user.kycPhotoUrl}
+                                        alt="Profile"
+                                        className="w-9 h-9 rounded-full object-cover border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/profile')}
+                                    />
+                                ) : (
+                                    <div
+                                        className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/profile')}
+                                    >
+                                        <User size={20} className="text-slate-400" />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

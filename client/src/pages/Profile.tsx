@@ -481,6 +481,71 @@ export const ProfilePage = () => {
     }
 
     // ═══════════════════════════════════════════
+    // SUB-PAGE: Appearance
+    // ═══════════════════════════════════════════
+    if (activePage === 'appearance') {
+        const themes = [
+            { id: 'amber', name: 'Golden Amber', color: '245 158 11', class: 'bg-amber-500' },
+            { id: 'blue', name: 'Royal Blue', color: '59 130 246', class: 'bg-blue-500' },
+            { id: 'emerald', name: 'Emerald Green', color: '16 185 129', class: 'bg-emerald-500' },
+            { id: 'rose', name: 'Rose Red', color: '244 63 94', class: 'bg-rose-500' },
+            { id: 'purple', name: 'Imperial Purple', color: '168 85 247', class: 'bg-purple-500' },
+            { id: 'cyan', name: 'Cyan Sky', color: '6 182 212', class: 'bg-cyan-500' },
+        ];
+
+        const currentTheme = user?.preferences?.theme || 'amber';
+
+        const applyTheme = async (themeId: string, colorRGB: string) => {
+            // Apply immediately
+            document.documentElement.style.setProperty('--color-primary', colorRGB);
+
+            // Save
+            try {
+                await userApi.updateProfile({
+                    preferences: { ...user?.preferences, theme: themeId }
+                });
+                await refreshUser();
+                addToast('success', 'Theme updated');
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        return (
+            <div className="max-w-lg mx-auto animate-fade-in">
+                <BackButton label="Back to Profile" />
+                <Card>
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="p-2 bg-slate-800 rounded-lg"><Moon size={18} className="text-slate-400" /></div>
+                        <h3 className="font-bold text-white text-lg">Appearance</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Accent Color</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                            {themes.map(theme => (
+                                <button
+                                    key={theme.id}
+                                    onClick={() => applyTheme(theme.id, theme.color)}
+                                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${currentTheme === theme.id
+                                            ? 'bg-slate-800 border-primary shadow-lg shadow-primary/10'
+                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                                        }`}
+                                >
+                                    <div className={`w-8 h-8 rounded-full ${theme.class} shadow-sm`} />
+                                    <span className={`font-medium ${currentTheme === theme.id ? 'text-white' : 'text-slate-400'}`}>
+                                        {theme.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    // ═══════════════════════════════════════════
     if (activePage === 'help-support') {
         const faqs = [
             { q: 'How do I fund my wallet?', a: 'You can fund your wallet by transferring to your virtual bank account, or via bank transfer from the Deposit page.' },

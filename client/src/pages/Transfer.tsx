@@ -33,7 +33,7 @@ export const TransferPage = () => {
     const [accountVerified, setAccountVerified] = useState(false);
 
     // Settings
-    const [settings, setSettings] = useState({ minWithdrawal: 1000, maxWithdrawal: 1000000 });
+    const [settings, setSettings] = useState({ minWithdrawal: 0, maxWithdrawal: 1000000 });
 
     // PIN management
     const [pinModal, setPinModal] = useState(false);
