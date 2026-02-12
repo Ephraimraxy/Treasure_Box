@@ -85,7 +85,9 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
         // Check Settings (Min Withdrawal)
         const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
         const minWithdrawal = settings?.minWithdrawal || 1000;
+        const maxWithdrawal = settings?.maxWithdrawal || 1000000;
         if (amount < minWithdrawal) return res.status(400).json({ error: `Minimum withdrawal is ₦${minWithdrawal}` });
+        if (amount > maxWithdrawal) return res.status(400).json({ error: `Maximum withdrawal is ₦${maxWithdrawal}` });
 
         // Resolve bank details
         let selectedBank: { bankName: string; accountNumber: string; accountName: string; bankCode?: string | null } | null = null;

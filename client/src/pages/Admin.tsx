@@ -938,6 +938,7 @@ export const AdminSettingsPage = () => {
     const [settings, setSettings] = useState({
         minDeposit: 1000,
         minWithdrawal: 1000,
+        maxWithdrawal: 1000000,
         minInvestment: 5000,
         isSystemPaused: false,
         paystackPublicKey: '',
@@ -1075,6 +1076,13 @@ export const AdminSettingsPage = () => {
                             value={settings.minWithdrawal}
                             onChange={e => setSettings({ ...settings, minWithdrawal: parseInt(e.target.value) || 0 })}
                             hint="Minimum amount a user can withdraw"
+                        />
+                        <Input
+                            label="Maximum Withdrawal Amount (₦)"
+                            type="number"
+                            value={settings.maxWithdrawal}
+                            onChange={e => setSettings({ ...settings, maxWithdrawal: parseInt(e.target.value) || 0 })}
+                            hint="Maximum amount a user can withdraw per transaction"
                         />
                         <Input
                             label="Minimum Investment Amount (₦)"
@@ -1220,9 +1228,9 @@ export const AdminResearchPage = () => {
                                 <div className="flex-1 space-y-3">
                                     <div className="flex items-center gap-2">
                                         <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.status === 'PENDING' ? 'bg-amber-500/20 text-amber-500' :
-                                                req.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
-                                                    req.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-500' :
-                                                        'bg-blue-500/20 text-blue-500'
+                                            req.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
+                                                req.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-500' :
+                                                    'bg-blue-500/20 text-blue-500'
                                             }`}>
                                             {req.status}
                                         </div>

@@ -131,6 +131,7 @@ model Settings {
   minDeposit                Float   @default(1000)
   minWithdrawal             Float   @default(1000)
   minInvestment             Float   @default(5000)
+  maxWithdrawal             Float   @default(1000000)
   enableNotifications       Boolean @default(true)
   enableEmailLoginAlerts    Boolean @default(true)
   enableWithdrawalApproval Boolean @default(true)

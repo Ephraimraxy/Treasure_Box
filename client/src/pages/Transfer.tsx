@@ -33,7 +33,7 @@ export const TransferPage = () => {
     const [accountVerified, setAccountVerified] = useState(false);
 
     // Settings
-    const [settings, setSettings] = useState({ minWithdrawal: 1000 });
+    const [settings, setSettings] = useState({ minWithdrawal: 1000, maxWithdrawal: 1000000 });
 
     // PIN management
     const [pinModal, setPinModal] = useState(false);
@@ -158,7 +158,7 @@ export const TransferPage = () => {
 
     const canProceedStep1 = () => {
         const amt = parseFloat(amount);
-        return amt >= settings.minWithdrawal && amt <= (user?.balance || 0);
+        return amt >= settings.minWithdrawal && amt <= settings.maxWithdrawal && amt <= (user?.balance || 0);
     };
 
     const canProceedStep2 = () => accountVerified;
@@ -235,7 +235,7 @@ export const TransferPage = () => {
                     </div>
 
                     <p className="text-[10px] text-slate-600 text-center mb-4">
-                        Min: ₦{settings.minWithdrawal.toLocaleString()}
+                        Min: <FormatCurrency amount={settings.minWithdrawal} /> • Max: <FormatCurrency amount={settings.maxWithdrawal} />
                     </p>
 
                     <div className="mt-auto">
