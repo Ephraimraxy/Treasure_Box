@@ -154,10 +154,48 @@ model Settings {
   minWithdrawal             Float   @default(1000)
   minInvestment             Float   @default(5000)
   maxWithdrawal             Float   @default(1000000)
+  autoTransferThreshold     Float   @default(50000)
   enableNotifications       Boolean @default(true)
   enableEmailLoginAlerts    Boolean @default(true)
   enableWithdrawalApproval Boolean @default(true)
   kycRequiredForAccount     Boolean @default(true)
+}
+
+// ── Financial Control Center Models ────────────────────────
+
+model SystemWallet {
+  id                      Int      @id @default(1)
+  userReserveBalance      Decimal  @default(0) @db.Decimal(18,2)
+  profitBalance           Decimal  @default(0) @db.Decimal(18,2)
+  operationalBalance      Decimal  @default(0) @db.Decimal(18,2)
+  lockedInvestmentBalance Decimal  @default(0) @db.Decimal(18,2)
+  updatedAt               DateTime @updatedAt
+}
+
+model ReconciliationLog {
+  id                String   @id @default(cuid())
+  date              DateTime @default(now())
+  userLiability     Decimal  @db.Decimal(18,2)
+  paystackAvailable Decimal  @db.Decimal(18,2)
+  difference        Decimal  @db.Decimal(18,2)
+  status            String   // OK, WARNING, CRITICAL
+  createdAt         DateTime @default(now())
+}
+
+model PaystackBalanceSnapshot {
+  id        String   @id @default(cuid())
+  available Decimal  @db.Decimal(18,2)
+  pending   Decimal  @db.Decimal(18,2)
+  createdAt DateTime @default(now())
+}
+
+model SystemHealth {
+  id                       Int       @id @default(1)
+  lastWebhookAt            DateTime?
+  lastSuccessfulTransferAt DateTime?
+  lastFailedTransferAt     DateTime?
+  failedTransferCount24h   Int       @default(0)
+  updatedAt                DateTime  @updatedAt
 }
 
 model AuditLog {

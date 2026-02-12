@@ -408,68 +408,292 @@ router.patch('/users/:id/suspend', async (req: AuthRequest, res, next) => {
     }
 });
 
-// Dashboard stats
+// ═══════════════════════════════════════════════
+//  FINANCIAL CONTROL CENTER — Dashboard Stats
+// ═══════════════════════════════════════════════
+
 router.get('/stats', async (req: AuthRequest, res, next) => {
     try {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(startOfDay);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
         const [
             totalUsers,
-            totalBalance,
-            activeInvestments,
+            totalBalanceAgg,
+            activeInvestmentCount,
             pendingWithdrawals,
             quizFeeAgg,
             systemWinAgg,
             pendingQuizPoolAgg,
             activeQuizGames,
-            totalCompletedGames
+            totalCompletedGames,
+            // Investment profit: matured/payout-processed investments
+            investmentProfitAgg,
+            // Locked capital (active investments)
+            lockedCapitalAgg,
+            // Risk: largest wallet
+            largestWalletUser,
+            // Risk: upcoming maturities (next 7 days)
+            upcomingMaturities,
+            upcomingMaturitySum,
+            // Paystack balance from DB snapshot (NOT live)
+            latestSnapshot,
+            // System health
+            systemHealth,
+            // Time-based profit: today
+            profitToday,
+            // Time-based profit: this week
+            profitWeek,
+            // Time-based profit: this month
+            profitMonth,
+            // Activity feed: last 20 transactions
+            activityFeed
         ] = await Promise.all([
             prisma.user.count(),
             prisma.user.aggregate({ _sum: { balance: true } }),
             prisma.investment.count({ where: { status: 'ACTIVE' } }),
             prisma.transaction.count({ where: { type: 'WITHDRAWAL', status: 'PENDING' } }),
-            // Platform Logic
+            // Quiz platform fees
             prisma.quizGame.aggregate({ _sum: { platformFee: true }, where: { status: 'COMPLETED' } }),
-            // System Wins: Sum of prizePool for SOLO games where nobody won
+            // System wins: SOLO games where nobody won
             prisma.quizGame.aggregate({
                 _sum: { prizePool: true },
-                where: {
-                    mode: 'SOLO',
-                    status: 'COMPLETED',
-                    participants: { none: { isWinner: true } }
-                }
+                where: { mode: 'SOLO', status: 'COMPLETED', participants: { none: { isWinner: true } } }
             }),
-            // Pending Quiz Pool: total entry amounts locked in WAITING games
-            prisma.quizGame.aggregate({
-                _sum: { entryAmount: true },
-                where: { status: 'WAITING' }
-            }),
-            // Active quiz games (WAITING + IN_PROGRESS)
+            // Pending quiz pool
+            prisma.quizGame.aggregate({ _sum: { entryAmount: true }, where: { status: 'WAITING' } }),
+            // Active quiz games
             prisma.quizGame.count({ where: { status: { in: ['WAITING', 'IN_PROGRESS'] } } }),
-            // Total completed games
-            prisma.quizGame.count({ where: { status: 'COMPLETED' } })
+            // Completed games
+            prisma.quizGame.count({ where: { status: 'COMPLETED' } }),
+            // Investment profit: SUM(principal * ((baseRate+bonusRate)/100) * (durationDays/365)) for matured
+            prisma.investment.findMany({
+                where: { status: { in: ['MATURED', 'PAYOUT_PROCESSED'] } },
+                select: { principal: true, baseRate: true, bonusRate: true, durationDays: true }
+            }),
+            // Locked capital
+            prisma.investment.aggregate({ _sum: { principal: true }, where: { status: 'ACTIVE' } }),
+            // Largest wallet (whale detection)
+            prisma.user.findFirst({
+                orderBy: { balance: 'desc' },
+                select: { id: true, email: true, username: true, name: true, balance: true }
+            }),
+            // Upcoming maturities count
+            prisma.investment.count({
+                where: { status: 'ACTIVE', maturityDate: { gte: now, lte: sevenDaysFromNow } }
+            }),
+            // Upcoming maturities sum
+            prisma.investment.aggregate({
+                _sum: { principal: true },
+                where: { status: 'ACTIVE', maturityDate: { gte: now, lte: sevenDaysFromNow } }
+            }),
+            // Latest Paystack snapshot from DB
+            prisma.paystackBalanceSnapshot.findFirst({ orderBy: { createdAt: 'desc' } }),
+            // System health
+            prisma.systemHealth.findUnique({ where: { id: 1 } }),
+            // Time-based: today's platform fees
+            prisma.quizGame.aggregate({
+                _sum: { platformFee: true },
+                where: { status: 'COMPLETED', endedAt: { gte: startOfDay } }
+            }),
+            // Time-based: this week's platform fees
+            prisma.quizGame.aggregate({
+                _sum: { platformFee: true },
+                where: { status: 'COMPLETED', endedAt: { gte: startOfWeek } }
+            }),
+            // Time-based: this month's platform fees
+            prisma.quizGame.aggregate({
+                _sum: { platformFee: true },
+                where: { status: 'COMPLETED', endedAt: { gte: startOfMonth } }
+            }),
+            // Activity feed: last 20 transactions
+            prisma.transaction.findMany({
+                take: 20,
+                orderBy: { createdAt: 'desc' },
+                include: { user: { select: { email: true, username: true, name: true } } }
+            })
         ]);
 
+        // ── Compute derived metrics ──
         const quizFees = quizFeeAgg._sum.platformFee || 0;
         const systemWins = systemWinAgg._sum.prizePool || 0;
-        const investmentProfit = 0; // Placeholder for now
+
+        // Investment profit: deterministic formula
+        const investmentProfit = investmentProfitAgg.reduce((sum: number, inv: { principal: number; baseRate: number; bonusRate: number; durationDays: number }) => {
+            return sum + inv.principal * ((inv.baseRate + inv.bonusRate) / 100) * (inv.durationDays / 365);
+        }, 0);
+
         const totalPlatformProfit = quizFees + systemWins + investmentProfit;
+        const totalUserLiability = totalBalanceAgg._sum.balance || 0;
+
+        // Paystack balance from snapshot
+        const paystackAvailable = latestSnapshot ? Number(latestSnapshot.available) : null;
+        const paystackPending = latestSnapshot ? Number(latestSnapshot.pending) : null;
+        const snapshotAge = latestSnapshot ? latestSnapshot.createdAt : null;
+
+        // Liquidity ratio (with zero-guard)
+        let liquidityRatio: number | null = null;
+        let netPlatformEquity: number | null = null;
+        if (paystackAvailable !== null) {
+            liquidityRatio = totalUserLiability === 0 ? null : paystackAvailable / totalUserLiability;
+            netPlatformEquity = paystackAvailable - totalUserLiability;
+        }
+
+        // Normalize activity feed
+        const normalizedFeed = activityFeed.map((t: any) => ({
+            id: t.id,
+            type: t.type,
+            amount: t.amount,
+            status: t.status,
+            description: t.description,
+            user: t.user.username || t.user.name || t.user.email,
+            timestamp: t.createdAt
+        }));
 
         res.json({
+            // Core stats
             totalUsers,
-            totalBalance: totalBalance._sum.balance || 0,
-            activeInvestments,
+            totalBalance: totalUserLiability,
+            activeInvestments: activeInvestmentCount,
             pendingWithdrawals,
+
+            // Platform profit
             platformProfit: {
                 total: totalPlatformProfit,
-                breakdown: {
-                    quizFees,
-                    systemWins,
-                    investmentProfit
-                }
+                breakdown: { quizFees, systemWins, investmentProfit }
             },
+
+            // Quiz stats
             quizStats: {
                 pendingPool: pendingQuizPoolAgg._sum.entryAmount || 0,
                 activeGames: activeQuizGames,
                 completedGames: totalCompletedGames
+            },
+
+            // ── Financial Control Center ──
+            financials: {
+                paystackAvailable,
+                paystackPending,
+                snapshotAge,
+                liquidityRatio,
+                netPlatformEquity,
+                totalUserLiability
+            },
+
+            // Risk metrics
+            risk: {
+                largestWallet: largestWalletUser ? {
+                    email: largestWalletUser.email,
+                    username: largestWalletUser.username,
+                    name: largestWalletUser.name,
+                    balance: largestWalletUser.balance
+                } : null,
+                lockedCapital: lockedCapitalAgg._sum.principal || 0,
+                upcomingMaturities: {
+                    count: upcomingMaturities,
+                    totalAmount: upcomingMaturitySum._sum.principal || 0
+                }
+            },
+
+            // Time-based profits
+            profitTimeline: {
+                today: profitToday._sum.platformFee || 0,
+                thisWeek: profitWeek._sum.platformFee || 0,
+                thisMonth: profitMonth._sum.platformFee || 0,
+                lifetime: totalPlatformProfit
+            },
+
+            // Activity feed
+            activityFeed: normalizedFeed,
+
+            // System health
+            systemHealth: systemHealth ? {
+                lastWebhookAt: systemHealth.lastWebhookAt,
+                lastSuccessfulTransferAt: systemHealth.lastSuccessfulTransferAt,
+                lastFailedTransferAt: systemHealth.lastFailedTransferAt,
+                failedTransferCount24h: systemHealth.failedTransferCount24h
+            } : null
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  RECONCILIATION — Snapshot & Health Check
+// ═══════════════════════════════════════════════
+
+router.post('/reconciliation/snapshot', async (req: AuthRequest, res, next) => {
+    try {
+        const { getBalance } = await import('../services/paystack.service');
+
+        // 1. Fetch live Paystack balance
+        let paystackData;
+        try {
+            paystackData = await getBalance();
+        } catch (err: any) {
+            return res.status(502).json({
+                error: 'Failed to fetch Paystack balance',
+                details: err.response?.data?.message || err.message
+            });
+        }
+
+        // Paystack returns balance in kobo, convert to Naira
+        const ngnBalance = paystackData.find((b: any) => b.currency === 'NGN');
+        const paystackAvailable = ngnBalance ? ngnBalance.balance / 100 : 0;
+        const paystackPending = ngnBalance ? (ngnBalance.pending || 0) / 100 : 0;
+
+        // 2. Get user liability
+        const totalBalanceAgg = await prisma.user.aggregate({ _sum: { balance: true } });
+        const userLiability = totalBalanceAgg._sum.balance || 0;
+
+        // 3. Compute difference and severity
+        const difference = paystackAvailable - userLiability;
+        const ratio = userLiability === 0 ? null : Math.abs(difference) / userLiability;
+
+        let status = 'OK';
+        if (ratio !== null) {
+            if (ratio > 0.02) status = 'CRITICAL';
+            else if (ratio > 0.005) status = 'WARNING';
+        }
+        // Also CRITICAL if available < liability
+        if (paystackAvailable < userLiability) {
+            status = 'CRITICAL';
+        }
+
+        // 4. Store snapshot + reconciliation log
+        const [snapshot, reconciliation] = await Promise.all([
+            prisma.paystackBalanceSnapshot.create({
+                data: { available: paystackAvailable, pending: paystackPending }
+            }),
+            prisma.reconciliationLog.create({
+                data: { userLiability, paystackAvailable, difference, status }
+            })
+        ]);
+
+        // 5. Audit log
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'RECONCILIATION_SNAPSHOT',
+                details: `Snapshot: Paystack ₦${paystackAvailable.toLocaleString()}, Liability ₦${userLiability.toLocaleString()}, Diff ₦${difference.toLocaleString()}, Status: ${status}`
+            }
+        });
+
+        res.json({
+            snapshot,
+            reconciliation,
+            summary: {
+                paystackAvailable,
+                paystackPending,
+                userLiability,
+                difference,
+                status,
+                liquidityRatio: userLiability === 0 ? null : paystackAvailable / userLiability
             }
         });
     } catch (error) {

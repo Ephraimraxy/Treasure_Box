@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2 } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart } from 'lucide-react';
 import { adminApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
@@ -22,6 +22,32 @@ interface Stats {
         activeGames: number;
         completedGames: number;
     };
+    financials?: {
+        paystackAvailable: number | null;
+        paystackPending: number | null;
+        snapshotAge: string | null;
+        liquidityRatio: number | null;
+        netPlatformEquity: number | null;
+        totalUserLiability: number;
+    };
+    risk?: {
+        largestWallet: { email: string; username: string | null; name: string | null; balance: number } | null;
+        lockedCapital: number;
+        upcomingMaturities: { count: number; totalAmount: number };
+    };
+    profitTimeline?: {
+        today: number;
+        thisWeek: number;
+        thisMonth: number;
+        lifetime: number;
+    };
+    activityFeed?: { id: string; type: string; amount: number; status: string; description: string; user: string; timestamp: string }[];
+    systemHealth?: {
+        lastWebhookAt: string | null;
+        lastSuccessfulTransferAt: string | null;
+        lastFailedTransferAt: string | null;
+        failedTransferCount24h: number;
+    } | null;
 }
 
 interface QuizGame {
@@ -71,10 +97,17 @@ interface Withdrawal {
     };
 }
 
+// ═══════════════════════════════════════════════
+//  FINANCIAL CONTROL CENTER — Dashboard
+// ═══════════════════════════════════════════════
+
 export const AdminDashboardPage = () => {
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
     const [profitModalOpen, setProfitModalOpen] = useState(false);
+    const [snapshotLoading, setSnapshotLoading] = useState(false);
+    const [snapshotResult, setSnapshotResult] = useState<any>(null);
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -90,6 +123,22 @@ export const AdminDashboardPage = () => {
         fetchStats();
     }, []);
 
+    const handleSnapshot = async () => {
+        setSnapshotLoading(true);
+        try {
+            const res = await adminApi.createSnapshot();
+            setSnapshotResult(res.data.summary);
+            addToast('success', `Reconciliation: ${res.data.summary.status}`);
+            // Refresh stats to get the new snapshot
+            const statsRes = await adminApi.getStats();
+            setStats(statsRes.data);
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Snapshot failed');
+        } finally {
+            setSnapshotLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -98,12 +147,90 @@ export const AdminDashboardPage = () => {
         );
     }
 
-    return (
-        <div className="space-y-4 animate-fade-in">
-            <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
+    const fin = stats?.financials;
+    const risk = stats?.risk;
+    const timeline = stats?.profitTimeline;
+    const health = stats?.systemHealth;
 
+    const isHealthy = (date: string | null | undefined, thresholdMinutes = 60) => {
+        if (!date) return false;
+        const diff = Date.now() - new Date(date).getTime();
+        return diff < thresholdMinutes * 60 * 1000;
+    };
+
+    return (
+        <div className="space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between">
+                <h1 className="text-lg font-bold text-white">Financial Control Center</h1>
+                <Button
+                    onClick={handleSnapshot}
+                    disabled={snapshotLoading}
+                    className="text-xs px-3 py-2"
+                >
+                    {snapshotLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : <RefreshCw size={14} className="mr-1" />}
+                    {snapshotLoading ? 'Syncing...' : 'Run Reconciliation'}
+                </Button>
+            </div>
+
+            {/* ── Financial Health ── */}
+            {fin && (
+                <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Heart size={12} /> Financial Health
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <Card className="bg-gradient-to-br from-emerald-900/40 to-slate-800">
+                            <div className="text-xs text-slate-400">Paystack Available</div>
+                            <div className="text-lg font-bold text-white">
+                                {fin.paystackAvailable !== null ? <FormatCurrency amount={fin.paystackAvailable} /> : <span className="text-slate-600">N/A</span>}
+                            </div>
+                            {fin.snapshotAge && <div className="text-[10px] text-slate-600 mt-1">Updated: {new Date(fin.snapshotAge).toLocaleString()}</div>}
+                        </Card>
+                        <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
+                            <div className="text-xs text-slate-400">Paystack Pending</div>
+                            <div className="text-lg font-bold text-white">
+                                {fin.paystackPending !== null ? <FormatCurrency amount={fin.paystackPending} /> : <span className="text-slate-600">N/A</span>}
+                            </div>
+                        </Card>
+                        <Card className={`bg-gradient-to-br ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'from-red-900/60 to-red-950 border border-red-500/40' : 'from-purple-900/40 to-slate-800'}`}>
+                            <div className="text-xs text-slate-400">Liquidity Ratio</div>
+                            <div className={`text-lg font-bold ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'text-red-400' : 'text-white'}`}>
+                                {fin.liquidityRatio !== null ? fin.liquidityRatio.toFixed(2) + 'x' : <span className="text-slate-600">N/A</span>}
+                            </div>
+                            {fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 && (
+                                <div className="flex items-center gap-1 text-[10px] text-red-400 mt-1 font-bold">
+                                    <AlertTriangle size={10} /> BELOW SAFE THRESHOLD
+                                </div>
+                            )}
+                        </Card>
+                        <Card className={`bg-gradient-to-br ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'from-red-900/60 to-red-950 border border-red-500/40' : 'from-teal-900/40 to-slate-800'}`}>
+                            <div className="text-xs text-slate-400">Net Platform Equity</div>
+                            <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-400' : 'text-white'}`}>
+                                {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-600">N/A</span>}
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Snapshot Result Banner ── */}
+            {snapshotResult && (
+                <Card className={`border ${snapshotResult.status === 'CRITICAL' ? 'border-red-500/50 bg-red-950/30' : snapshotResult.status === 'WARNING' ? 'border-amber-500/50 bg-amber-950/30' : 'border-emerald-500/50 bg-emerald-950/30'}`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${snapshotResult.status === 'CRITICAL' ? 'bg-red-500' : snapshotResult.status === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            <span className="text-sm font-bold text-white">Reconciliation: {snapshotResult.status}</span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                            Diff: <FormatCurrency amount={snapshotResult.difference} />
+                            {snapshotResult.liquidityRatio !== null && ` • Ratio: ${snapshotResult.liquidityRatio.toFixed(2)}x`}
+                        </div>
+                    </div>
+                </Card>
+            )}
+
+            {/* ── Core Stats ── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-                {/* Platform Profit Card */}
                 <Card
                     className="bg-gradient-to-br from-indigo-900/40 to-slate-800 cursor-pointer hover:border-indigo-500/50 transition-all group"
                     onClick={() => setProfitModalOpen(true)}
@@ -138,7 +265,7 @@ export const AdminDashboardPage = () => {
                             <DollarSign className="text-emerald-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Total Balance</div>
+                            <div className="text-xs text-slate-400">User Liability</div>
                             <div className="text-xl font-bold text-white">
                                 <FormatCurrency amount={stats?.totalBalance || 0} />
                             </div>
@@ -169,35 +296,157 @@ export const AdminDashboardPage = () => {
                         </div>
                     </div>
                 </Card>
+            </div>
 
-                <Card className="bg-gradient-to-br from-pink-900/40 to-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-pink-500/20 rounded-xl">
-                            <Activity className="text-pink-500" size={24} />
-                        </div>
-                        <div>
-                            <div className="text-xs text-slate-400">Quiz Pool (Locked)</div>
-                            <div className="text-lg font-bold text-white">
-                                <FormatCurrency amount={stats?.quizStats?.pendingPool || 0} />
+            {/* ── Risk Monitor ── */}
+            {risk && (
+                <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Shield size={12} /> Risk Monitor
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <Card className="bg-gradient-to-br from-rose-900/30 to-slate-800">
+                            <div className="text-xs text-slate-400 mb-1">Largest Wallet (Whale)</div>
+                            {risk.largestWallet ? (
+                                <>
+                                    <div className="text-lg font-bold text-white"><FormatCurrency amount={risk.largestWallet.balance} /></div>
+                                    <div className="text-[10px] text-slate-500 truncate">{risk.largestWallet.username || risk.largestWallet.name || risk.largestWallet.email}</div>
+                                </>
+                            ) : (
+                                <div className="text-slate-600">No users</div>
+                            )}
+                        </Card>
+                        <Card className="bg-gradient-to-br from-orange-900/30 to-slate-800">
+                            <div className="text-xs text-slate-400 mb-1">Locked Capital (Active Investments)</div>
+                            <div className="text-lg font-bold text-white"><FormatCurrency amount={risk.lockedCapital} /></div>
+                        </Card>
+                        <Card className="bg-gradient-to-br from-yellow-900/30 to-slate-800">
+                            <div className="text-xs text-slate-400 mb-1">Maturing in 7 Days</div>
+                            <div className="text-lg font-bold text-white">{risk.upcomingMaturities.count} plans</div>
+                            <div className="text-xs text-slate-500"><FormatCurrency amount={risk.upcomingMaturities.totalAmount} /> exposure</div>
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Profit Timeline ── */}
+            {timeline && (
+                <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <BarChart3 size={12} /> Profit Timeline
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        <Card className="bg-slate-800/50 text-center">
+                            <div className="text-[10px] text-slate-500 uppercase">Today</div>
+                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.today} /></div>
+                        </Card>
+                        <Card className="bg-slate-800/50 text-center">
+                            <div className="text-[10px] text-slate-500 uppercase">This Week</div>
+                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.thisWeek} /></div>
+                        </Card>
+                        <Card className="bg-slate-800/50 text-center">
+                            <div className="text-[10px] text-slate-500 uppercase">This Month</div>
+                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.thisMonth} /></div>
+                        </Card>
+                        <Card className="bg-slate-800/50 text-center">
+                            <div className="text-[10px] text-slate-500 uppercase">Lifetime</div>
+                            <div className="text-sm font-bold text-white"><FormatCurrency amount={timeline.lifetime} /></div>
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ── System Health + Quiz Stats Row ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* System Health */}
+                <Card className="bg-slate-900/50">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                        <Zap size={12} /> System Health
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Webhook</span>
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastWebhookAt) ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                <span className="text-xs text-slate-500">
+                                    {health?.lastWebhookAt ? new Date(health.lastWebhookAt).toLocaleString() : 'Never'}
+                                </span>
                             </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Last Transfer</span>
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastSuccessfulTransferAt, 1440) ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                <span className="text-xs text-slate-500">
+                                    {health?.lastSuccessfulTransferAt ? new Date(health.lastSuccessfulTransferAt).toLocaleString() : 'Never'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Failed Transfers (24h)</span>
+                            <span className={`text-xs font-bold ${(health?.failedTransferCount24h || 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                {health?.failedTransferCount24h || 0}
+                            </span>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-cyan-900/40 to-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-cyan-500/20 rounded-xl">
-                            <TrendingUp className="text-cyan-500" size={24} />
+                {/* Quiz Stats */}
+                <Card className="bg-slate-900/50">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                        <Activity size={12} /> Quiz Economy
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Quiz Pool (Locked)</span>
+                            <span className="font-bold text-white"><FormatCurrency amount={stats?.quizStats?.pendingPool || 0} /></span>
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-400">Active Games</div>
-                            <div className="text-lg font-bold text-white">{stats?.quizStats?.activeGames || 0}</div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Active Games</span>
+                            <span className="font-bold text-white">{stats?.quizStats?.activeGames || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Completed Games</span>
+                            <span className="font-bold text-white">{stats?.quizStats?.completedGames || 0}</span>
                         </div>
                     </div>
                 </Card>
             </div>
 
-            <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit History">
+            {/* ── Activity Feed ── */}
+            {stats?.activityFeed && stats.activityFeed.length > 0 && (
+                <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Eye size={12} /> Activity Feed (Last 20)
+                    </div>
+                    <Card className="bg-slate-900/50 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                            {stats.activityFeed.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.type === 'DEPOSIT' ? 'bg-emerald-500/20 text-emerald-400' :
+                                            item.type === 'WITHDRAWAL' ? 'bg-red-500/20 text-red-400' :
+                                                item.type === 'QUIZ_ENTRY' ? 'bg-purple-500/20 text-purple-400' :
+                                                    item.type === 'QUIZ_WINNING' ? 'bg-amber-500/20 text-amber-400' :
+                                                        'bg-slate-700 text-slate-400'
+                                            }`}>
+                                            {item.type.replace('_', ' ')}
+                                        </span>
+                                        <span className="text-xs text-slate-400 truncate">{item.user}</span>
+                                    </div>
+                                    <div className="text-right shrink-0 ml-2">
+                                        <div className="text-xs font-bold text-white"><FormatCurrency amount={item.amount} /></div>
+                                        <div className="text-[10px] text-slate-600">{new Date(item.timestamp).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* Profit Breakdown Modal */}
+            <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit Breakdown">
                 <div className="space-y-4">
                     <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
                         <div className="text-slate-400 text-sm mb-1">Total Platform Profit</div>
@@ -214,7 +463,7 @@ export const AdminDashboardPage = () => {
                                 </div>
                                 <div>
                                     <div className="text-sm font-medium text-white">Investment Profit</div>
-                                    <div className="text-xs text-slate-500">Margins from payouts</div>
+                                    <div className="text-xs text-slate-500">Computed from matured plans</div>
                                 </div>
                             </div>
                             <div className="font-bold text-white">
@@ -940,6 +1189,7 @@ export const AdminSettingsPage = () => {
         minWithdrawal: 1000,
         maxWithdrawal: 1000000,
         minInvestment: 5000,
+        autoTransferThreshold: 50000,
         isSystemPaused: false,
         paystackPublicKey: '',
         kycRequiredForAccount: true,
@@ -1083,6 +1333,13 @@ export const AdminSettingsPage = () => {
                             value={settings.maxWithdrawal}
                             onChange={e => setSettings({ ...settings, maxWithdrawal: parseInt(e.target.value) || 0 })}
                             hint="Maximum amount a user can transfer per transaction"
+                        />
+                        <Input
+                            label="Auto Transfer Threshold (₦)"
+                            type="number"
+                            value={settings.autoTransferThreshold}
+                            onChange={e => setSettings({ ...settings, autoTransferThreshold: parseInt(e.target.value) || 0 })}
+                            hint="Transfers ≤ this amount auto-process; above requires manual approval"
                         />
                         <Input
                             label="Minimum Investment Amount (₦)"

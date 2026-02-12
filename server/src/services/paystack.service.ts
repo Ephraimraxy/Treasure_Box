@@ -141,6 +141,26 @@ export const verifyWebhookSignature = (payload: string, signature: string): bool
 
 // ... existing code ...
 
+// ── Financial Control Center API ─────────────────────────
+
+// Get Paystack account balance
+export const getBalance = async () => {
+    const response = await paystackApi.get('/balance');
+    return response.data.data; // [{currency, balance, ...}]
+};
+
+// Get Paystack transaction history
+export const getTransactions = async (perPage = 50, page = 1) => {
+    const response = await paystackApi.get(`/transaction?perPage=${perPage}&page=${page}`);
+    return response.data;
+};
+
+// Get Paystack transfer history
+export const getTransfers = async (perPage = 50, page = 1) => {
+    const response = await paystackApi.get(`/transfer?perPage=${perPage}&page=${page}`);
+    return response.data;
+};
+
 // Generate unique reference
 export const generateReference = (prefix: string = 'TB'): string => {
     return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
