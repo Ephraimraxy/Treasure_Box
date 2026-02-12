@@ -12,6 +12,7 @@ interface Transaction {
     status: string;
     description: string;
     createdAt: string;
+    metadata?: any;
 }
 
 export const HistoryPage = () => {
@@ -80,57 +81,116 @@ export const HistoryPage = () => {
     const formatTime = (d: string) => new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
     const formatFull = (d: string) => `${formatDate(d)} at ${formatTime(d)}`;
 
-    // ─── Share as Image ───
-    const handleShareImage = async () => {
-        if (!receiptRef.current) return;
-        setSharing(true);
+    interface ReceiptData {
+        amount: number;
+        status: string;
+        type: string;
+        date: string;
+        ref: string;
+        sender?: string;
+        recipient?: string;
+        bankName?: string;
+        accountNumber?: string;
+        description?: string;
+        provider?: string;
+        meterNumber?: string;
+        token?: string;
+        item?: string; // For store purchases/quiz
+    }
+
+    // ─── Generate Receipt Data ───
+    const getReceiptData = useCallback((tx: Transaction): ReceiptData => {
+        const data: ReceiptData = {
+            amount: tx.amount,
+            status: tx.status,
+            type: tx.type,
+            date: tx.createdAt,
+            ref: tx.id,
+            description: tx.description,
+        };
+
+        const meta = tx.metadata || {};
+
+        if (tx.type === 'WITHDRAWAL' || tx.type.includes('DEBIT')) {
+            data.recipient = meta.recipientName || meta.accountName || "External Bank Account";
+            data.bankName = meta.bankName || meta.bank || "";
+            data.accountNumber = meta.accountNumber || meta.account || "";
+        } else if (tx.type === 'DEPOSIT') {
+            data.sender = "Bank Transfer / Card";
+            data.bankName = "Paystack Checkout";
+        } else if (tx.type === 'UTILITY_BILL') {
+            data.provider = meta.provider || "Utility Provider";
+            data.meterNumber = meta.meterNumber || meta.customer || "N/A";
+            data.token = meta.token;
+        }
+
+        return data;
+    }, []);
+
+    // ─── Capture Receipt (Shared Logic) ───
+    const captureReceipt = async () => {
+        if (!receiptRef.current) return null;
         try {
             const canvas = await html2canvas(receiptRef.current, {
-                backgroundColor: '#0f172a',
-                scale: 2,
+                backgroundColor: '#0f172a', // Match slate-950/900 theme
+                scale: 3, // Higher quality
                 useCORS: true,
+                logging: false,
+                onclone: (doc) => {
+                    // Ensure hidden elements are visible for capture if needed
+                    const el = doc.getElementById('receipt-content');
+                    if (el) el.style.padding = '20px'; // Add padding for export
+                }
             });
+            return canvas;
+        } catch (e) {
+            console.error("Capture failed", e);
+            return null;
+        }
+    };
+
+    const handleShareImage = async () => {
+        setSharing(true);
+        const canvas = await captureReceipt();
+        if (!canvas) { setSharing(false); return; }
+
+        try {
             const url = canvas.toDataURL('image/png');
-            // Try native share first
             if (navigator.share && navigator.canShare) {
                 const blob = await (await fetch(url)).blob();
-                const file = new File([blob], `receipt-${selectedTx?.id?.slice(0, 8)}.png`, { type: 'image/png' });
+                const file = new File([blob], `TB-Receipt-${selectedTx?.id.slice(0, 8)}.png`, { type: 'image/png' });
                 if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: 'Transaction Receipt' });
+                    await navigator.share({ files: [file], title: 'Treasure Box Receipt' });
                     setSharing(false);
                     return;
                 }
             }
-            // Fallback: download
             const a = document.createElement('a');
             a.href = url;
-            a.download = `receipt-${selectedTx?.id?.slice(0, 8)}.png`;
+            a.download = `TB-Receipt-${selectedTx?.id.slice(0, 8)}.png`;
             a.click();
-        } catch (e) {
-            console.error(e);
         } finally {
             setSharing(false);
         }
     };
 
-    // ─── Share as PDF ───
     const handleSharePDF = async () => {
-        if (!receiptRef.current) return;
         setSharing(true);
+        const canvas = await captureReceipt();
+        if (!canvas) { setSharing(false); return; }
+
         try {
-            const canvas = await html2canvas(receiptRef.current, {
-                backgroundColor: '#0f172a',
-                scale: 2,
-                useCORS: true,
-            });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
             const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, imgHeight);
-            pdf.save(`receipt-${selectedTx?.id?.slice(0, 8)}.pdf`);
-        } catch (e) {
-            console.error(e);
+
+            // Center vertically if short, or top if long
+            const yPos = imgHeight < pdfHeight ? (pdfHeight - imgHeight) / 5 : 10;
+
+            pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, imgHeight);
+            pdf.save(`TB-Receipt-${selectedTx?.id.slice(0, 8)}.pdf`);
         } finally {
             setSharing(false);
         }
@@ -241,84 +301,146 @@ export const HistoryPage = () => {
             {selectedTx && (() => {
                 const debit = isDebit(selectedTx.type);
                 const statusCfg = getStatusConfig(selectedTx.status);
+                const rData = getReceiptData(selectedTx);
+
                 return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" onClick={() => setSelectedTx(null)} />
-                        <div className="relative z-10 w-full max-w-sm animate-fade-in flex flex-col max-h-[90vh]">
-                            {/* Receipt Card (capturable) */}
-                            <div ref={receiptRef} className="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
-                                {/* Receipt Header */}
-                                <div className={`p-5 text-center ${debit
-                                    ? 'bg-gradient-to-br from-red-500/20 to-slate-900'
-                                    : 'bg-gradient-to-br from-emerald-500/20 to-slate-900'
-                                    }`}>
-                                    <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-3 ${debit ? 'bg-red-500/20' : 'bg-emerald-500/20'
-                                        }`}>
-                                        {debit
-                                            ? <ArrowUpRight size={28} className="text-red-400" />
-                                            : <ArrowDownRight size={28} className="text-emerald-400" />
-                                        }
-                                    </div>
-                                    <div className={`text-3xl font-black font-mono ${debit ? 'text-red-400' : 'text-emerald-400'}`}>
-                                        {debit ? '-' : '+'}<FormatCurrency amount={selectedTx.amount} />
-                                    </div>
-                                    <div className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-bold ${statusCfg.bg} ${statusCfg.color}`}>
-                                        {statusCfg.icon} {statusCfg.label}
-                                    </div>
-                                </div>
+                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={() => setSelectedTx(null)} />
 
-                                {/* Receipt Details */}
-                                <div className="p-5 space-y-3">
-                                    {[
-                                        { label: 'Description', value: selectedTx.description },
-                                        { label: 'Type', value: selectedTx.type.replace(/_/g, ' ') },
-                                        { label: 'Date & Time', value: formatFull(selectedTx.createdAt) },
-                                        { label: 'Transaction ID', value: selectedTx.id.slice(0, 16) + '...' },
-                                    ].map((row, i) => (
-                                        <div key={i} className="flex justify-between items-start gap-4 py-2 border-b border-slate-800/60 last:border-0">
-                                            <span className="text-xs text-slate-500 shrink-0">{row.label}</span>
-                                            <span className="text-xs text-white font-semibold text-right break-all">{row.value}</span>
+                        <div className="relative z-10 w-full max-w-sm flex flex-col h-[85vh]">
+                            {/* Scrollable Container for Receipt */}
+                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-t-2xl bg-slate-900 border border-slate-700 border-b-0 shadow-2xl">
+                                <div id="receipt-content" ref={receiptRef} className="bg-slate-900 p-6 min-h-full flex flex-col relative overflow-hidden">
+                                    {/* Top Decoration */}
+                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500" />
+
+                                    {/* Header: Logo & Title */}
+                                    <div className="flex justify-between items-start mb-8 mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
+                                                <div className="text-white font-bold text-xs">TB</div>
+                                            </div>
+                                            <span className="font-bold text-white leading-tight text-sm">Treasure<br />Box</span>
                                         </div>
-                                    ))}
+                                        <div className="text-right">
+                                            <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">Transaction Receipt</div>
+                                        </div>
+                                    </div>
 
-                                    {/* Copy ID */}
-                                    <button
-                                        onClick={() => copyId(selectedTx.id)}
-                                        className="w-full flex items-center justify-center gap-2 py-2 text-xs text-slate-400 hover:text-amber-400 transition-colors"
-                                    >
-                                        <Copy size={12} /> Copy Full ID
-                                    </button>
+                                    {/* Amount & Status */}
+                                    <div className="text-center mb-8">
+                                        <div className={`text-4xl font-black mb-2 ${debit ? 'text-white' : 'text-emerald-400'}`}>
+                                            <FormatCurrency amount={rData.amount} />
+                                        </div>
+                                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusCfg.bg} ${statusCfg.color}`}>
+                                            {statusCfg.icon} {statusCfg.label}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-2 font-mono">{formatFull(rData.date)}</div>
+                                    </div>
 
-                                    {/* Branding */}
-                                    <div className="text-center pt-3 border-t border-slate-800/60">
-                                        <p className="text-[10px] text-slate-600 font-bold">Treasure Box • Transaction Receipt</p>
+                                    {/* Divider */}
+                                    <div className="relative h-px bg-slate-800 w-full mb-6">
+                                        <div className="absolute -left-8 -top-3 w-6 h-6 rounded-full bg-slate-950" />
+                                        <div className="absolute -right-8 -top-3 w-6 h-6 rounded-full bg-slate-950" />
+                                    </div>
+
+                                    {/* Detailed Rows */}
+                                    <div className="space-y-4 text-sm flex-1">
+                                        {/* Dynamic Fields based on Type */}
+                                        {rData.recipient && (
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-slate-500">Recipient Details</span>
+                                                <div className="text-right">
+                                                    <div className="font-bold text-white uppercase">{rData.recipient}</div>
+                                                    {rData.bankName && <div className="text-xs text-slate-400">{rData.bankName}</div>}
+                                                    {rData.accountNumber && <div className="text-xs text-slate-400">{rData.accountNumber}</div>}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {rData.sender && (
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-slate-500">Sender Details</span>
+                                                <div className="text-right">
+                                                    <div className="font-bold text-white uppercase">{rData.sender}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {rData.provider && (
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-slate-500">Provider</span>
+                                                <div className="text-right">
+                                                    <div className="font-bold text-white uppercase">{rData.provider}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-slate-500">Transaction Type</span>
+                                            <span className="font-medium text-white capitalize">{rData.type.replace(/_/g, ' ').toLowerCase()}</span>
+                                        </div>
+
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-slate-500 shrink-0">Description</span>
+                                            <span className="font-medium text-white text-right">{rData.description}</span>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-dashed border-slate-800 space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">Transaction No.</span>
+                                                <span className="font-mono text-xs text-slate-300">{rData.ref.slice(0, 20)}...</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">Session ID</span>
+                                                <span className="font-mono text-xs text-slate-300">{rData.ref}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+                                        <p className="text-[10px] text-slate-500 leading-relaxed max-w-[200px] mx-auto">
+                                            Enjoy a better life with Treasure Box. Get free transfers, withdrawals, bill payments, and good annual interest on your savings.
+                                        </p>
+                                        <p className="text-[10px] text-slate-600 mt-2 font-bold opacity-50">Licensed by Central Bank of Nigeria</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Share Actions (outside capturable area) */}
-                            <div className="flex gap-2 mt-3">
+                            {/* Bottom Wave/Tear Effect (Visual only) */}
+                            <div className="h-4 bg-slate-900 w-full relative overflow-hidden rounded-b-2xl mb-4">
+                                <div className="absolute top-0 left-0 w-full h-full flex" style={{ transform: 'translateY(-50%)' }}>
+                                    {Array.from({ length: 20 }).map((_, i) => (
+                                        <div key={i} className="flex-1 h-8 rounded-full bg-slate-950 mx-[-4px]" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Share Buttons */}
+                            <div className="grid grid-cols-2 gap-3 pb-safe">
                                 <button
                                     onClick={handleShareImage}
                                     disabled={sharing}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400 text-sm font-bold transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
-                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Share2 size={16} /> Image</>}
+                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Share2 size={18} /> Share Image</>}
                                 </button>
                                 <button
                                     onClick={handleSharePDF}
                                     disabled={sharing}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-xl text-blue-400 text-sm font-bold transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
-                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Download size={16} /> PDF</>}
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTx(null)}
-                                    className="px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-400 text-sm font-bold transition-all"
-                                >
-                                    <X size={16} />
+                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Download size={18} /> Share PDF</>}
                                 </button>
                             </div>
+
+                            <button
+                                onClick={() => setSelectedTx(null)}
+                                className="mt-4 mx-auto p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all absolute -top-14 right-0"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
                     </div>
                 );
