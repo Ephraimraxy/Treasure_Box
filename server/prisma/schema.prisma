@@ -154,7 +154,7 @@ model Settings {
   minWithdrawal             Float   @default(1000)
   minInvestment             Float   @default(5000)
   maxWithdrawal             Float   @default(1000000)
-  autoTransferThreshold     Float   @default(50000)
+  autoTransferThreshold     Decimal @default(50000) @db.Decimal(18,2)
   enableNotifications       Boolean @default(true)
   enableEmailLoginAlerts    Boolean @default(true)
   enableWithdrawalApproval Boolean @default(true)
