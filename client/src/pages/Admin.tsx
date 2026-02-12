@@ -101,6 +101,8 @@ interface Withdrawal {
 //  FINANCIAL CONTROL CENTER — Dashboard
 // ═══════════════════════════════════════════════
 
+import { FinancialStatementReport } from '../components/reports/FinancialStatementReport';
+
 export const AdminDashboardPage = () => {
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -113,6 +115,12 @@ export const AdminDashboardPage = () => {
         start: new Date(new Date().setDate(1)).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
     });
+
+    // Financial Report State
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportData, setReportData] = useState<any>(null);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -152,6 +160,20 @@ export const AdminDashboardPage = () => {
             addToast('error', error.response?.data?.error || 'Snapshot failed');
         } finally {
             setSnapshotLoading(false);
+        }
+    };
+
+    const handleGenerateReport = async () => {
+        setIsGeneratingReport(true);
+        try {
+            const { data } = await adminApi.getStatementData(statementRange.start, statementRange.end);
+            setReportData(data);
+            setShowReportModal(true);
+        } catch (error) {
+            console.error('Failed to generate report', error);
+            addToast('error', 'Failed to generate report');
+        } finally {
+            setIsGeneratingReport(false);
         }
     };
 
@@ -212,8 +234,8 @@ export const AdminDashboardPage = () => {
             {/* ── Capital Protection Banner ── */}
             {protectionStatus && (
                 <div className={`p-3 rounded-xl border text-sm flex items-center gap-2 ${protectionStatus.active
-                        ? 'bg-red-950/60 border-red-500/50 text-red-300'
-                        : 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                    ? 'bg-red-950/60 border-red-500/50 text-red-300'
+                    : 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
                     }`}>
                     <Shield size={16} />
                     <span className="font-semibold">
@@ -572,36 +594,45 @@ export const AdminDashboardPage = () => {
                     <h3 className="text-sm font-bold text-white">Financial Statement Export</h3>
                 </div>
                 <p className="text-xs text-slate-400 mb-3">Generate and download a detailed financial transcript including all transactions, investments, risk events, and platform metrics for the selected period.</p>
-                <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-wrap items-end gap-3 mt-3">
                     <div>
                         <label className="text-xs text-slate-400 block mb-1">Start Date</label>
-                        <input
+                        <Input
                             type="date"
                             value={statementRange.start}
-                            onChange={e => setStatementRange(p => ({ ...p, start: e.target.value }))}
-                            className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                            onChange={(e) => setStatementRange({ ...statementRange, start: e.target.value })}
+                            className="bg-slate-950 border-slate-700 text-white h-9"
                         />
                     </div>
                     <div>
                         <label className="text-xs text-slate-400 block mb-1">End Date</label>
-                        <input
+                        <Input
                             type="date"
                             value={statementRange.end}
-                            onChange={e => setStatementRange(p => ({ ...p, end: e.target.value }))}
-                            className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                            onChange={(e) => setStatementRange({ ...statementRange, end: e.target.value })}
+                            className="bg-slate-950 border-slate-700 text-white h-9"
                         />
                     </div>
-                    <Button
-                        onClick={handleDownloadStatement}
-                        disabled={statementLoading}
-                        className="text-xs px-4 py-2"
-                    >
-                        {statementLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
-                        {statementLoading ? 'Generating...' : 'Download CSV Statement'}
+                    <Button onClick={handleGenerateReport} disabled={isGeneratingReport} variant="primary" className="h-9">
+                        {isGeneratingReport ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrendingUp className="w-4 h-4 mr-2" />}
+                        Preview Report
+                    </Button>
+                    <Button onClick={handleDownloadStatement} disabled={statementLoading} variant="outline" className="h-9 border-slate-600 hover:bg-slate-700">
+                        {statementLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                        Download CSV
                     </Button>
                 </div>
             </Card>
-        </div>
+
+            {/* Financial Report Modal */}
+            {showReportModal && reportData && (
+                <FinancialStatementReport
+                    data={reportData}
+                    onClose={() => setShowReportModal(false)}
+                />
+            )}
+
+        </div >
     );
 };
 

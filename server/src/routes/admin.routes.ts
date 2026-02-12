@@ -1157,6 +1157,49 @@ router.get('/statement', async (req: AuthRequest, res, next) => {
             }
         });
 
+        // ── Return JSON if requested ──
+        if (req.query.format === 'json') {
+            return res.json({
+                period: { start: startDate, end: endDate },
+                summary: {
+                    totalUsers: userCount,
+                    totalLiability,
+                    paystackAvailable,
+                    coverageRatio: totalLiability > 0 ? paystackAvailable / totalLiability : null,
+                    netCashFlow: sum(deposits) - sum(successfulWithdrawals),
+                    platformRevenue: (sum(quizEntries) - sum(quizWinnings)) + (sum(investmentPayouts) * 0.1) // Est. inv profit
+                },
+                cashFlow: {
+                    deposits: sum(deposits),
+                    withdrawals: sum(successfulWithdrawals),
+                    pendingWithdrawals: sum(pendingWithdrawals)
+                },
+                quizEconomy: {
+                    revenue: sum(quizEntries),
+                    payouts: sum(quizWinnings),
+                    profit: sum(quizEntries) - sum(quizWinnings)
+                },
+                investments: {
+                    newCount: investments.length,
+                    totalCapital: investments.reduce((s: number, i: { principal: any }) => s + Number(i.principal), 0),
+                    payouts: sum(investmentPayouts)
+                },
+                risk: {
+                    reconciliations: reconciliationLogs.length,
+                    criticalEvents: reconciliationLogs.filter((r: { status: string }) => r.status === 'CRITICAL').length,
+                    protectionBlocks: protectionLogs.filter((p: { action: string }) => p.action === 'BLOCK_TRANSFER').length
+                },
+                transactions: transactions.map(t => ({
+                    date: t.createdAt,
+                    type: t.type,
+                    amount: t.amount,
+                    status: t.status,
+                    user: t.user.username || t.user.name || t.user.email,
+                    description: t.description
+                }))
+            });
+        }
+
         // ── Send CSV ──
         const csv = lines.join('\r\n');
         const filename = `TreasureBox_Statement_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`;
