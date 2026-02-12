@@ -83,7 +83,7 @@ export const DisputePage = () => {
                     <AlertTriangle size={24} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Report & Disputes</h1>
+                    <h1 className="text-2xl font-bold text-foreground">Report & Disputes</h1>
                     <p className="text-slate-400">Submit issues or report problems with transactions</p>
                 </div>
             </div>
@@ -165,10 +165,10 @@ export const DisputePage = () => {
                         history.map((item) => (
                             <Card key={item.id} className="group hover:border-slate-700 transition-colors">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-white">{item.subject}</h3>
+                                    <h3 className="font-bold text-foreground">{item.subject}</h3>
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${item.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-500' :
-                                            item.status === 'CLOSED' ? 'bg-slate-700 text-slate-400' :
-                                                'bg-amber-500/20 text-amber-500'
+                                        item.status === 'CLOSED' ? 'bg-slate-700 text-slate-400' :
+                                            'bg-amber-500/20 text-amber-500'
                                         }`}>
                                         {item.status}
                                     </span>

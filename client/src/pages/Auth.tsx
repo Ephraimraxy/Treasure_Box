@@ -558,7 +558,7 @@ export const RegisterPage = () => {
                                     <CheckCircle className="text-emerald-500" size={32} />
                                 </div>
                                 <p className="text-slate-400">Enter the 6-digit code sent to</p>
-                                <p className="text-white font-medium">{email}</p>
+                                <p className="text-foreground font-medium">{email}</p>
                             </div>
                             <AnimatedInput
                                 type="text"

@@ -331,7 +331,7 @@ export const HistoryPage = () => {
 
                                     {/* Amount & Status */}
                                     <div className="text-center mb-8">
-                                        <div className={`text-4xl font-black mb-2 ${debit ? 'text-white' : 'text-emerald-400'}`}>
+                                        <div className={`text-4xl font-black mb-2 ${debit ? 'text-slate-900 dark:text-white' : 'text-emerald-400'}`}>
                                             <FormatCurrency amount={rData.amount} />
                                         </div>
                                         <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusCfg.bg} ${statusCfg.color}`}>
@@ -353,7 +353,7 @@ export const HistoryPage = () => {
                                             <div className="flex justify-between items-start">
                                                 <span className="text-slate-500">Recipient Details</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-white uppercase">{rData.recipient}</div>
+                                                    <div className="font-bold text-slate-900 dark:text-white uppercase">{rData.recipient}</div>
                                                     {rData.bankName && <div className="text-xs text-slate-400">{rData.bankName}</div>}
                                                     {rData.accountNumber && <div className="text-xs text-slate-400">{rData.accountNumber}</div>}
                                                 </div>
@@ -364,7 +364,7 @@ export const HistoryPage = () => {
                                             <div className="flex justify-between items-start">
                                                 <span className="text-slate-500">Sender Details</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-white uppercase">{rData.sender}</div>
+                                                    <div className="font-bold text-slate-900 dark:text-white uppercase">{rData.sender}</div>
                                                 </div>
                                             </div>
                                         )}
@@ -373,19 +373,19 @@ export const HistoryPage = () => {
                                             <div className="flex justify-between items-start">
                                                 <span className="text-slate-500">Provider</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-white uppercase">{rData.provider}</div>
+                                                    <div className="font-bold text-slate-900 dark:text-white uppercase">{rData.provider}</div>
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="flex justify-between items-start">
                                             <span className="text-slate-500">Transaction Type</span>
-                                            <span className="font-medium text-white capitalize">{rData.type.replace(/_/g, ' ').toLowerCase()}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white capitalize">{rData.type.replace(/_/g, ' ').toLowerCase()}</span>
                                         </div>
 
                                         <div className="flex justify-between items-start gap-4">
                                             <span className="text-slate-500 shrink-0">Description</span>
-                                            <span className="font-medium text-white text-right">{rData.description}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white text-right">{rData.description}</span>
                                         </div>
 
                                         <div className="pt-4 border-t border-dashed border-slate-800 space-y-4">

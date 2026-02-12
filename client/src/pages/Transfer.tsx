@@ -252,7 +252,7 @@ export const TransferPage = () => {
             {step === 2 && (
                 <div className="flex-1 flex flex-col">
                     <p className="text-sm text-slate-400 mb-4">
-                        Where should we send <span className="text-white font-bold"><FormatCurrency amount={parseFloat(amount)} /></span>?
+                        Where should we send <span className="text-primary font-bold"><FormatCurrency amount={parseFloat(amount)} /></span>?
                     </p>
 
                     {/* Bank Selector */}
@@ -361,10 +361,10 @@ export const TransferPage = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="text-[10px] text-muted uppercase tracking-widest">Sending</div>
-                                <div className="text-xl font-black text-white"><FormatCurrency amount={parseFloat(amount)} /></div>
+                                <div className="text-xl font-black text-foreground"><FormatCurrency amount={parseFloat(amount)} /></div>
                             </div>
                             <div className="text-right">
-                                <div className="text-xs font-semibold text-white">{bankData.accountName}</div>
+                                <div className="text-xs font-semibold text-foreground">{bankData.accountName}</div>
                                 <div className="text-[10px] text-blue-400">{bankData.accountNumber} • {bankData.bankName}</div>
                             </div>
                         </div>

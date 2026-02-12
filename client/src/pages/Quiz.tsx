@@ -462,7 +462,7 @@ export const QuizPage = () => {
                 <ArrowLeft size={18} className="text-slate-300" />
             </button>
             <div>
-                <h2 className="text-lg font-bold text-white">{title}</h2>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h2>
                 {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
             </div>
         </div>
@@ -483,7 +483,7 @@ export const QuizPage = () => {
                             <Brain size={22} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-white">Mendula Quiz Arena</h1>
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Mendula Quiz Arena</h1>
                             <p className="text-xs text-slate-400">Test your knowledge, earn rewards</p>
                         </div>
                     </div>
@@ -523,7 +523,7 @@ export const QuizPage = () => {
 
                 {/* Courses */}
                 <div>
-                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                         <Star size={14} className="text-amber-400" /> Select a Course
                     </h3>
                     {loading ? (
@@ -540,7 +540,7 @@ export const QuizPage = () => {
                                         {course.icon || '📚'}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-white text-sm">{course.name}</div>
+                                        <div className="font-semibold text-slate-900 dark:text-white text-sm">{course.name}</div>
                                         <div className="text-[11px] text-slate-400 truncate">{course.description}</div>
                                         <div className="text-[10px] text-slate-500 mt-0.5">
                                             {course.modules?.length || 0} module{course.modules?.length !== 1 ? 's' : ''}
@@ -573,7 +573,7 @@ export const QuizPage = () => {
                                 <Brain size={18} className="text-blue-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-white text-sm">{mod.name}</div>
+                                <div className="font-semibold text-slate-900 dark:text-white text-sm">{mod.name}</div>
                                 <div className="text-[11px] text-slate-400 truncate">{mod.description}</div>
                                 <div className="text-[10px] text-slate-500 mt-0.5">
                                     {mod.levels?.length || 0} level{mod.levels?.length !== 1 ? 's' : ''}
@@ -613,7 +613,7 @@ export const QuizPage = () => {
                         >
                             <div className="text-2xl">{levelIcons[level.level] || '🟢'}</div>
                             <div className="flex-1">
-                                <div className="font-semibold text-white text-sm">{level.name}</div>
+                                <div className="font-semibold text-slate-900 dark:text-white text-sm">{level.name}</div>
                                 <div className="text-[10px] text-slate-400">
                                     {level._count?.questions || 0} questions
                                 </div>
@@ -645,7 +645,7 @@ export const QuizPage = () => {
                             <Target size={24} className="text-emerald-400" />
                         </div>
                         <div className="flex-1">
-                            <div className="font-bold text-white flex items-center gap-2">
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 Solo Skill Challenge
                                 <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">BEST FOR START</span>
                             </div>
@@ -664,7 +664,7 @@ export const QuizPage = () => {
                             <Swords size={24} className="text-orange-400" />
                         </div>
                         <div className="flex-1">
-                            <div className="font-bold text-white flex items-center gap-2">
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 Duel Skill Match
                                 <span className="text-[9px] bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">PVP</span>
                             </div>
@@ -682,7 +682,7 @@ export const QuizPage = () => {
                             <Crown size={24} className="text-violet-400" />
                         </div>
                         <div className="flex-1">
-                            <div className="font-bold text-white flex items-center gap-2">
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 League Skill Arena
                                 <span className="text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full">MULTI</span>
                             </div>
@@ -701,7 +701,7 @@ export const QuizPage = () => {
                             onClick={() => { setSelectedMode('DUEL'); setView('duel-join'); }}
                         >
                             <Swords size={18} className="text-orange-400 mx-auto mb-1" />
-                            <div className="text-[11px] font-medium text-white">Join Duel</div>
+                            <div className="text-[11px] font-medium text-slate-900 dark:text-white">Join Duel</div>
                             <div className="text-[9px] text-slate-500">Enter match code</div>
                         </Card>
                         <Card
@@ -709,7 +709,7 @@ export const QuizPage = () => {
                             onClick={() => { setSelectedMode('LEAGUE'); setView('league-join'); }}
                         >
                             <Crown size={18} className="text-violet-400 mx-auto mb-1" />
-                            <div className="text-[11px] font-medium text-white">Join League</div>
+                            <div className="text-[11px] font-medium text-slate-900 dark:text-white">Join League</div>
                             <div className="text-[9px] text-slate-500">Enter league code</div>
                         </Card>
                     </div>
@@ -734,7 +734,7 @@ export const QuizPage = () => {
 
                 {/* Entry Amount */}
                 <Card className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
                         <Zap size={14} className={`text-${config.color}-400`} /> Entry Amount (₦)
                     </div>
                     <Input
@@ -767,7 +767,7 @@ export const QuizPage = () => {
                 {/* League: Max Players */}
                 {selectedMode === 'LEAGUE' && (
                     <Card className="p-4 space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
                             <Users size={14} className="text-violet-400" /> Max Players
                         </div>
                         <Input
@@ -783,7 +783,7 @@ export const QuizPage = () => {
 
                 {/* PIN */}
                 <Card className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
                         <Lock size={14} className="text-slate-400" /> Transaction PIN
                     </div>
                     <Input

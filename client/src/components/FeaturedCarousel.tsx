@@ -163,7 +163,7 @@ export const FeaturedCarousel = () => {
         <div className="w-full space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between px-1">
-                <h2 className="text-lg font-bold text-white tracking-tight">Featured</h2>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Featured</h2>
                 <div className="flex items-center gap-1">
                     <button
                         onClick={() => goTo((current - 1 + FEATURED_SLIDES.length) % FEATURED_SLIDES.length)}
