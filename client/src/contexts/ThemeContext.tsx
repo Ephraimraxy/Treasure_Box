@@ -27,7 +27,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Initialize from localStorage or default
     const [mode, setModeState] = useState<ThemeMode>(() =>
-        (localStorage.getItem('theme-mode') as ThemeMode) || 'dark'
+        (localStorage.getItem('theme-mode') as ThemeMode) || 'system'
     );
 
     const [accent, setAccentState] = useState<AccentColor>(() =>
