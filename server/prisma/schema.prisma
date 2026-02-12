@@ -155,6 +155,7 @@ model Settings {
   minInvestment             Float   @default(5000)
   maxWithdrawal             Float   @default(1000000)
   autoTransferThreshold     Decimal @default(50000) @db.Decimal(18,2)
+  minLiquidityRatio         Decimal @default(1.05)  @db.Decimal(5,2)
   enableNotifications       Boolean @default(true)
   enableEmailLoginAlerts    Boolean @default(true)
   enableWithdrawalApproval Boolean @default(true)
@@ -178,6 +179,7 @@ model ReconciliationLog {
   userLiability     Decimal  @db.Decimal(18,2)
   paystackAvailable Decimal  @db.Decimal(18,2)
   difference        Decimal  @db.Decimal(18,2)
+  coverageRatio     Decimal  @db.Decimal(10,4)
   status            String   // OK, WARNING, CRITICAL
   createdAt         DateTime @default(now())
 }
@@ -194,6 +196,7 @@ model SystemHealth {
   lastWebhookAt            DateTime?
   lastSuccessfulTransferAt DateTime?
   lastFailedTransferAt     DateTime?
+  lastReconciliation       DateTime?
   failedTransferCount24h   Int       @default(0)
   updatedAt                DateTime  @updatedAt
 }
@@ -400,4 +403,17 @@ enum ResearchStatus {
   IN_PROGRESS
   COMPLETED
   REJECTED
+}
+
+// ── Capital Protection ─────────────────────────────────────
+
+model CapitalProtectionLog {
+  id          String   @id @default(cuid())
+  coverage    Decimal  @db.Decimal(10,4)
+  threshold   Decimal  @db.Decimal(10,4)
+  liability   Decimal  @db.Decimal(18,2)
+  available   Decimal  @db.Decimal(18,2)
+  action      String   // BLOCK_TRANSFER, ALLOW_TRANSFER
+  triggeredBy String   // USER_WITHDRAWAL, ADMIN_APPROVAL
+  createdAt   DateTime @default(now())
 }

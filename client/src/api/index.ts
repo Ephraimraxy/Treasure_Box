@@ -134,6 +134,9 @@ export const adminApi = {
     getResearchRequests: () => api.get('/research/admin/requests'),
     updateResearchRequest: (id: string, data: any) => api.patch(`/research/admin/requests/${id}`, data),
     createSnapshot: () => api.post('/admin/reconciliation/snapshot'),
+    getProtectionStatus: () => api.get('/admin/protection-status'),
+    downloadStatement: (start: string, end: string) =>
+        api.get(`/admin/statement?start=${start}&end=${end}`, { responseType: 'blob' }),
 };
 
 // Quiz API

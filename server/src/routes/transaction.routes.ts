@@ -112,6 +112,21 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
 
         const isApprovalEnabled = settings?.enableWithdrawalApproval !== false; // Default true
 
+        // ── Capital protection guard ──
+        // Check liquidity BEFORE initiating any transfer
+        if (!isApprovalEnabled) {
+            const { checkLiquidityGuard } = await import('../services/risk.service');
+            const liquidityCheck = await checkLiquidityGuard('USER_WITHDRAWAL');
+            if (!liquidityCheck.allowed) {
+                // Refund user — transfer blocked by risk engine
+                await prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } });
+                return res.status(503).json({
+                    error: 'Transfers temporarily paused for system maintenance. Please try again later.',
+                    code: 'LIQUIDITY_PROTECTION'
+                });
+            }
+        }
+
         let transactionStatus: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
         let transactionMeta: any = {
             bankDetails: {

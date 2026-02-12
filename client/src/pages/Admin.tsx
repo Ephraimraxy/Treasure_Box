@@ -107,6 +107,12 @@ export const AdminDashboardPage = () => {
     const [profitModalOpen, setProfitModalOpen] = useState(false);
     const [snapshotLoading, setSnapshotLoading] = useState(false);
     const [snapshotResult, setSnapshotResult] = useState<any>(null);
+    const [protectionStatus, setProtectionStatus] = useState<any>(null);
+    const [statementLoading, setStatementLoading] = useState(false);
+    const [statementRange, setStatementRange] = useState({
+        start: new Date(new Date().setDate(1)).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -120,7 +126,16 @@ export const AdminDashboardPage = () => {
                 setLoading(false);
             }
         };
+        const fetchProtection = async () => {
+            try {
+                const res = await adminApi.getProtectionStatus();
+                setProtectionStatus(res.data);
+            } catch (error) {
+                console.error('Failed to fetch protection status:', error);
+            }
+        };
         fetchStats();
+        fetchProtection();
     }, []);
 
     const handleSnapshot = async () => {
@@ -129,13 +144,35 @@ export const AdminDashboardPage = () => {
             const res = await adminApi.createSnapshot();
             setSnapshotResult(res.data.summary);
             addToast('success', `Reconciliation: ${res.data.summary.status}`);
-            // Refresh stats to get the new snapshot
             const statsRes = await adminApi.getStats();
             setStats(statsRes.data);
+            const protRes = await adminApi.getProtectionStatus();
+            setProtectionStatus(protRes.data);
         } catch (error: any) {
             addToast('error', error.response?.data?.error || 'Snapshot failed');
         } finally {
             setSnapshotLoading(false);
+        }
+    };
+
+    const handleDownloadStatement = async () => {
+        setStatementLoading(true);
+        try {
+            const res = await adminApi.downloadStatement(statementRange.start, statementRange.end);
+            const blob = new Blob([res.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TreasureBox_Statement_${statementRange.start}_to_${statementRange.end}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            addToast('success', 'Statement downloaded successfully');
+        } catch (error: any) {
+            addToast('error', 'Failed to download statement');
+        } finally {
+            setStatementLoading(false);
         }
     };
 
@@ -171,6 +208,30 @@ export const AdminDashboardPage = () => {
                     {snapshotLoading ? 'Syncing...' : 'Run Reconciliation'}
                 </Button>
             </div>
+
+            {/* ── Capital Protection Banner ── */}
+            {protectionStatus && (
+                <div className={`p-3 rounded-xl border text-sm flex items-center gap-2 ${protectionStatus.active
+                        ? 'bg-red-950/60 border-red-500/50 text-red-300'
+                        : 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                    }`}>
+                    <Shield size={16} />
+                    <span className="font-semibold">
+                        Capital Protection: {protectionStatus.active ? '🔴 ACTIVE — Transfers Blocked' : '🟢 Inactive — Transfers Allowed'}
+                    </span>
+                    {protectionStatus.coverage !== null && (
+                        <span className="ml-auto text-xs opacity-80">
+                            Coverage: {protectionStatus.coverage === Infinity ? '∞' : protectionStatus.coverage?.toFixed(2)}x
+                            {protectionStatus.threshold && ` / ${protectionStatus.threshold}x threshold`}
+                        </span>
+                    )}
+                    {protectionStatus.recentBlocks > 0 && (
+                        <span className="text-xs bg-red-500/20 px-2 py-0.5 rounded-full ml-2">
+                            {protectionStatus.recentBlocks} blocks (24h)
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* ── Financial Health ── */}
             {fin && (
@@ -503,6 +564,43 @@ export const AdminDashboardPage = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* ── Financial Statement Export ── */}
+            <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
+                <div className="flex items-center gap-2 mb-3">
+                    <FileText size={16} className="text-amber-400" />
+                    <h3 className="text-sm font-bold text-white">Financial Statement Export</h3>
+                </div>
+                <p className="text-xs text-slate-400 mb-3">Generate and download a detailed financial transcript including all transactions, investments, risk events, and platform metrics for the selected period.</p>
+                <div className="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label className="text-xs text-slate-400 block mb-1">Start Date</label>
+                        <input
+                            type="date"
+                            value={statementRange.start}
+                            onChange={e => setStatementRange(p => ({ ...p, start: e.target.value }))}
+                            className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-slate-400 block mb-1">End Date</label>
+                        <input
+                            type="date"
+                            value={statementRange.end}
+                            onChange={e => setStatementRange(p => ({ ...p, end: e.target.value }))}
+                            className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                        />
+                    </div>
+                    <Button
+                        onClick={handleDownloadStatement}
+                        disabled={statementLoading}
+                        className="text-xs px-4 py-2"
+                    >
+                        {statementLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
+                        {statementLoading ? 'Generating...' : 'Download CSV Statement'}
+                    </Button>
+                </div>
+            </Card>
         </div>
     );
 };
@@ -1190,6 +1288,7 @@ export const AdminSettingsPage = () => {
         maxWithdrawal: 1000000,
         minInvestment: 5000,
         autoTransferThreshold: 50000,
+        minLiquidityRatio: 1.05,
         isSystemPaused: false,
         paystackPublicKey: '',
         kycRequiredForAccount: true,
@@ -1347,6 +1446,14 @@ export const AdminSettingsPage = () => {
                             value={settings.minInvestment}
                             onChange={e => setSettings({ ...settings, minInvestment: parseInt(e.target.value) || 0 })}
                             hint="Minimum amount required to create an investment"
+                        />
+                        <Input
+                            label="Min Liquidity Ratio"
+                            type="number"
+                            step="0.01"
+                            value={settings.minLiquidityRatio}
+                            onChange={e => setSettings({ ...settings, minLiquidityRatio: parseFloat(e.target.value) || 1.05 })}
+                            hint="Capital protection threshold. Transfers blocked when coverage falls below this (e.g. 1.05 = 105%)"
                         />
                     </div>
                 </Card>

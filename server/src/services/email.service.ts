@@ -247,3 +247,55 @@ export const sendLoginAlertEmail = async (email: string, date: string, ip: strin
     `,
   });
 };
+
+// Capital Protection Alert Email
+export const sendCapitalAlert = async (
+  email: string,
+  coverage: number,
+  threshold: number,
+  liability: number,
+  available: number
+) => {
+  const coverageColor = coverage < 1.0 ? '#ef4444' : '#f59e0b';
+
+  await resend.emails.send({
+    from: `${appName} <${fromEmail}>`,
+    to: email,
+    subject: `🔴 CRITICAL: Capital Protection Triggered — Coverage ${coverage.toFixed(2)}x`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; }
+            .container { max-width: 500px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 40px; border: 2px solid #ef4444; }
+            h1 { color: #ef4444; text-align: center; margin-bottom: 10px; }
+            .subtitle { color: #94a3b8; text-align: center; margin-bottom: 30px; font-size: 14px; }
+            .metric { background: #0f172a; border-radius: 8px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; }
+            .metric-label { color: #94a3b8; }
+            .metric-value { color: #fff; font-weight: bold; }
+            .coverage-value { color: ${coverageColor}; font-size: 24px; font-weight: bold; text-align: center; margin: 15px 0; }
+            .action { background: #ef444420; border: 1px solid #ef4444; border-radius: 8px; padding: 15px; margin: 20px 0; color: #fca5a5; text-align: center; }
+            .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>⚠️ Capital Protection Active</h1>
+            <p class="subtitle">All outbound transfers have been automatically blocked.</p>
+            <div class="coverage-value">${coverage.toFixed(4)}x coverage</div>
+            <div class="metric"><span class="metric-label">Threshold</span><span class="metric-value">${threshold}x</span></div>
+            <div class="metric"><span class="metric-label">Available (Paystack)</span><span class="metric-value">₦${available.toLocaleString()}</span></div>
+            <div class="metric"><span class="metric-label">Total Liability</span><span class="metric-value">₦${liability.toLocaleString()}</span></div>
+            <div class="metric"><span class="metric-label">Shortfall</span><span class="metric-value">₦${(liability - available).toLocaleString()}</span></div>
+            <div class="action">
+              <strong>Action Required:</strong> Fund Paystack balance or reduce liability to restore coverage above ${threshold}x.
+            </div>
+            <p style="color: #94a3b8; text-align: center; font-size: 13px;">This is an automated alert from ${appName} Risk Engine.</p>
+            <div class="footer">&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</div>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+};

@@ -84,6 +84,16 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
         }
 
         // Initialize Paystack Transfer
+        // ── Capital protection guard ──
+        const { checkLiquidityGuard } = await import('../services/risk.service');
+        const liquidityCheck = await checkLiquidityGuard('ADMIN_APPROVAL');
+        if (!liquidityCheck.allowed) {
+            return res.status(503).json({
+                error: `Capital protection active. Coverage: ${liquidityCheck.coverage.toFixed(2)}x (threshold: ${liquidityCheck.threshold.toFixed(2)}x). Fund Paystack or run reconciliation.`,
+                code: 'LIQUIDITY_PROTECTION'
+            });
+        }
+
         // 1. Get Bank Details (from meta or user's bank details)
         // Meta should have 'bankDetails' snapshot from creation time
         const meta = transaction.meta as any;
@@ -671,7 +681,13 @@ router.post('/reconciliation/snapshot', async (req: AuthRequest, res, next) => {
                 data: { available: paystackAvailable, pending: paystackPending }
             }),
             prisma.reconciliationLog.create({
-                data: { userLiability, paystackAvailable, difference, status }
+                data: {
+                    userLiability,
+                    paystackAvailable,
+                    difference,
+                    coverageRatio: userLiability === 0 ? 9999 : paystackAvailable / userLiability,
+                    status
+                }
             })
         ]);
 
@@ -854,6 +870,300 @@ router.put('/settings', async (req: AuthRequest, res, next) => {
         });
 
         res.json(settings);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  RECONCILIATION SNAPSHOT (Rate-limited, live Paystack call)
+// ═══════════════════════════════════════════════
+router.post('/reconciliation/snapshot', async (req: AuthRequest, res, next) => {
+    try {
+        // ── Rate limiter: 1 snapshot per 2 minutes ──
+        const lastSnapshot = await prisma.paystackBalanceSnapshot.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (lastSnapshot) {
+            const timeSince = Date.now() - new Date(lastSnapshot.createdAt).getTime();
+            if (timeSince < 2 * 60 * 1000) {
+                const waitSeconds = Math.ceil((2 * 60 * 1000 - timeSince) / 1000);
+                return res.status(429).json({
+                    error: `Rate limited. Please wait ${waitSeconds}s before next snapshot.`,
+                    lastSnapshot
+                });
+            }
+        }
+
+        // ── Fetch live Paystack balance ──
+        const { getBalance } = await import('../services/paystack.service');
+        const balanceData = await getBalance();
+
+        if (!balanceData) {
+            return res.status(502).json({ error: 'Failed to fetch Paystack balance. Check PAYSTACK_SECRET_KEY.' });
+        }
+
+        // Paystack returns amounts in kobo (1/100 of Naira)
+        const available = balanceData.available / 100;
+        const pending = balanceData.pending / 100;
+
+        // ── Store snapshot ──
+        const snapshot = await prisma.paystackBalanceSnapshot.create({
+            data: { available, pending }
+        });
+
+        // ── Calculate liability and coverage ──
+        const { calculateTotalLiability } = await import('../services/risk.service');
+        const userLiability = await calculateTotalLiability();
+        const coverage = userLiability > 0 ? available / userLiability : Infinity;
+
+        // ── Determine severity ──
+        let status = 'OK';
+        if (userLiability > 0) {
+            const diffRatio = Math.abs(available - userLiability) / userLiability;
+            if (diffRatio > 0.02 || available < userLiability) {
+                status = 'CRITICAL';
+            } else if (diffRatio > 0.005) {
+                status = 'WARNING';
+            }
+        }
+
+        // ── Store reconciliation log ──
+        const reconciliation = await prisma.reconciliationLog.create({
+            data: {
+                paystackAvailable: available,
+                userLiability,
+                difference: available - userLiability,
+                coverageRatio: coverage === Infinity ? 9999 : coverage,
+                status
+            }
+        });
+
+        // ── Update system health ──
+        await prisma.systemHealth.upsert({
+            where: { id: 1 },
+            update: { lastReconciliation: new Date() },
+            create: { id: 1, lastReconciliation: new Date() }
+        });
+
+        // ── Audit log ──
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'RECONCILIATION_SNAPSHOT',
+                details: `Coverage: ${coverage === Infinity ? '∞' : coverage.toFixed(4)}x | Status: ${status} | Available: ₦${available.toLocaleString()} | Liability: ₦${userLiability.toLocaleString()}`
+            }
+        });
+
+        res.json({
+            snapshot,
+            reconciliation,
+            summary: {
+                available,
+                pending,
+                userLiability,
+                coverage: coverage === Infinity ? null : Number(coverage.toFixed(4)),
+                status
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  CAPITAL PROTECTION STATUS
+// ═══════════════════════════════════════════════
+router.get('/protection-status', async (req: AuthRequest, res, next) => {
+    try {
+        const latestSnapshot = await prisma.paystackBalanceSnapshot.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!latestSnapshot) {
+            return res.json({ active: false, reason: 'No snapshot yet (fail-open)', coverage: null, threshold: null });
+        }
+
+        const { calculateTotalLiability } = await import('../services/risk.service');
+        const liability = await calculateTotalLiability();
+
+        if (liability === 0) {
+            return res.json({ active: false, reason: 'Zero liability', coverage: Infinity, threshold: null });
+        }
+
+        const available = Number(latestSnapshot.available);
+        const coverage = available / liability;
+        const settings = await prisma.settings.findFirst();
+        const threshold = settings?.minLiquidityRatio ? Number(settings.minLiquidityRatio) : 1.05;
+        const active = coverage < threshold;
+
+        // Recent blocks
+        const recentBlocks = await prisma.capitalProtectionLog.count({
+            where: {
+                action: 'BLOCK_TRANSFER',
+                createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+            }
+        });
+
+        res.json({ active, coverage: Number(coverage.toFixed(4)), threshold, liability, available, recentBlocks });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  FINANCIAL STATEMENT EXPORT (CSV)
+// ═══════════════════════════════════════════════
+router.get('/statement', async (req: AuthRequest, res, next) => {
+    try {
+        const startDate = req.query.start ? new Date(req.query.start as string) : new Date(new Date().setDate(1)); // default: 1st of current month
+        const endDate = req.query.end ? new Date(req.query.end as string) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        // ── Gather all financial data for the period ──
+        const [
+            transactions,
+            investments,
+            reconciliationLogs,
+            protectionLogs,
+            userCount,
+            totalUserBalance,
+            latestSnapshot
+        ] = await Promise.all([
+            prisma.transaction.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                include: { user: { select: { email: true, username: true, name: true } } },
+                orderBy: { createdAt: 'asc' }
+            }),
+            prisma.investment.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                include: { user: { select: { email: true, username: true, name: true } } },
+                orderBy: { createdAt: 'asc' }
+            }),
+            prisma.reconciliationLog.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                orderBy: { createdAt: 'asc' }
+            }),
+            prisma.capitalProtectionLog.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                orderBy: { createdAt: 'asc' }
+            }),
+            prisma.user.count(),
+            prisma.user.aggregate({ _sum: { balance: true } }),
+            prisma.paystackBalanceSnapshot.findFirst({ orderBy: { createdAt: 'desc' } })
+        ]);
+
+        // ── Compute summary metrics ──
+        const deposits = transactions.filter(t => t.type === 'DEPOSIT' && t.status === 'SUCCESS');
+        const withdrawals = transactions.filter(t => t.type === 'WITHDRAWAL');
+        const successfulWithdrawals = withdrawals.filter(t => t.status === 'SUCCESS');
+        const pendingWithdrawals = withdrawals.filter(t => t.status === 'PENDING');
+        const quizEntries = transactions.filter(t => t.type === 'QUIZ_ENTRY');
+        const quizWinnings = transactions.filter(t => t.type === 'QUIZ_WINNING');
+        const investmentPayouts = transactions.filter(t => t.type === 'INVESTMENT_PAYOUT' && t.status === 'SUCCESS');
+        const referralBonuses = transactions.filter(t => t.type === 'REFERRAL_BONUS');
+
+        const sum = (arr: { amount: number }[]) => arr.reduce((s: number, t: { amount: number }) => s + t.amount, 0);
+
+        const totalLiability = (totalUserBalance._sum.balance || 0);
+        const paystackAvailable = latestSnapshot ? Number(latestSnapshot.available) : 0;
+
+        // ── Build CSV ──
+        const lines: string[] = [];
+
+        // Header section
+        lines.push('TREASURE BOX — FINANCIAL STATEMENT');
+        lines.push(`Period: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
+        lines.push(`Generated: ${new Date().toISOString()}`);
+        lines.push(`Generated By: ${req.user!.email}`);
+        lines.push('');
+
+        // Summary section
+        lines.push('═══════════════════════════════════════════');
+        lines.push('EXECUTIVE SUMMARY');
+        lines.push('═══════════════════════════════════════════');
+        lines.push(`Total Users,${userCount}`);
+        lines.push(`Total User Liability (Wallet Balances),₦${totalLiability.toLocaleString()}`);
+        lines.push(`Paystack Available Balance,₦${paystackAvailable.toLocaleString()}`);
+        lines.push(`Coverage Ratio,${totalLiability > 0 ? (paystackAvailable / totalLiability).toFixed(4) + 'x' : 'N/A'}`);
+        lines.push('');
+
+        // Inflow / Outflow
+        lines.push('═══════════════════════════════════════════');
+        lines.push('INFLOW / OUTFLOW');
+        lines.push('═══════════════════════════════════════════');
+        lines.push(`Total Deposits (${deposits.length} txns),₦${sum(deposits).toLocaleString()}`);
+        lines.push(`Total Successful Withdrawals (${successfulWithdrawals.length} txns),₦${sum(successfulWithdrawals).toLocaleString()}`);
+        lines.push(`Pending Withdrawals (${pendingWithdrawals.length} txns),₦${sum(pendingWithdrawals).toLocaleString()}`);
+        lines.push(`Net Cash Flow,₦${(sum(deposits) - sum(successfulWithdrawals)).toLocaleString()}`);
+        lines.push('');
+
+        // Investment section
+        lines.push('═══════════════════════════════════════════');
+        lines.push('INVESTMENTS');
+        lines.push('═══════════════════════════════════════════');
+        lines.push(`New Investments Created,${investments.length}`);
+        lines.push(`Total Capital Invested,₦${investments.reduce((s: number, i: { principal: any }) => s + Number(i.principal), 0).toLocaleString()}`);
+        lines.push(`Investment Payouts (${investmentPayouts.length} txns),₦${sum(investmentPayouts).toLocaleString()}`);
+        lines.push('');
+
+        // Quiz Economy
+        lines.push('═══════════════════════════════════════════');
+        lines.push('QUIZ ECONOMY');
+        lines.push('═══════════════════════════════════════════');
+        lines.push(`Quiz Entries (${quizEntries.length} txns),₦${sum(quizEntries).toLocaleString()}`);
+        lines.push(`Quiz Winnings (${quizWinnings.length} txns),₦${sum(quizWinnings).toLocaleString()}`);
+        lines.push(`Quiz Platform Revenue,₦${(sum(quizEntries) - sum(quizWinnings)).toLocaleString()}`);
+        lines.push('');
+
+        // Referrals
+        lines.push(`Referral Bonuses Paid (${referralBonuses.length} txns),₦${sum(referralBonuses).toLocaleString()}`);
+        lines.push('');
+
+        // Risk Events
+        if (reconciliationLogs.length > 0 || protectionLogs.length > 0) {
+            lines.push('═══════════════════════════════════════════');
+            lines.push('RISK EVENTS');
+            lines.push('═══════════════════════════════════════════');
+            lines.push(`Reconciliation Checks,${reconciliationLogs.length}`);
+            const criticals = reconciliationLogs.filter((r: { status: string }) => r.status === 'CRITICAL');
+            const warnings = reconciliationLogs.filter((r: { status: string }) => r.status === 'WARNING');
+            lines.push(`  OK,${reconciliationLogs.length - criticals.length - warnings.length}`);
+            lines.push(`  WARNING,${warnings.length}`);
+            lines.push(`  CRITICAL,${criticals.length}`);
+            lines.push(`Capital Protection Blocks,${protectionLogs.filter((p: { action: string }) => p.action === 'BLOCK_TRANSFER').length}`);
+            lines.push('');
+        }
+
+        // Transaction detail section
+        lines.push('═══════════════════════════════════════════');
+        lines.push('TRANSACTION LEDGER');
+        lines.push('═══════════════════════════════════════════');
+        lines.push('Date,Type,Amount (₦),Status,User,Description');
+
+        for (const t of transactions) {
+            const user = t.user.username || t.user.name || t.user.email;
+            const desc = (t.description || '').replace(/,/g, ';');
+            lines.push(`${t.createdAt.toISOString()},${t.type},${t.amount},${t.status},${user},${desc}`);
+        }
+
+        // ── Audit log ──
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'EXPORT_STATEMENT',
+                details: `Exported financial statement: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${transactions.length} transactions)`
+            }
+        });
+
+        // ── Send CSV ──
+        const csv = lines.join('\r\n');
+        const filename = `TreasureBox_Statement_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csv);
     } catch (error) {
         next(error);
     }
