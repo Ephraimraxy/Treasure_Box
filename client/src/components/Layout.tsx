@@ -26,6 +26,10 @@ interface LayoutProps {
     children: React.ReactNode;
 }
 
+import { NetworkStatus } from './NetworkStatus';
+
+// ... (imports remain the same)
+
 export const Layout = ({ children }: LayoutProps) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -38,8 +42,10 @@ export const Layout = ({ children }: LayoutProps) => {
 
     return (
         <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
+            <NetworkStatus />
             {/* Sidebar (Desktop) */}
             <div className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl">
+// ... rest of file
                 <div className="p-6">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
