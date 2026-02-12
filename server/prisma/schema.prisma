@@ -179,7 +179,7 @@ model ReconciliationLog {
   userLiability     Decimal  @db.Decimal(18,2)
   paystackAvailable Decimal  @db.Decimal(18,2)
   difference        Decimal  @db.Decimal(18,2)
-  coverageRatio     Decimal  @db.Decimal(10,4)
+  coverageRatio     Decimal? @db.Decimal(10,4)
   status            String   // OK, WARNING, CRITICAL
   createdAt         DateTime @default(now())
 }

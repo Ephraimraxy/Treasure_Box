@@ -59,6 +59,15 @@ interface AuthContextType {
     handleLoginSuccess: (token: string) => Promise<void>;
 }
 
+const THEME_COLORS: Record<string, string> = {
+    amber: '245 158 11',
+    blue: '59 130 246',
+    emerald: '16 185 129',
+    rose: '244 63 94',
+    purple: '168 85 247',
+    cyan: '6 182 212',
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -142,6 +151,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUser(newToken);
         setIsLoading(false);
     };
+
+    // Apply theme whenever user preferences change
+    useEffect(() => {
+        if (user?.preferences?.theme) {
+            const color = THEME_COLORS[user.preferences.theme] || THEME_COLORS['amber'];
+            document.documentElement.style.setProperty('--color-primary', color);
+        }
+    }, [user?.preferences?.theme]);
 
     return (
         <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser, handleLoginSuccess }}>
