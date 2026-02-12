@@ -24,6 +24,7 @@ import { ServicePaymentPage } from './pages/ServicePayment';
 import { ResearchServicesPage } from './pages/ResearchServices';
 import { ProfilePage } from './pages/Profile';
 import { InvestmentsPage } from './pages/Investments';
+import { TransferPage } from './pages/Transfer';
 import {
     AdminDashboardPage,
     AdminWithdrawalsPage,
@@ -95,6 +96,7 @@ const AppContent = () => {
                 <Route path="/research-services" element={<ProtectedRoute><ResearchServicesPage /></ProtectedRoute>} />
                 <Route path="/investments" element={<ProtectedRoute><InvestmentsPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/transfer" element={<ProtectedRoute><TransferPage /></ProtectedRoute>} />
                 <Route path="/kyc" element={<ProtectedRoute><KYCPage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}

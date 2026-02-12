@@ -25,7 +25,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
             if (type === 'deposit') where.type = 'DEPOSIT';
             else if (type === 'withdrawal') where.type = 'WITHDRAWAL';
             else if (type === 'referral') where.type = 'REFERRAL_BONUS';
-            else if (type === 'investment') where.type = { contains: 'INVESTMENT' };
+            else if (type === 'investment') where.type = { in: ['INVESTMENT_PAYOUT', 'INVESTMENT_DEBIT'] };
         }
 
         if (search && search.trim()) {

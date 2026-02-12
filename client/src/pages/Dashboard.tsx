@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Shield, Clock, DollarSign, Activity, Eye, EyeOff, RefreshCw, Plus, ArrowUpRight, ArrowDownLeft, Copy, Flag, Info, ChevronRight, Send, Building2, Search, CheckCircle, Loader2, ArrowLeft, FileText } from 'lucide-react';
+import { TrendingUp, Clock, DollarSign, Eye, EyeOff, RefreshCw, Plus, Copy, Flag, Info, ChevronRight, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
@@ -16,25 +16,6 @@ interface Transaction {
     createdAt: string;
 }
 
-interface Investment {
-    id: string;
-    principal: number;
-    durationDays: number;
-    baseRate: number;
-    bonusRate: number;
-    maturityDate: string;
-    status: string;
-}
-
-const DURATIONS = [
-    { days: 7, baseRate: 2 },
-    { days: 14, baseRate: 4 },
-    { days: 30, baseRate: 8 },
-    { days: 60, baseRate: 12 },
-];
-
-const MIN_INVESTMENT = 20000;
-
 export const DashboardPage = () => {
     const { user, refreshUser } = useAuth();
     const { addToast } = useToast();
@@ -42,15 +23,13 @@ export const DashboardPage = () => {
 
     // Data State
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [investments, setInvestments] = useState<Investment[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showBalance, setShowBalance] = useState(true);
 
     // Wallet Logic State
-    const [activeAction, setActiveAction] = useState<'deposit' | 'transfer' | 'invest' | null>(null);
+    const [activeAction, setActiveAction] = useState<'deposit' | null>(null);
     const [amount, setAmount] = useState('');
-    const [duration, setDuration] = useState(7);
 
     // Loading States
     const [actionLoading, setActionLoading] = useState(false);
@@ -59,8 +38,6 @@ export const DashboardPage = () => {
     // Settings
     const [settings, setSettings] = useState({
         minDeposit: 1000,
-        minWithdrawal: 1000,
-        minInvestment: 5000,
         kycRequiredForAccount: true
     });
 
@@ -75,74 +52,15 @@ export const DashboardPage = () => {
     const [appealMessage, setAppealMessage] = useState('');
     const [appealLoading, setAppealLoading] = useState(false);
 
-    // ═══════════════════════════════════════
-    // TRANSFER FLOW STATE
-    // ═══════════════════════════════════════
-    const [transferStep, setTransferStep] = useState(1); // 1: Amount, 2: Bank, 3: Description + PIN, 4: Confirm
-    const [transferAmount, setTransferAmount] = useState('');
-    const [transferPin, setTransferPin] = useState('');
-    const [transferDescription, setTransferDescription] = useState('');
-    const [transferLoading, setTransferLoading] = useState(false);
-    const [showTransferPin, setShowTransferPin] = useState(false);
-
-    // Bank selection state (inline in transfer)
-    const [banks, setBanks] = useState<any[]>([]);
-    const [bankSearch, setBankSearch] = useState('');
-    const [showBankDropdown, setShowBankDropdown] = useState(false);
-    const [bankData, setBankData] = useState({ bankName: '', bankCode: '', accountNumber: '', accountName: '' });
-    const [verifyingAccount, setVerifyingAccount] = useState(false);
-    const [accountVerified, setAccountVerified] = useState(false);
-    const [selectedExistingBankId, setSelectedExistingBankId] = useState('');
-
-    // Fetch banks on mount
-    useEffect(() => {
-        paymentApi.getBanks().then(res => setBanks(res.data || [])).catch(console.error);
-    }, []);
-
-    // Auto-verify when bank + account filled
-    useEffect(() => {
-        if (bankData.accountNumber.length === 10 && bankData.bankCode && !selectedExistingBankId) {
-            verifyAccountInline();
-        } else if (!selectedExistingBankId) {
-            setAccountVerified(false);
-            setBankData(prev => ({ ...prev, accountName: '' }));
-        }
-    }, [bankData.accountNumber, bankData.bankCode]);
-
-    const verifyAccountInline = async () => {
-        setVerifyingAccount(true);
-        setAccountVerified(false);
-        try {
-            const res = await paymentApi.verifyAccount(bankData.accountNumber, bankData.bankCode);
-            setBankData(prev => ({ ...prev, accountName: res.data.accountName }));
-            setAccountVerified(true);
-        } catch {
-            setBankData(prev => ({ ...prev, accountName: '' }));
-            addToast('error', 'Could not verify account.');
-        } finally {
-            setVerifyingAccount(false);
-        }
-    };
-
-    const filteredBanks = banks.filter((b: any) => b.name?.toLowerCase().includes(bankSearch.toLowerCase()));
-    const selectBank = (bank: any) => {
-        setBankData(prev => ({ ...prev, accountName: '', bankName: bank.name, bankCode: bank.code }));
-        setBankSearch('');
-        setShowBankDropdown(false);
-        setAccountVerified(false);
-    };
-
     // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [txRes, invRes, settingsRes] = await Promise.all([
+                const [txRes, settingsRes] = await Promise.all([
                     transactionApi.getAll(1, 5),
-                    investmentApi.getAll(),
                     userApi.getSettings()
                 ]);
                 setTransactions(txRes.data.data);
-                setInvestments(invRes.data);
                 setSettings(settingsRes.data);
             } catch (error) {
                 console.error('Failed to fetch data:', error);
@@ -153,26 +71,19 @@ export const DashboardPage = () => {
         fetchData();
     }, []);
 
-
-    // --- Action Handlers ---
-
     const handleRefresh = async () => {
         setRefreshing(true);
         try {
             await refreshUser();
-            const [txRes, invRes] = await Promise.all([
-                transactionApi.getAll(1, 5),
-                investmentApi.getAll()
-            ]);
+            const txRes = await transactionApi.getAll(1, 5);
             setTransactions(txRes.data.data);
-            setInvestments(invRes.data);
             addToast('success', 'Dashboard updated');
         } catch (error) {
             addToast('error', 'Failed to refresh');
         } finally {
             setRefreshing(false);
         }
-    }
+    };
 
     const handleDeposit = async () => {
         const amt = parseFloat(amount);
@@ -194,101 +105,18 @@ export const DashboardPage = () => {
         }
     };
 
-    // ═══════════════════════════════════════
-    // TRANSFER HANDLER (multi-step)
-    // ═══════════════════════════════════════
-    const openTransferFlow = () => {
-        setActiveAction('transfer');
-        setTransferStep(1);
-        setTransferAmount('');
-        setTransferPin('');
-        setTransferDescription('');
-        setSelectedExistingBankId('');
-        setBankData({ bankName: '', bankCode: '', accountNumber: '', accountName: '' });
-        setAccountVerified(false);
-        setShowTransferPin(false);
-    };
-
-    const handleTransferSubmit = async () => {
-        const amt = parseFloat(transferAmount);
-        if (!user?.transactionPin) {
-            setActiveAction(null);
-            setPinModal({ open: true, mode: 'create' });
-            return;
-        }
-        if (!transferPin) {
-            addToast('error', 'Please enter your transaction PIN');
-            return;
-        }
-
-        setTransferLoading(true);
-        try {
-            const bankId = selectedExistingBankId || undefined;
-            // If using a new bank, save it first
-            if (!bankId && accountVerified) {
-                await userApi.updateBankDetails({
-                    bankName: bankData.bankName,
-                    bankCode: bankData.bankCode,
-                    accountNumber: bankData.accountNumber,
-                    accountName: bankData.accountName
-                });
-                await refreshUser();
-            }
-            await transactionApi.withdraw(amt, transferPin, bankId);
-            addToast('success', 'Transfer submitted successfully');
-            await refreshUser();
-            setActiveAction(null);
-            // Refresh transactions
-            const txRes = await transactionApi.getAll(1, 5);
-            setTransactions(txRes.data.data);
-        } catch (error: any) {
-            addToast('error', error.response?.data?.error || 'Transfer failed');
-        } finally {
-            setTransferLoading(false);
-        }
-    };
-
-    const canProceedStep1 = () => {
-        const amt = parseFloat(transferAmount);
-        return amt >= settings.minWithdrawal && amt <= (user?.balance || 0);
-    };
-
-    const canProceedStep2 = () => {
-        return selectedExistingBankId || accountVerified;
-    };
-
-    const canProceedStep3 = () => {
-        return transferPin.length === 4;
-    };
-
-    const getBankRecipientDisplay = () => {
-        if (selectedExistingBankId) {
-            const bank = user?.bankDetails?.find((b: any) => b.id === selectedExistingBankId);
-            return bank ? `${bank.accountName} • ${bank.bankName}` : '';
-        }
-        if (accountVerified) {
-            return `${bankData.accountName} • ${bankData.bankName}`;
-        }
-        return '';
-    };
-
-    // --- PIN Handlers ---
-
+    // PIN Handlers
     const handlePinSubmit = async () => {
         setPinLoading(true);
         try {
+            if (pinInputs.pin !== pinInputs.confirm) {
+                addToast('error', 'PINs do not match');
+                return;
+            }
             if (pinModal.mode === 'create') {
-                if (pinInputs.pin !== pinInputs.confirm) {
-                    addToast('error', 'PINs do not match');
-                    return;
-                }
                 await userApi.setPin(pinInputs.pin, pinInputs.password);
                 addToast('success', 'Transaction PIN set successfully');
             } else {
-                if (pinInputs.pin !== pinInputs.confirm) {
-                    addToast('error', 'PINs do not match');
-                    return;
-                }
                 await userApi.resetPin(pinInputs.password, pinInputs.pin);
                 addToast('success', 'Transaction PIN reset successfully');
             }
@@ -303,7 +131,7 @@ export const DashboardPage = () => {
         }
     };
 
-    // --- Appeal Handler ---
+    // Appeal Handler
     const handleAppealSubmit = async () => {
         if (!appealMessage.trim()) return;
         setAppealLoading(true);
@@ -318,7 +146,6 @@ export const DashboardPage = () => {
             setAppealLoading(false);
         }
     };
-
 
     if (loading) {
         return <div className="flex items-center justify-center h-64"><Spinner /></div>;
@@ -421,7 +248,7 @@ export const DashboardPage = () => {
                     </div>
                 </Card>
 
-                {/* Quick Actions Integration */}
+                {/* Quick Actions */}
                 <div className="grid grid-rows-3 gap-2">
                     <button
                         onClick={() => { setActiveAction('deposit'); setAmount(''); }}
@@ -437,7 +264,7 @@ export const DashboardPage = () => {
                     </button>
 
                     <button
-                        onClick={openTransferFlow}
+                        onClick={() => navigate('/transfer')}
                         className="flex items-center gap-3 p-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all group text-left"
                     >
                         <div className="p-2 bg-blue-500 text-white rounded-lg group-hover:scale-110 transition-transform">
@@ -464,13 +291,11 @@ export const DashboardPage = () => {
                 </div>
             </div>
 
-
             {/* Featured Carousel */}
             <FeaturedCarousel />
 
-            {/* Content Section: Recent Transactions */}
+            {/* Recent Transactions */}
             <div className="max-w-3xl mx-auto w-full">
-                {/* Recent Transactions */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-white flex items-center gap-2">
@@ -508,8 +333,6 @@ export const DashboardPage = () => {
                 </Card>
             </div>
 
-            {/* --- ACTION MODALS --- */}
-
             {/* Deposit Modal */}
             <Modal
                 isOpen={activeAction === 'deposit'}
@@ -538,283 +361,6 @@ export const DashboardPage = () => {
                     >
                         {actionLoading ? 'Processing...' : 'Confirm Deposit'}
                     </Button>
-                </div>
-            </Modal>
-
-            {/* ═══════════════════════════════════════ */}
-            {/* TRANSFER MODAL (Multi-Step) */}
-            {/* ═══════════════════════════════════════ */}
-            <Modal
-                isOpen={activeAction === 'transfer'}
-                onClose={() => setActiveAction(null)}
-                title={`Transfer${transferStep > 1 ? ` — Step ${transferStep}/4` : ''}`}
-            >
-                <div className="space-y-4">
-                    {/* Step Progress */}
-                    <div className="flex gap-1">
-                        {[1, 2, 3, 4].map(s => (
-                            <div key={s} className={`flex-1 h-1 rounded-full transition-all ${s <= transferStep ? 'bg-blue-500' : 'bg-slate-800'}`} />
-                        ))}
-                    </div>
-
-                    {/* STEP 1: Amount */}
-                    {transferStep === 1 && (
-                        <>
-                            <div className="text-center py-2">
-                                <p className="text-sm text-slate-400">How much do you want to transfer?</p>
-                                <p className="text-xs text-slate-600 mt-1">
-                                    Balance: <FormatCurrency amount={user?.balance || 0} /> • Min: ₦{settings.minWithdrawal.toLocaleString()}
-                                </p>
-                            </div>
-                            <Input
-                                label="Amount (₦)"
-                                type="number"
-                                value={transferAmount}
-                                onChange={(e) => setTransferAmount(e.target.value)}
-                                placeholder="Enter amount"
-                            />
-                            {parseFloat(transferAmount) > (user?.balance || 0) && (
-                                <p className="text-xs text-red-400">Insufficient balance</p>
-                            )}
-                            <Button
-                                onClick={() => setTransferStep(2)}
-                                disabled={!canProceedStep1()}
-                                className="w-full"
-                            >
-                                Continue
-                            </Button>
-                        </>
-                    )}
-
-                    {/* STEP 2: Bank Details */}
-                    {transferStep === 2 && (
-                        <>
-                            <button onClick={() => setTransferStep(1)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white">
-                                <ArrowLeft size={14} /> Back
-                            </button>
-                            <p className="text-sm text-slate-400">Where should we send <span className="text-white font-bold"><FormatCurrency amount={parseFloat(transferAmount)} /></span>?</p>
-
-                            {/* Existing Bank Accounts */}
-                            {user?.bankDetails && user.bankDetails.length > 0 && (
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Saved Accounts</label>
-                                    {user.bankDetails.map((b: any) => (
-                                        <button
-                                            key={b.id}
-                                            onClick={() => {
-                                                setSelectedExistingBankId(b.id);
-                                                setBankData({ bankName: '', bankCode: '', accountNumber: '', accountName: '' });
-                                                setAccountVerified(false);
-                                            }}
-                                            className={`w-full p-3 rounded-xl border text-left flex items-center gap-3 transition-all ${selectedExistingBankId === b.id
-                                                ? 'border-blue-500 bg-blue-500/10'
-                                                : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
-                                                }`}
-                                        >
-                                            <div className="w-9 h-9 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0">
-                                                <Building2 size={16} className="text-blue-400" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-semibold text-white truncate">{b.accountName}</div>
-                                                <div className="text-[10px] text-slate-500">{b.accountNumber} • {b.bankName}</div>
-                                            </div>
-                                            {selectedExistingBankId === b.id && (
-                                                <CheckCircle size={16} className="text-blue-400 shrink-0" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Divider */}
-                            {user?.bankDetails && user.bankDetails.length > 0 && (
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-1 h-px bg-slate-800" />
-                                    <span className="text-[10px] text-slate-600 uppercase font-bold">Or new account</span>
-                                    <div className="flex-1 h-px bg-slate-800" />
-                                </div>
-                            )}
-
-                            {/* New Bank Entry */}
-                            <div className={`space-y-3 transition-opacity ${selectedExistingBankId ? 'opacity-40' : 'opacity-100'}`}
-                                onClick={() => selectedExistingBankId && setSelectedExistingBankId('')}
-                            >
-                                {/* Bank Selector */}
-                                <div className="relative">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Select Bank</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setSelectedExistingBankId(''); setShowBankDropdown(!showBankDropdown); }}
-                                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-left hover:border-slate-600 transition-colors text-sm"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Building2 size={16} className="text-slate-500" />
-                                            <span className={bankData.bankName ? 'text-white' : 'text-slate-500'}>{bankData.bankName || 'Choose your bank'}</span>
-                                        </div>
-                                        <Search size={14} className="text-slate-500" />
-                                    </button>
-                                    {showBankDropdown && (
-                                        <div className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-                                            <div className="p-2">
-                                                <input
-                                                    type="text"
-                                                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-amber-500"
-                                                    placeholder="Search banks..."
-                                                    value={bankSearch}
-                                                    onChange={(e) => setBankSearch(e.target.value)}
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            <div className="max-h-36 overflow-y-auto">
-                                                {filteredBanks.length === 0 ? (
-                                                    <div className="px-4 py-3 text-sm text-slate-500">No banks found</div>
-                                                ) : filteredBanks.slice(0, 30).map((bank: any) => (
-                                                    <button
-                                                        key={bank.code}
-                                                        onClick={() => selectBank(bank)}
-                                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition-colors ${bankData.bankCode === bank.code ? 'bg-amber-500/10 text-amber-400' : 'text-white'}`}
-                                                    >
-                                                        {bank.name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Account Number */}
-                                <Input
-                                    label="Account Number"
-                                    value={bankData.accountNumber}
-                                    onChange={(e) => {
-                                        setSelectedExistingBankId('');
-                                        const val = e.target.value.replace(/\D/g, '');
-                                        setBankData({ ...bankData, accountNumber: val });
-                                    }}
-                                    placeholder="Enter 10-digit account number"
-                                    maxLength={10}
-                                />
-
-                                {/* Account Name (auto-verified) */}
-                                <div className={`px-3 py-2.5 rounded-xl border flex items-center gap-2 text-sm ${accountVerified ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-slate-900 border-slate-700'}`}>
-                                    {verifyingAccount ? (
-                                        <><Loader2 size={14} className="text-amber-400 animate-spin" /><span className="text-slate-400 text-xs">Verifying...</span></>
-                                    ) : accountVerified ? (
-                                        <><CheckCircle size={14} className="text-emerald-400" /><span className="text-white font-medium text-xs">{bankData.accountName}</span></>
-                                    ) : (
-                                        <span className="text-xs text-slate-500">{bankData.bankCode && bankData.accountNumber.length === 10 ? 'Could not verify' : 'Select bank & enter account number'}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <Button
-                                onClick={() => setTransferStep(3)}
-                                disabled={!canProceedStep2()}
-                                className="w-full"
-                            >
-                                Continue
-                            </Button>
-                        </>
-                    )}
-
-                    {/* STEP 3: Description + PIN */}
-                    {transferStep === 3 && (
-                        <>
-                            <button onClick={() => setTransferStep(2)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white">
-                                <ArrowLeft size={14} /> Back
-                            </button>
-
-                            <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
-                                <div className="text-xs text-slate-400">Sending</div>
-                                <div className="text-lg font-bold text-white"><FormatCurrency amount={parseFloat(transferAmount)} /></div>
-                                <div className="text-xs text-blue-400 mt-0.5">to {getBankRecipientDisplay()}</div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description (optional)</label>
-                                <input
-                                    type="text"
-                                    value={transferDescription}
-                                    onChange={(e) => setTransferDescription(e.target.value)}
-                                    placeholder="e.g. School fees, Family support..."
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 placeholder-slate-600"
-                                    maxLength={60}
-                                />
-                            </div>
-
-                            <div className="relative">
-                                <Input
-                                    label="Transaction PIN"
-                                    type={showTransferPin ? 'text' : 'password'}
-                                    maxLength={4}
-                                    value={transferPin}
-                                    onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="****"
-                                    className="tracking-widest text-center"
-                                />
-                            </div>
-                            <div className="flex justify-end">
-                                <button onClick={() => { setActiveAction(null); setPinModal({ open: true, mode: 'reset' }); }} className="text-xs text-slate-500 hover:text-amber-500">
-                                    Forgot PIN?
-                                </button>
-                            </div>
-
-                            <Button
-                                onClick={() => setTransferStep(4)}
-                                disabled={!canProceedStep3()}
-                                className="w-full"
-                            >
-                                Review Transfer
-                            </Button>
-                        </>
-                    )}
-
-                    {/* STEP 4: Confirmation */}
-                    {transferStep === 4 && (
-                        <>
-                            <button onClick={() => setTransferStep(3)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white">
-                                <ArrowLeft size={14} /> Back
-                            </button>
-
-                            <div className="text-center py-2">
-                                <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Confirm Transfer</p>
-                            </div>
-
-                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Amount</span>
-                                    <span className="text-white font-bold"><FormatCurrency amount={parseFloat(transferAmount)} /></span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Recipient</span>
-                                    <span className="text-white font-semibold text-right text-xs max-w-[180px] break-words">{getBankRecipientDisplay()}</span>
-                                </div>
-                                {transferDescription && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Description</span>
-                                        <span className="text-white text-xs max-w-[180px] break-words">{transferDescription}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">PIN</span>
-                                    <span className="text-white font-mono tracking-widest">••••</span>
-                                </div>
-                            </div>
-
-                            <div className="text-xs text-amber-500 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20 flex items-start gap-2">
-                                <Info size={14} className="shrink-0 mt-0.5" />
-                                <span>Funds will be sent to the recipient's bank account. Processing may take 1–24 hours.</span>
-                            </div>
-
-                            <Button
-                                onClick={handleTransferSubmit}
-                                disabled={transferLoading}
-                                className="w-full"
-                            >
-                                {transferLoading ? 'Processing...' : 'Confirm & Send'}
-                            </Button>
-                        </>
-                    )}
                 </div>
             </Modal>
 
