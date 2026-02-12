@@ -262,34 +262,34 @@ export const AdminDashboardPage = () => {
                         <Heart size={12} /> Financial Health
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <Card className="bg-gradient-to-br from-emerald-900/40 to-slate-800">
-                            <div className="text-xs text-slate-400">Paystack Available</div>
-                            <div className="text-lg font-bold text-white">
-                                {fin.paystackAvailable !== null ? <FormatCurrency amount={fin.paystackAvailable} /> : <span className="text-slate-600">N/A</span>}
+                        <Card className="bg-white dark:bg-gradient-to-br dark:from-emerald-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Paystack Available</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">
+                                {fin.paystackAvailable !== null ? <FormatCurrency amount={fin.paystackAvailable} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
                             </div>
-                            {fin.snapshotAge && <div className="text-[10px] text-slate-600 mt-1">Updated: {new Date(fin.snapshotAge).toLocaleString()}</div>}
+                            {fin.snapshotAge && <div className="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Updated: {new Date(fin.snapshotAge).toLocaleString()}</div>}
                         </Card>
-                        <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
-                            <div className="text-xs text-slate-400">Paystack Pending</div>
-                            <div className="text-lg font-bold text-white">
-                                {fin.paystackPending !== null ? <FormatCurrency amount={fin.paystackPending} /> : <span className="text-slate-600">N/A</span>}
+                        <Card className="bg-white dark:bg-gradient-to-br dark:from-blue-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Paystack Pending</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">
+                                {fin.paystackPending !== null ? <FormatCurrency amount={fin.paystackPending} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
                             </div>
                         </Card>
-                        <Card className={`bg-gradient-to-br ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'from-red-900/60 to-red-950 border border-red-500/40' : 'from-purple-900/40 to-slate-800'}`}>
-                            <div className="text-xs text-slate-400">Liquidity Ratio</div>
-                            <div className={`text-lg font-bold ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'text-red-400' : 'text-white'}`}>
-                                {fin.liquidityRatio !== null ? fin.liquidityRatio.toFixed(2) + 'x' : <span className="text-slate-600">N/A</span>}
+                        <Card className={`bg-white dark:bg-gradient-to-br border ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'border-red-500 dark:from-red-900/60 dark:to-red-950 dark:border-red-500/40' : 'border-slate-200 dark:from-purple-900/40 dark:to-slate-800 dark:border-slate-700'}`}>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Liquidity Ratio</div>
+                            <div className={`text-lg font-bold ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
+                                {fin.liquidityRatio !== null ? fin.liquidityRatio.toFixed(2) + 'x' : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
                             </div>
                             {fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 && (
-                                <div className="flex items-center gap-1 text-[10px] text-red-400 mt-1 font-bold">
+                                <div className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 mt-1 font-bold">
                                     <AlertTriangle size={10} /> BELOW SAFE THRESHOLD
                                 </div>
                             )}
                         </Card>
-                        <Card className={`bg-gradient-to-br ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'from-red-900/60 to-red-950 border border-red-500/40' : 'from-teal-900/40 to-slate-800'}`}>
-                            <div className="text-xs text-slate-400">Net Platform Equity</div>
-                            <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-400' : 'text-white'}`}>
-                                {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-600">N/A</span>}
+                        <Card className={`bg-white dark:bg-gradient-to-br border ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'border-red-500 dark:from-red-900/60 dark:to-red-950 dark:border-red-500/40' : 'border-slate-200 dark:from-teal-900/40 dark:to-slate-800 dark:border-slate-700'}`}>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Net Platform Equity</div>
+                            <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
+                                {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
                             </div>
                         </Card>
                     </div>
@@ -298,13 +298,13 @@ export const AdminDashboardPage = () => {
 
             {/* ── Snapshot Result Banner ── */}
             {snapshotResult && (
-                <Card className={`border ${snapshotResult.status === 'CRITICAL' ? 'border-red-500/50 bg-red-950/30' : snapshotResult.status === 'WARNING' ? 'border-amber-500/50 bg-amber-950/30' : 'border-emerald-500/50 bg-emerald-950/30'}`}>
+                <Card className={`border ${snapshotResult.status === 'CRITICAL' ? 'border-red-500/50 bg-red-50 dark:bg-red-950/30' : snapshotResult.status === 'WARNING' ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/30' : 'border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/30'}`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${snapshotResult.status === 'CRITICAL' ? 'bg-red-500' : snapshotResult.status === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                            <span className="text-sm font-bold text-white">Reconciliation: {snapshotResult.status}</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-white">Reconciliation: {snapshotResult.status}</span>
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                             Diff: <FormatCurrency amount={snapshotResult.difference} />
                             {snapshotResult.liquidityRatio !== null && ` • Ratio: ${snapshotResult.liquidityRatio.toFixed(2)}x`}
                         </div>
@@ -315,67 +315,67 @@ export const AdminDashboardPage = () => {
             {/* ── Core Stats ── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 <Card
-                    className="bg-gradient-to-br from-indigo-900/40 to-slate-800 cursor-pointer hover:border-indigo-500/50 transition-all group"
+                    className="bg-white dark:bg-gradient-to-br dark:from-indigo-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-500/50 transition-all group"
                     onClick={() => setProfitModalOpen(true)}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
-                            <Activity className="text-indigo-500" size={24} />
+                        <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                            <Activity className="text-indigo-600 dark:text-indigo-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Platform Profit</div>
-                            <div className="text-lg font-bold text-white">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Platform Profit</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">
                                 <FormatCurrency amount={stats?.platformProfit.total || 0} />
                             </div>
                         </div>
                     </div>
                 </Card>
-                <Card className="bg-gradient-to-br from-blue-900/40 to-slate-800">
+                <Card className="bg-white dark:bg-gradient-to-br dark:from-blue-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-blue-500/20 rounded-xl">
-                            <Users className="text-blue-500" size={24} />
+                        <div className="p-3 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
+                            <Users className="text-blue-600 dark:text-blue-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Total Users</div>
-                            <div className="text-lg font-bold text-white">{stats?.totalUsers || 0}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Total Users</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.totalUsers || 0}</div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-emerald-900/40 to-slate-800">
+                <Card className="bg-white dark:bg-gradient-to-br dark:from-emerald-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-emerald-500/20 rounded-xl">
-                            <DollarSign className="text-emerald-500" size={24} />
+                        <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl">
+                            <DollarSign className="text-emerald-600 dark:text-emerald-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">User Liability</div>
-                            <div className="text-xl font-bold text-white">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">User Liability</div>
+                            <div className="text-xl font-bold text-slate-900 dark:text-white">
                                 <FormatCurrency amount={stats?.totalBalance || 0} />
                             </div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-purple-900/40 to-slate-800">
+                <Card className="bg-white dark:bg-gradient-to-br dark:from-purple-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-500/20 rounded-xl">
-                            <TrendingUp className="text-purple-500" size={24} />
+                        <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl">
+                            <TrendingUp className="text-purple-600 dark:text-purple-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Active Plans</div>
-                            <div className="text-lg font-bold text-white">{stats?.activeInvestments || 0}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Active Plans</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.activeInvestments || 0}</div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-amber-900/40 to-slate-800">
+                <Card className="bg-white dark:bg-gradient-to-br dark:from-amber-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-amber-500/20 rounded-xl">
-                            <Clock className="text-amber-500" size={24} />
+                        <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-xl">
+                            <Clock className="text-amber-600 dark:text-amber-500" size={24} />
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Pending Withdrawals</div>
-                            <div className="text-lg font-bold text-white">{stats?.pendingWithdrawals || 0}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Pending Withdrawals</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.pendingWithdrawals || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -388,24 +388,24 @@ export const AdminDashboardPage = () => {
                         <Shield size={12} /> Risk Monitor
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <Card className="bg-gradient-to-br from-rose-900/30 to-slate-800">
-                            <div className="text-xs text-slate-400 mb-1">Largest Wallet (Whale)</div>
+                        <Card className="bg-white dark:bg-gradient-to-br dark:from-rose-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Largest Wallet (Whale)</div>
                             {risk.largestWallet ? (
                                 <>
-                                    <div className="text-lg font-bold text-white"><FormatCurrency amount={risk.largestWallet.balance} /></div>
+                                    <div className="text-lg font-bold text-slate-900 dark:text-white"><FormatCurrency amount={risk.largestWallet.balance} /></div>
                                     <div className="text-[10px] text-slate-500 truncate">{risk.largestWallet.username || risk.largestWallet.name || risk.largestWallet.email}</div>
                                 </>
                             ) : (
-                                <div className="text-slate-600">No users</div>
+                                <div className="text-slate-400 dark:text-slate-600">No users</div>
                             )}
                         </Card>
-                        <Card className="bg-gradient-to-br from-orange-900/30 to-slate-800">
-                            <div className="text-xs text-slate-400 mb-1">Locked Capital (Active Investments)</div>
-                            <div className="text-lg font-bold text-white"><FormatCurrency amount={risk.lockedCapital} /></div>
+                        <Card className="bg-white dark:bg-gradient-to-br dark:from-orange-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Locked Capital (Active Investments)</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white"><FormatCurrency amount={risk.lockedCapital} /></div>
                         </Card>
-                        <Card className="bg-gradient-to-br from-yellow-900/30 to-slate-800">
-                            <div className="text-xs text-slate-400 mb-1">Maturing in 7 Days</div>
-                            <div className="text-lg font-bold text-white">{risk.upcomingMaturities.count} plans</div>
+                        <Card className="bg-white dark:bg-gradient-to-br dark:from-yellow-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Maturing in 7 Days</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white">{risk.upcomingMaturities.count} plans</div>
                             <div className="text-xs text-slate-500"><FormatCurrency amount={risk.upcomingMaturities.totalAmount} /> exposure</div>
                         </Card>
                     </div>
@@ -419,21 +419,21 @@ export const AdminDashboardPage = () => {
                         <BarChart3 size={12} /> Profit Timeline
                     </div>
                     <div className="grid grid-cols-4 gap-2">
-                        <Card className="bg-slate-800/50 text-center">
+                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
                             <div className="text-[10px] text-slate-500 uppercase">Today</div>
-                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.today} /></div>
+                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.today} /></div>
                         </Card>
-                        <Card className="bg-slate-800/50 text-center">
+                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
                             <div className="text-[10px] text-slate-500 uppercase">This Week</div>
-                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.thisWeek} /></div>
+                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.thisWeek} /></div>
                         </Card>
-                        <Card className="bg-slate-800/50 text-center">
+                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
                             <div className="text-[10px] text-slate-500 uppercase">This Month</div>
-                            <div className="text-sm font-bold text-emerald-400"><FormatCurrency amount={timeline.thisMonth} /></div>
+                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.thisMonth} /></div>
                         </Card>
-                        <Card className="bg-slate-800/50 text-center">
+                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
                             <div className="text-[10px] text-slate-500 uppercase">Lifetime</div>
-                            <div className="text-sm font-bold text-white"><FormatCurrency amount={timeline.lifetime} /></div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white"><FormatCurrency amount={timeline.lifetime} /></div>
                         </Card>
                     </div>
                 </div>
@@ -442,13 +442,13 @@ export const AdminDashboardPage = () => {
             {/* ── System Health + Quiz Stats Row ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* System Health */}
-                <Card className="bg-slate-900/50">
+                <Card className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
                         <Zap size={12} /> System Health
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Webhook</span>
+                            <span className="text-slate-500 dark:text-slate-400">Webhook</span>
                             <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastWebhookAt) ? 'bg-emerald-500' : 'bg-red-500'}`} />
                                 <span className="text-xs text-slate-500">
@@ -457,7 +457,7 @@ export const AdminDashboardPage = () => {
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Last Transfer</span>
+                            <span className="text-slate-500 dark:text-slate-400">Last Transfer</span>
                             <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastSuccessfulTransferAt, 1440) ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                 <span className="text-xs text-slate-500">
@@ -466,8 +466,8 @@ export const AdminDashboardPage = () => {
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Failed Transfers (24h)</span>
-                            <span className={`text-xs font-bold ${(health?.failedTransferCount24h || 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                            <span className="text-slate-500 dark:text-slate-400">Failed Transfers (24h)</span>
+                            <span className={`text-xs font-bold ${(health?.failedTransferCount24h || 0) > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                 {health?.failedTransferCount24h || 0}
                             </span>
                         </div>
@@ -475,22 +475,22 @@ export const AdminDashboardPage = () => {
                 </Card>
 
                 {/* Quiz Stats */}
-                <Card className="bg-slate-900/50">
+                <Card className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
                         <Activity size={12} /> Quiz Economy
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Quiz Pool (Locked)</span>
-                            <span className="font-bold text-white"><FormatCurrency amount={stats?.quizStats?.pendingPool || 0} /></span>
+                            <span className="text-slate-500 dark:text-slate-400">Quiz Pool (Locked)</span>
+                            <span className="font-bold text-slate-900 dark:text-white"><FormatCurrency amount={stats?.quizStats?.pendingPool || 0} /></span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Active Games</span>
-                            <span className="font-bold text-white">{stats?.quizStats?.activeGames || 0}</span>
+                            <span className="text-slate-500 dark:text-slate-400">Active Games</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{stats?.quizStats?.activeGames || 0}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">Completed Games</span>
-                            <span className="font-bold text-white">{stats?.quizStats?.completedGames || 0}</span>
+                            <span className="text-slate-500 dark:text-slate-400">Completed Games</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{stats?.quizStats?.completedGames || 0}</span>
                         </div>
                     </div>
                 </Card>
@@ -502,24 +502,24 @@ export const AdminDashboardPage = () => {
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Eye size={12} /> Activity Feed (Last 20)
                     </div>
-                    <Card className="bg-slate-900/50 max-h-64 overflow-y-auto">
+                    <Card className="bg-white dark:bg-slate-900/50 max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-800">
                         <div className="space-y-1">
                             {stats.activityFeed.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0">
+                                <div key={item.id} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.type === 'DEPOSIT' ? 'bg-emerald-500/20 text-emerald-400' :
-                                            item.type === 'WITHDRAWAL' ? 'bg-red-500/20 text-red-400' :
-                                                item.type === 'QUIZ_ENTRY' ? 'bg-purple-500/20 text-purple-400' :
-                                                    item.type === 'QUIZ_WINNING' ? 'bg-amber-500/20 text-amber-400' :
-                                                        'bg-slate-700 text-slate-400'
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                            item.type === 'WITHDRAWAL' ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' :
+                                                item.type === 'QUIZ_ENTRY' ? 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400' :
+                                                    item.type === 'QUIZ_WINNING' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                        'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                                             }`}>
                                             {item.type.replace('_', ' ')}
                                         </span>
-                                        <span className="text-xs text-slate-400 truncate">{item.user}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.user}</span>
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
-                                        <div className="text-xs font-bold text-white"><FormatCurrency amount={item.amount} /></div>
-                                        <div className="text-[10px] text-slate-600">{new Date(item.timestamp).toLocaleString()}</div>
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white"><FormatCurrency amount={item.amount} /></div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-600">{new Date(item.timestamp).toLocaleString()}</div>
                                     </div>
                                 </div>
                             ))}
@@ -531,7 +531,7 @@ export const AdminDashboardPage = () => {
             {/* Profit Breakdown Modal */}
             <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit Breakdown">
                 <div className="space-y-4">
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-4 rounded-xl">
                         <div className="text-slate-400 text-sm mb-1">Total Platform Profit</div>
                         <div className="text-3xl font-bold text-white">
                             <FormatCurrency amount={stats?.platformProfit.total || 0} />
@@ -539,47 +539,47 @@ export const AdminDashboardPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                    <DollarSign size={18} className="text-emerald-400" />
+                                    <DollarSign size={18} className="text-emerald-500" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-white">Investment Profit</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-white">Investment Profit</div>
                                     <div className="text-xs text-slate-500">Computed from matured plans</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-white">
+                            <div className="font-bold text-slate-900 dark:text-white">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.investmentProfit || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-purple-500/10 rounded-lg">
-                                    <Activity size={18} className="text-purple-400" />
+                                    <Activity size={18} className="text-purple-500" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-white">Quiz Fees</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-white">Quiz Fees</div>
                                     <div className="text-xs text-slate-500">Platform commission</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-white">
+                            <div className="font-bold text-slate-900 dark:text-white">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.quizFees || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-800/50 rounded-lg flex justify-between items-center">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-amber-500/10 rounded-lg">
-                                    <Shield size={18} className="text-amber-400" />
+                                    <Shield size={18} className="text-amber-500" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-white">System Wins</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-white">System Wins</div>
                                     <div className="text-xs text-slate-500">Solo mode losses</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-white">
+                            <div className="font-bold text-slate-900 dark:text-white">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.systemWins || 0} />
                             </div>
                         </div>
@@ -588,7 +588,7 @@ export const AdminDashboardPage = () => {
             </Modal>
 
             {/* ── Financial Statement Export ── */}
-            <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
+            <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 text-white shadow-lg">
                 <div className="flex items-center gap-2 mb-3">
                     <FileText size={16} className="text-amber-400" />
                     <h3 className="text-sm font-bold text-white">Financial Statement Export</h3>
@@ -601,7 +601,7 @@ export const AdminDashboardPage = () => {
                             type="date"
                             value={statementRange.start}
                             onChange={(e) => setStatementRange({ ...statementRange, start: e.target.value })}
-                            className="bg-slate-950 border-slate-700 text-white h-9"
+                            className="bg-slate-950 border-slate-700 text-white h-9 focus:ring-amber-500"
                         />
                     </div>
                     <div>
@@ -610,14 +610,14 @@ export const AdminDashboardPage = () => {
                             type="date"
                             value={statementRange.end}
                             onChange={(e) => setStatementRange({ ...statementRange, end: e.target.value })}
-                            className="bg-slate-950 border-slate-700 text-white h-9"
+                            className="bg-slate-950 border-slate-700 text-white h-9 focus:ring-amber-500"
                         />
                     </div>
                     <Button onClick={handleGenerateReport} disabled={isGeneratingReport} variant="primary" className="h-9">
                         {isGeneratingReport ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrendingUp className="w-4 h-4 mr-2" />}
                         Preview Report
                     </Button>
-                    <Button onClick={handleDownloadStatement} disabled={statementLoading} variant="outline" className="h-9 border-slate-600 hover:bg-slate-700">
+                    <Button onClick={handleDownloadStatement} disabled={statementLoading} variant="outline" className="h-9 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white">
                         {statementLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                         Download CSV
                     </Button>
@@ -698,7 +698,7 @@ export const AdminWithdrawalsPage = () => {
 
     return (
         <div className="space-y-4 animate-fade-in">
-            <h1 className="text-lg font-bold text-white">Pending Withdrawals</h1>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">Pending Withdrawals</h1>
 
             {withdrawals.length === 0 ? (
                 <Card className="text-center py-12">
@@ -710,7 +710,7 @@ export const AdminWithdrawalsPage = () => {
                     {withdrawals.map((w) => (
                         <Card key={w.id} className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                             <div>
-                                <div className="font-bold text-white">{w.user.name || w.user.email}</div>
+                                <div className="font-bold text-slate-900 dark:text-white">{w.user.name || w.user.email}</div>
                                 <div className="text-sm text-slate-400">{w.user.email}</div>
                                 {w.user.bankDetails && (
                                     <div className="text-xs text-slate-500 mt-1">
@@ -859,7 +859,7 @@ export const AdminUsersPage = () => {
 
     return (
         <div className="space-y-4 animate-fade-in">
-            <h1 className="text-lg font-bold text-white">Users ({users.length})</h1>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">Users ({users.length})</h1>
 
             <div className="space-y-3">
                 {users.map((user) => (
@@ -867,7 +867,7 @@ export const AdminUsersPage = () => {
                         <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-bold text-white truncate">{user.name || user.email}</span>
+                                    <span className="font-bold text-slate-900 dark:text-white truncate">{user.name || user.email}</span>
                                     {user.isSuspended && (
                                         <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full text-[10px] font-bold whitespace-nowrap">
                                             <AlertTriangle size={10} /> SUSPENDED
@@ -884,7 +884,7 @@ export const AdminUsersPage = () => {
                                 </div>
                             </div>
                             <div className="text-right shrink-0">
-                                <div className="font-bold text-white">
+                                <div className="font-bold text-slate-900 dark:text-white">
                                     <FormatCurrency amount={user.balance} />
                                 </div>
                                 <div className={`text-xs uppercase font-bold ${user.kycVerified ? 'text-emerald-400' :
@@ -969,8 +969,8 @@ export const AdminUsersPage = () => {
                             <AlertTriangle size={18} />
                             <span className="font-bold">Irreversible Action</span>
                         </div>
-                        <p className="text-sm text-slate-300">
-                            This will permanently delete <strong className="text-white">{deleteUser?.name || deleteUser?.email}</strong> and all their data (transactions, investments, virtual account).
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            This will permanently delete <strong className="text-slate-900 dark:text-white">{deleteUser?.name || deleteUser?.email}</strong> and all their data (transactions, investments, virtual account).
                         </p>
                         {deleteUser?.balance > 0 && (
                             <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -997,8 +997,8 @@ export const AdminUsersPage = () => {
             >
                 <div className="space-y-4">
                     {suspendUser?.isSuspended ? (
-                        <p className="text-sm text-slate-300">
-                            Remove suspension from <strong className="text-white">{suspendUser?.name || suspendUser?.email}</strong>?
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            Remove suspension from <strong className="text-slate-900 dark:text-white">{suspendUser?.name || suspendUser?.email}</strong>?
                             They will regain full access to withdrawals, investments, and services.
                         </p>
                     ) : (
@@ -1060,7 +1060,7 @@ export const AdminAuditPage = () => {
 
     return (
         <div className="space-y-4 animate-fade-in">
-            <h1 className="text-lg font-bold text-white">Audit Logs</h1>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">Audit Logs</h1>
 
             {logs.length === 0 ? (
                 <Card className="text-center py-12">
@@ -1072,7 +1072,7 @@ export const AdminAuditPage = () => {
                         <Card key={log.id} className="p-4">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <div className="font-medium text-white">{log.action}</div>
+                                    <div className="font-medium text-slate-900 dark:text-white">{log.action}</div>
                                     <div className="text-sm text-slate-400">{log.details}</div>
                                     <div className="text-xs text-slate-600 mt-1">By: {log.adminEmail}</div>
                                 </div>
@@ -1135,17 +1135,17 @@ export const AdminQuizPage = () => {
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">Quiz Management</h2>
-                <div className="flex bg-slate-800 rounded-lg p-1">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quiz Management</h2>
+                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                     <button
                         onClick={() => { setView('games'); setPage(1); }}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'games' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'games' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                     >
                         Active Games
                     </button>
                     <button
                         onClick={() => { setView('history'); setPage(1); }}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                     >
                         Full History
                     </button>
@@ -1158,7 +1158,7 @@ export const AdminQuizPage = () => {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 outline-none"
+                            className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-700 outline-none"
                         >
                             <option value="">All Statuses</option>
                             <option value="WAITING">Waiting</option>
@@ -1168,10 +1168,10 @@ export const AdminQuizPage = () => {
                         </select>
                     </div>
 
-                    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase">
                                     <tr>
                                         <th className="p-4">Game Info</th>
                                         <th className="p-4">Creator</th>
@@ -1181,7 +1181,7 @@ export const AdminQuizPage = () => {
                                         <th className="p-4">Age</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-800">
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                     {loading ? (
                                         <tr><td colSpan={6} className="p-8 text-center"><Spinner /></td></tr>
                                     ) : games.length === 0 ? (
@@ -1190,14 +1190,14 @@ export const AdminQuizPage = () => {
                                         games.map(game => (
                                             <tr key={game.id} className="hover:bg-slate-800/30">
                                                 <td className="p-4">
-                                                    <div className="font-bold text-white text-sm">{game.mode}</div>
+                                                    <div className="font-bold text-slate-900 dark:text-white text-sm">{game.mode}</div>
                                                     <div className="text-xs text-slate-500 font-mono">{game.matchCode || '-'}</div>
                                                     <div className="text-[10px] text-slate-400">{game.level}</div>
                                                 </td>
                                                 <td className="p-4">
                                                     {game.creator ? (
                                                         <>
-                                                            <div className="text-sm text-white">{game.creator.username}</div>
+                                                            <div className="text-sm text-slate-900 dark:text-white">{game.creator.username}</div>
                                                             <div className="text-xs text-slate-500">{game.creator.email}</div>
                                                         </>
                                                     ) : <span className="text-slate-500">-</span>}
@@ -1213,11 +1213,11 @@ export const AdminQuizPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm font-medium text-white"><FormatCurrency amount={game.entryAmount * game.currentPlayers} /></div>
+                                                    <div className="text-sm font-medium text-slate-900 dark:text-white"><FormatCurrency amount={game.entryAmount * game.currentPlayers} /></div>
                                                     <div className="text-xs text-indigo-400">Fee: <FormatCurrency amount={game.platformFee} /></div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{game.currentPlayers} / {game.maxPlayers}</div>
+                                                    <div className="text-sm text-slate-600 dark:text-slate-300">{game.currentPlayers} / {game.maxPlayers}</div>
                                                 </td>
                                                 <td className="p-4 text-xs text-slate-500">
                                                     {new Date(game.createdAt).toLocaleDateString()}
@@ -1233,10 +1233,10 @@ export const AdminQuizPage = () => {
             )}
 
             {view === 'history' && (
-                <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                <div className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase">
                                 <tr>
                                     <th className="p-4">Date</th>
                                     <th className="p-4">User</th>
@@ -1246,7 +1246,7 @@ export const AdminQuizPage = () => {
                                     <th className="p-4">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800">
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                 {loading ? (
                                     <tr><td colSpan={6} className="p-8 text-center"><Spinner /></td></tr>
                                 ) : history.length === 0 ? (
@@ -1258,7 +1258,7 @@ export const AdminQuizPage = () => {
                                                 {new Date(item.createdAt).toLocaleString()}
                                             </td>
                                             <td className="p-4">
-                                                <div className="text-sm text-white">{item.userName}</div>
+                                                <div className="text-sm text-slate-900 dark:text-white">{item.userName}</div>
                                                 <div className="text-xs text-slate-500">{item.userEmail}</div>
                                             </td>
                                             <td className="p-4">
@@ -1266,10 +1266,10 @@ export const AdminQuizPage = () => {
                                                     {item.type.replace('QUIZ_', '')}
                                                 </span>
                                             </td>
-                                            <td className="p-4 font-bold text-white">
+                                            <td className="p-4 font-bold text-slate-900 dark:text-white">
                                                 <FormatCurrency amount={item.amount} />
                                             </td>
-                                            <td className="p-4 text-sm text-slate-300 truncate max-w-xs" title={item.description}>
+                                            <td className="p-4 text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs" title={item.description}>
                                                 {item.description}
                                             </td>
                                             <td className="p-4">
@@ -1368,15 +1368,15 @@ export const AdminSettingsPage = () => {
 
     return (
         <div className="space-y-4 animate-fade-in">
-            <h1 className="text-lg font-bold text-white">System Settings</h1>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">System Settings</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
-                    <h3 className="font-bold text-white mb-4">General Configuration</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-4">General Configuration</h3>
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div>
-                                <div className="font-medium text-white">System Pause</div>
+                                <div className="font-medium text-slate-900 dark:text-white">System Pause</div>
                                 <div className="text-xs text-slate-400">Suspend all withdrawals & deposits</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -1390,9 +1390,9 @@ export const AdminSettingsPage = () => {
                             </label>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div>
-                                <div className="font-medium text-white">Require KYC for Virtual Account</div>
+                                <div className="font-medium text-slate-900 dark:text-white">Require KYC for Virtual Account</div>
                                 <div className="text-xs text-slate-400">Enforce KYC verification before account generation</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -1406,9 +1406,9 @@ export const AdminSettingsPage = () => {
                             </label>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div>
-                                <div className="font-medium text-white">Withdrawal Approval Required</div>
+                                <div className="font-medium text-slate-900 dark:text-white">Withdrawal Approval Required</div>
                                 <div className="text-xs text-slate-400">If disabled, withdrawals are instant (automated)</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -1422,9 +1422,9 @@ export const AdminSettingsPage = () => {
                             </label>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div>
-                                <div className="font-medium text-white">Email Login Alerts</div>
+                                <div className="font-medium text-slate-900 dark:text-white">Email Login Alerts</div>
                                 <div className="text-xs text-slate-400">Send email when user logs in</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -1441,7 +1441,7 @@ export const AdminSettingsPage = () => {
                 </Card>
 
                 <Card>
-                    <h3 className="font-bold text-white mb-4">Financial Limits (Minimums)</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-4">Financial Limits (Minimums)</h3>
                     <div className="space-y-4">
                         <Input
                             label="Minimum Funding Amount (₦)"
@@ -1602,8 +1602,8 @@ export const AdminResearchPage = () => {
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">Research Services Management</h1>
-                    <p className="text-slate-400 text-sm">Review, quote, and deliver academic research requests.</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Research Services Management</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Review, quote, and deliver academic research requests.</p>
                 </div>
                 <Button onClick={fetchRequests} variant="secondary" className="gap-2">
                     <Activity size={16} /> Refresh
@@ -1612,13 +1612,13 @@ export const AdminResearchPage = () => {
 
             <div className="grid grid-cols-1 gap-4">
                 {requests.length === 0 ? (
-                    <Card className="text-center py-20 border-slate-800 bg-slate-900">
+                    <Card className="text-center py-20 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <FileText className="mx-auto text-slate-700 mb-4" size={48} />
                         <p className="text-slate-500">No research requests found.</p>
                     </Card>
                 ) : (
                     requests.map((req) => (
-                        <Card key={req.id} className="border-slate-800 bg-slate-900 border-l-4 border-l-indigo-500">
+                        <Card key={req.id} className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 border-l-4 border-l-indigo-500 shadow-sm">
                             <div className="flex flex-col md:flex-row justify-between gap-6">
                                 <div className="flex-1 space-y-3">
                                     <div className="flex items-center gap-2">
@@ -1629,46 +1629,46 @@ export const AdminResearchPage = () => {
                                             }`}>
                                             {req.status}
                                         </div>
-                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.urgency === 'Urgent' ? 'bg-rose-500/20 text-rose-500' : 'bg-slate-800 text-slate-400'
+                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${req.urgency === 'Urgent' ? 'bg-rose-500/20 text-rose-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                                             }`}>
                                             {req.urgency}
                                         </div>
                                         <span className="text-[10px] text-slate-500">{new Date(req.createdAt).toLocaleString()}</span>
                                     </div>
                                     <div>
-                                        <h3 className="text-white font-bold text-lg">{req.specificService}</h3>
+                                        <h3 className="text-slate-900 dark:text-white font-bold text-lg">{req.specificService}</h3>
                                         <div className="flex items-center gap-2 text-xs text-indigo-400 font-medium">
                                             <Users size={12} /> {req.fullName} • {req.user.username || req.email}
                                         </div>
                                     </div>
-                                    <p className="text-sm text-slate-400 leading-relaxed bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 italic">
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800/50 italic">
                                         "{req.description}"
                                     </p>
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                                         <div>
                                             <div className="text-[10px] text-slate-500 uppercase font-bold">Category</div>
-                                            <div className="text-xs text-slate-300">{req.serviceCategory}</div>
+                                            <div className="text-xs text-slate-700 dark:text-slate-300">{req.serviceCategory}</div>
                                         </div>
                                         <div>
                                             <div className="text-[10px] text-slate-500 uppercase font-bold">Discipline</div>
-                                            <div className="text-xs text-slate-300">{req.discipline}</div>
+                                            <div className="text-xs text-slate-700 dark:text-slate-300">{req.discipline}</div>
                                         </div>
                                         <div>
                                             <div className="text-[10px] text-slate-500 uppercase font-bold">Role</div>
-                                            <div className="text-xs text-slate-300">{req.role}</div>
+                                            <div className="text-xs text-slate-700 dark:text-slate-300">{req.role}</div>
                                         </div>
                                         <div>
                                             <div className="text-[10px] text-slate-500 uppercase font-bold">Preferred Date</div>
-                                            <div className="text-xs text-slate-300">{req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'N/A'}</div>
+                                            <div className="text-xs text-slate-700 dark:text-slate-300">{req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'N/A'}</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="md:w-64 space-y-4 md:border-l md:border-slate-800 md:pl-6 flex flex-col justify-between">
+                                <div className="md:w-64 space-y-4 md:border-l md:border-slate-200 dark:md:border-slate-800 md:pl-6 flex flex-col justify-between">
                                     <div className="space-y-4">
-                                        <div className="bg-slate-950 rounded-xl p-4 border border-slate-800">
+                                        <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
                                             <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Quote Amount</div>
-                                            <div className="text-xl font-bold text-white font-mono">₦{req.quoteAmount?.toLocaleString()}</div>
+                                            <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">₦{req.quoteAmount?.toLocaleString()}</div>
                                         </div>
                                         {req.attachmentUrl && (
                                             <a href={req.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-amber-500 hover:text-amber-400 font-bold p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 transition-colors">
@@ -1682,7 +1682,7 @@ export const AdminResearchPage = () => {
                                 </div>
                             </div>
                             {req.adminNotes && (
-                                <div className="mt-4 p-3 bg-slate-800 text-xs text-slate-300 rounded border border-slate-700">
+                                <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
                                     <span className="font-bold text-slate-500 block mb-1">ADMIN NOTES</span>
                                     {req.adminNotes}
                                 </div>
@@ -1699,7 +1699,7 @@ export const AdminResearchPage = () => {
                         <select
                             value={updateForm.status}
                             onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                         >
                             <option value="PENDING">Pending Review</option>
                             <option value="REVIEWING">Reviewing</option>
@@ -1722,7 +1722,7 @@ export const AdminResearchPage = () => {
                         <textarea
                             value={updateForm.adminNotes}
                             onChange={(e) => setUpdateForm({ ...updateForm, adminNotes: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 min-h-[100px]"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 min-h-[100px]"
                             placeholder="Response to user..."
                         />
                     </div>

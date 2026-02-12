@@ -150,7 +150,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </div>
 
                 <main className="flex-1 overflow-y-auto p-3 md:p-6 pb-20 md:pb-6 relative scroll-smooth">
-                    <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none z-0" />
+                    <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-500/5 to-transparent dark:from-blue-900/10 pointer-events-none z-0" />
                     <div className="relative z-10 max-w-5xl mx-auto">
                         {children}
                     </div>

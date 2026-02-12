@@ -32,8 +32,8 @@
 
   --text-foreground: 15 23 42;
   /* slate-900 */
-  --text-muted: 100 116 139;
-  /* slate-500 */
+  --text-muted: 71 85 105;
+  /* slate-600 (Darkened from slate-500 for better visibility in light mode) */
   --text-inverted: 255 255 255;
   /* white */
 

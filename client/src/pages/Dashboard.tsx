@@ -176,29 +176,29 @@ export const DashboardPage = () => {
             {/* Header & Balance Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Main Balance Card - Keeping Dark for Premium Feel */}
-                <Card className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden flex flex-col justify-between border-slate-700 shadow-xl">
+                <Card className="md:col-span-2 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 relative overflow-hidden flex flex-col justify-between border-slate-200 dark:border-slate-700 shadow-xl">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <DollarSign size={120} className="text-white" />
+                        <DollarSign size={120} className="text-slate-900 dark:text-white" />
                     </div>
 
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
                                 {user?.kycPhotoUrl && (
-                                    <img src={user.kycPhotoUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-slate-600" />
+                                    <img src={user.kycPhotoUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-600" />
                                 )}
                                 <div>
-                                    <div className="text-sm text-slate-400">Total Balance</div>
-                                    <div className="text-3xl font-bold text-white font-mono tracking-tight">
+                                    <div className="text-sm text-slate-500 dark:text-slate-400">Total Balance</div>
+                                    <div className="text-3xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
                                         {showBalance ? <FormatCurrency amount={user?.balance || 0} /> : '*******'}
                                     </div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => setShowBalance(!showBalance)} className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+                                <button onClick={() => setShowBalance(!showBalance)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                                     {showBalance ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
-                                <button onClick={handleRefresh} className={`p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors ${refreshing ? 'animate-spin' : ''}`} disabled={refreshing}>
+                                <button onClick={handleRefresh} className={`p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors ${refreshing ? 'animate-spin' : ''}`} disabled={refreshing}>
                                     <RefreshCw size={18} />
                                 </button>
                             </div>
@@ -206,18 +206,18 @@ export const DashboardPage = () => {
 
                         {/* Virtual Account Info (Compact) */}
                         {user?.virtualAccount ? (
-                            <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                            <div className="mt-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3 flex items-center justify-between">
                                 <div>
-                                    <div className="text-[10px] text-slate-400 uppercase tracking-wider">Virtual Account</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Virtual Account</div>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-white font-bold font-mono">{user.virtualAccount.accountNumber}</span>
-                                        <span className="text-xs text-slate-400">• {user.virtualAccount.bankName}</span>
+                                        <span className="text-slate-900 dark:text-white font-bold font-mono">{user.virtualAccount.accountNumber}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">• {user.virtualAccount.bankName}</span>
                                     </div>
                                     <div className="text-xs text-slate-500">{user.virtualAccount.accountName}</div>
                                 </div>
                                 <button
                                     onClick={() => { navigator.clipboard.writeText(user.virtualAccount?.accountNumber || ''); addToast('info', 'Copied!'); }}
-                                    className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white"
+                                    className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                                 >
                                     <Copy size={16} />
                                 </button>
