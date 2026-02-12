@@ -1071,18 +1071,18 @@ export const AdminSettingsPage = () => {
                             hint="Minimum amount a user can deposit"
                         />
                         <Input
-                            label="Minimum Withdrawal Amount (₦)"
+                            label="Minimum Transfer Amount (₦)"
                             type="number"
                             value={settings.minWithdrawal}
                             onChange={e => setSettings({ ...settings, minWithdrawal: parseInt(e.target.value) || 0 })}
-                            hint="Minimum amount a user can withdraw"
+                            hint="Minimum amount a user can transfer per transaction"
                         />
                         <Input
-                            label="Maximum Withdrawal Amount (₦)"
+                            label="Maximum Transfer Amount (₦)"
                             type="number"
                             value={settings.maxWithdrawal}
                             onChange={e => setSettings({ ...settings, maxWithdrawal: parseInt(e.target.value) || 0 })}
-                            hint="Maximum amount a user can withdraw per transaction"
+                            hint="Maximum amount a user can transfer per transaction"
                         />
                         <Input
                             label="Minimum Investment Amount (₦)"

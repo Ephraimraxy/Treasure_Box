@@ -26,7 +26,7 @@ export const HistoryPage = () => {
 
     // Receipt state
     const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-    const [sharing, setSharing] = useState(false);
+    const [sharing, setSharing] = useState<'image' | 'pdf' | null>(null);
     const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -149,10 +149,11 @@ export const HistoryPage = () => {
         }
     };
 
+    // ─── Share as Image ───
     const handleShareImage = async () => {
-        setSharing(true);
+        setSharing('image');
         const canvas = await captureReceipt();
-        if (!canvas) { setSharing(false); return; }
+        if (!canvas) { setSharing(null); return; }
 
         try {
             const url = canvas.toDataURL('image/png');
@@ -161,7 +162,7 @@ export const HistoryPage = () => {
                 const file = new File([blob], `TB-Receipt-${selectedTx?.id.slice(0, 8)}.png`, { type: 'image/png' });
                 if (navigator.canShare({ files: [file] })) {
                     await navigator.share({ files: [file], title: 'Treasure Box Receipt' });
-                    setSharing(false);
+                    setSharing(null);
                     return;
                 }
             }
@@ -170,14 +171,15 @@ export const HistoryPage = () => {
             a.download = `TB-Receipt-${selectedTx?.id.slice(0, 8)}.png`;
             a.click();
         } finally {
-            setSharing(false);
+            setSharing(null);
         }
     };
 
+    // ─── Share as PDF ───
     const handleSharePDF = async () => {
-        setSharing(true);
+        setSharing('pdf');
         const canvas = await captureReceipt();
-        if (!canvas) { setSharing(false); return; }
+        if (!canvas) { setSharing(null); return; }
 
         try {
             const imgData = canvas.toDataURL('image/png');
@@ -192,7 +194,7 @@ export const HistoryPage = () => {
             pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, imgHeight);
             pdf.save(`TB-Receipt-${selectedTx?.id.slice(0, 8)}.pdf`);
         } finally {
-            setSharing(false);
+            setSharing(null);
         }
     };
 
@@ -421,17 +423,17 @@ export const HistoryPage = () => {
                             <div className="grid grid-cols-2 gap-3 pb-safe">
                                 <button
                                     onClick={handleShareImage}
-                                    disabled={sharing}
+                                    disabled={!!sharing}
                                     className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
-                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Share2 size={18} /> Share Image</>}
+                                    {sharing === 'image' ? <Spinner className="w-4 h-4" /> : <><Share2 size={18} /> Share Image</>}
                                 </button>
                                 <button
                                     onClick={handleSharePDF}
-                                    disabled={sharing}
+                                    disabled={!!sharing}
                                     className="flex items-center justify-center gap-2 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
-                                    {sharing ? <Spinner className="w-4 h-4" /> : <><Download size={18} /> Share PDF</>}
+                                    {sharing === 'pdf' ? <Spinner className="w-4 h-4" /> : <><Download size={18} /> Share PDF</>}
                                 </button>
                             </div>
 
