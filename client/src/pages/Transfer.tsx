@@ -170,12 +170,12 @@ export const TransferPage = () => {
         <div className="min-h-[80vh] flex flex-col max-w-md mx-auto animate-fade-in">
             {/* Header */}
             <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/')} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/')} className="p-2 hover:bg-muted rounded-xl text-muted hover:text-foreground transition-colors">
                     <ArrowLeft size={20} />
                 </button>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-white">Transfer</h1>
-                    <p className="text-xs text-slate-500">Send money to a bank account</p>
+                    <h1 className="text-xl font-bold text-foreground">Transfer</h1>
+                    <p className="text-xs text-muted">Send money to a bank account</p>
                 </div>
                 <div className="p-2.5 bg-blue-500/10 rounded-xl">
                     <Send size={20} className="text-blue-500" />
@@ -186,8 +186,8 @@ export const TransferPage = () => {
             <div className="flex items-center gap-1 mb-6">
                 {stepLabels.map((label, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <div className={`w-full h-1 rounded-full transition-all ${i + 1 <= step ? 'bg-blue-500' : 'bg-slate-800'}`} />
-                        <span className={`text-[9px] font-bold uppercase tracking-widest ${i + 1 === step ? 'text-blue-400' : i + 1 < step ? 'text-blue-500/50' : 'text-slate-600'}`}>{label}</span>
+                        <div className={`w-full h-1 rounded-full transition-all ${i + 1 <= step ? 'bg-blue-500' : 'bg-muted'}`} />
+                        <span className={`text-[9px] font-bold uppercase tracking-widest ${i + 1 === step ? 'text-blue-500' : i + 1 < step ? 'text-blue-500/50' : 'text-muted'}`}>{label}</span>
                     </div>
                 ))}
             </div>
@@ -198,20 +198,20 @@ export const TransferPage = () => {
             {step === 1 && (
                 <div className="flex-1 flex flex-col">
                     <div className="text-center mb-6">
-                        <p className="text-sm text-slate-400">How much do you want to send?</p>
-                        <p className="text-xs text-slate-600 mt-1">
+                        <p className="text-sm text-muted">How much do you want to send?</p>
+                        <p className="text-xs text-muted mt-1">
                             Balance: <FormatCurrency amount={user?.balance || 0} />
                         </p>
                     </div>
 
                     <div className="relative mb-4">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-600">₦</div>
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-muted">₦</div>
                         <input
                             type="number"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0"
-                            className="w-full bg-slate-900 border border-slate-700 rounded-2xl pl-12 pr-4 py-5 text-3xl font-black text-white text-center focus:outline-none focus:border-blue-500 placeholder:text-slate-800 font-mono"
+                            className="w-full bg-input border border-input rounded-2xl pl-12 pr-4 py-5 text-3xl font-black text-foreground text-center focus:outline-none focus:border-primary placeholder:text-muted/50 font-mono"
                         />
                     </div>
 
@@ -225,8 +225,8 @@ export const TransferPage = () => {
                                 key={preset}
                                 onClick={() => setAmount(String(preset))}
                                 className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${amount === String(preset)
-                                    ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                                    : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'
+                                    ? 'border-blue-500 bg-blue-500/10 text-blue-500'
+                                    : 'border-border bg-card text-muted hover:border-primary/50'
                                     }`}
                             >
                                 ₦{preset >= 1000 ? `${preset / 1000}k` : preset}
@@ -257,27 +257,27 @@ export const TransferPage = () => {
 
                     {/* Bank Selector */}
                     <div className="relative mb-3">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Select Bank</label>
+                        <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Select Bank</label>
                         <button
                             type="button"
                             onClick={() => setShowBankDropdown(!showBankDropdown)}
-                            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-left hover:border-slate-600 transition-colors text-sm"
+                            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-input border border-input text-left hover:border-primary/50 transition-colors text-sm"
                         >
                             <div className="flex items-center gap-2.5">
-                                <Building2 size={16} className="text-slate-500" />
-                                <span className={bankData.bankName ? 'text-white font-medium' : 'text-slate-500'}>{bankData.bankName || 'Choose your bank'}</span>
+                                <Building2 size={16} className="text-muted" />
+                                <span className={bankData.bankName ? 'text-foreground font-medium' : 'text-muted'}>{bankData.bankName || 'Choose your bank'}</span>
                             </div>
-                            <ChevronRight size={14} className={`text-slate-500 transition-transform ${showBankDropdown ? 'rotate-90' : ''}`} />
+                            <ChevronRight size={14} className={`text-muted transition-transform ${showBankDropdown ? 'rotate-90' : ''}`} />
                         </button>
 
                         {showBankDropdown && (
-                            <div className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                            <div className="absolute z-20 w-full mt-1 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden">
                                 <div className="p-2">
                                     <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                                         <input
                                             type="text"
-                                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500"
+                                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-input border border-input text-foreground placeholder:text-muted text-sm focus:outline-none focus:border-primary"
                                             placeholder="Search banks..."
                                             value={bankSearch}
                                             onChange={(e) => setBankSearch(e.target.value)}
@@ -287,12 +287,12 @@ export const TransferPage = () => {
                                 </div>
                                 <div className="max-h-40 overflow-y-auto">
                                     {filteredBanks.length === 0 ? (
-                                        <div className="px-4 py-3 text-sm text-slate-500">No banks found</div>
+                                        <div className="px-4 py-3 text-sm text-muted">No banks found</div>
                                     ) : filteredBanks.slice(0, 30).map((bank: any) => (
                                         <button
                                             key={bank.code}
                                             onClick={() => selectBank(bank)}
-                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 transition-colors flex items-center justify-between ${bankData.bankCode === bank.code ? 'bg-blue-500/10 text-blue-400' : 'text-white'}`}
+                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center justify-between ${bankData.bankCode === bank.code ? 'bg-blue-500/10 text-blue-500' : 'text-foreground'}`}
                                         >
                                             {bank.name}
                                             {bankData.bankCode === bank.code && <CheckCircle size={14} />}
@@ -320,22 +320,22 @@ export const TransferPage = () => {
                     {/* Account Verification Status */}
                     <div className={`px-4 py-3 rounded-xl border flex items-center gap-2.5 mb-4 ${accountVerified
                         ? 'bg-emerald-500/5 border-emerald-500/30'
-                        : 'bg-slate-900 border-slate-700'
+                        : 'bg-card border-border'
                         }`}>
                         {verifyingAccount ? (
-                            <><Loader2 size={16} className="text-blue-400 animate-spin" /><span className="text-slate-400 text-xs">Verifying account...</span></>
+                            <><Loader2 size={16} className="text-blue-500 animate-spin" /><span className="text-muted text-xs">Verifying account...</span></>
                         ) : accountVerified ? (
                             <>
                                 <div className="w-8 h-8 bg-emerald-500/10 rounded-full flex items-center justify-center shrink-0">
-                                    <User size={14} className="text-emerald-400" />
+                                    <User size={14} className="text-emerald-500" />
                                 </div>
                                 <div>
-                                    <div className="text-white font-semibold text-sm">{bankData.accountName}</div>
-                                    <div className="text-[10px] text-emerald-400">✓ Account verified</div>
+                                    <div className="text-foreground font-semibold text-sm">{bankData.accountName}</div>
+                                    <div className="text-[10px] text-emerald-500">✓ Account verified</div>
                                 </div>
                             </>
                         ) : (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-muted">
                                 {bankData.bankCode && bankData.accountNumber.length === 10
                                     ? 'Could not verify account'
                                     : 'Select a bank & enter account number to verify'}
@@ -360,7 +360,7 @@ export const TransferPage = () => {
                     <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-xl mb-5">
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="text-[10px] text-slate-500 uppercase tracking-widest">Sending</div>
+                                <div className="text-[10px] text-muted uppercase tracking-widest">Sending</div>
                                 <div className="text-xl font-black text-white"><FormatCurrency amount={parseFloat(amount)} /></div>
                             </div>
                             <div className="text-right">
@@ -372,13 +372,13 @@ export const TransferPage = () => {
 
                     {/* Description */}
                     <div className="mb-4">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Description <span className="text-slate-700">(optional)</span></label>
+                        <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Description <span className="text-muted/50">(optional)</span></label>
                         <input
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="e.g. School fees, Family support..."
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 placeholder-slate-600"
+                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary placeholder-muted"
                             maxLength={60}
                         />
                     </div>
@@ -395,7 +395,7 @@ export const TransferPage = () => {
                             className="tracking-[0.3em] text-center text-lg"
                         />
                         <div className="flex justify-end mt-1">
-                            <button onClick={() => navigate('/profile')} className="text-[10px] text-slate-500 hover:text-amber-500 transition-colors">
+                            <button onClick={() => navigate('/profile')} className="text-[10px] text-muted hover:text-amber-500 transition-colors">
                                 Forgot PIN?
                             </button>
                         </div>
@@ -406,17 +406,17 @@ export const TransferPage = () => {
                         onClick={() => setSaveBeneficiary(!saveBeneficiary)}
                         className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all mb-4 ${saveBeneficiary
                             ? 'bg-amber-500/5 border-amber-500/30'
-                            : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                            : 'bg-card border-border hover:border-primary/50'
                             }`}
                     >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${saveBeneficiary ? 'bg-amber-500/20' : 'bg-slate-800'}`}>
-                            {saveBeneficiary ? <Star size={16} className="text-amber-500 fill-amber-500" /> : <StarOff size={16} className="text-slate-500" />}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${saveBeneficiary ? 'bg-amber-500/20' : 'bg-muted'}`}>
+                            {saveBeneficiary ? <Star size={16} className="text-amber-500 fill-amber-500" /> : <StarOff size={16} className="text-muted" />}
                         </div>
                         <div className="text-left flex-1">
-                            <div className={`text-sm font-semibold ${saveBeneficiary ? 'text-amber-400' : 'text-white'}`}>Save Beneficiary</div>
-                            <div className="text-[10px] text-slate-500">Save this bank account for future transfers</div>
+                            <div className={`text-sm font-semibold ${saveBeneficiary ? 'text-amber-500' : 'text-foreground'}`}>Save Beneficiary</div>
+                            <div className="text-[10px] text-muted">Save this bank account for future transfers</div>
                         </div>
-                        <div className={`w-10 h-5 rounded-full relative transition-colors ${saveBeneficiary ? 'bg-amber-500' : 'bg-slate-700'}`}>
+                        <div className={`w-10 h-5 rounded-full relative transition-colors ${saveBeneficiary ? 'bg-amber-500' : 'bg-muted'}`}>
                             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${saveBeneficiary ? 'left-5' : 'left-0.5'}`} />
                         </div>
                     </button>
@@ -438,22 +438,22 @@ export const TransferPage = () => {
                         <div className="w-14 h-14 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                             <Send size={24} className="text-blue-400" />
                         </div>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Review & Confirm</p>
+                        <p className="text-[10px] text-muted uppercase font-bold tracking-widest">Review & Confirm</p>
                     </div>
 
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-4">
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden mb-4">
                         {[
                             { label: 'Amount', value: <span className="font-bold font-mono"><FormatCurrency amount={parseFloat(amount)} /></span> },
                             { label: 'Recipient', value: <span className="text-xs">{bankData.accountName}</span> },
                             { label: 'Account', value: <span className="font-mono text-xs">{bankData.accountNumber}</span> },
                             { label: 'Bank', value: <span className="text-xs">{bankData.bankName}</span> },
                             ...(description ? [{ label: 'Description', value: <span className="text-xs">{description}</span> }] : []),
-                            { label: 'Save Beneficiary', value: <span className={`text-xs font-bold ${saveBeneficiary ? 'text-amber-400' : 'text-slate-500'}`}>{saveBeneficiary ? 'Yes' : 'No'}</span> },
+                            { label: 'Save Beneficiary', value: <span className={`text-xs font-bold ${saveBeneficiary ? 'text-amber-500' : 'text-muted'}`}>{saveBeneficiary ? 'Yes' : 'No'}</span> },
                             { label: 'PIN', value: <span className="font-mono tracking-widest">••••</span> },
                         ].map((row, i) => (
-                            <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-slate-800/60 last:border-0">
-                                <span className="text-xs text-slate-500">{row.label}</span>
-                                <span className="text-white">{row.value}</span>
+                            <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-border/60 last:border-0">
+                                <span className="text-xs text-muted">{row.label}</span>
+                                <span className="text-foreground">{row.value}</span>
                             </div>
                         ))}
                     </div>
@@ -486,11 +486,11 @@ export const TransferPage = () => {
             {/* ════════════════════════════════════ */}
             {pinModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" onClick={() => setPinModal(false)} />
-                    <div className="relative z-10 bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-5 animate-fade-in">
+                    <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" onClick={() => setPinModal(false)} />
+                    <div className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-sm p-5 animate-fade-in">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-white">Set Transaction PIN</h3>
-                            <button onClick={() => setPinModal(false)} className="p-1 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white">
+                            <h3 className="font-bold text-foreground">Set Transaction PIN</h3>
+                            <button onClick={() => setPinModal(false)} className="p-1 hover:bg-muted rounded-full text-muted hover:text-foreground">
                                 <X size={18} />
                             </button>
                         </div>

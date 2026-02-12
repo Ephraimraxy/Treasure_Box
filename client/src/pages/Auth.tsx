@@ -32,7 +32,7 @@ export const AnimatedInput = ({
     return (
         <div className="animate-slide-up">
             <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">
                     <Icon size={20} />
                 </div>
                 <input
@@ -43,13 +43,13 @@ export const AnimatedInput = ({
                     autoFocus={autoFocus}
                     maxLength={maxLength}
                     onKeyDown={onKeyDown}
-                    className={`w-full bg-slate-900/50 border border-slate-700 rounded-xl py-4 pl-12 ${isPassword ? 'pr-12' : 'pr-4'} text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-lg`}
+                    className={`w-full bg-surface/50 border border-border rounded-xl py-4 pl-12 ${isPassword ? 'pr-12' : 'pr-4'} text-foreground placeholder:text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-lg`}
                 />
                 {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors focus:outline-none"
                     >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -65,7 +65,7 @@ const StepIndicator = ({ current, total }: { current: number; total: number }) =
         {Array.from({ length: total }).map((_, i) => (
             <div
                 key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${i < current ? 'w-8 bg-amber-500' : i === current ? 'w-8 bg-amber-500/50' : 'w-2 bg-slate-700'
+                className={`h-1.5 rounded-full transition-all duration-300 ${i < current ? 'w-8 bg-primary' : i === current ? 'w-8 bg-primary/50' : 'w-2 bg-surface-highlight'
                     }`}
             />
         ))}
@@ -90,8 +90,8 @@ export const ActionButton = ({
         onClick={onClick}
         disabled={disabled || loading}
         className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${variant === 'primary'
-            ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50'
-            : 'bg-slate-800 text-white hover:bg-slate-700'
+            ? 'bg-gradient-to-r from-primary to-orange-600 text-primary-foreground hover:from-primary/90 hover:to-orange-500 disabled:opacity-50'
+            : 'bg-surface hover:bg-surface-highlight text-foreground border border-border'
             }`}
     >
         {loading ? <Loader2 className="animate-spin" size={20} /> : children}
@@ -237,20 +237,20 @@ export const LoginPage = () => {
 
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-950 to-slate-950" />
-            <div className="absolute top-20 left-1/4 w-72 h-72 bg-amber-500/10 blur-[120px] rounded-full" />
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+            <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 blur-[120px] rounded-full" />
             <div className="absolute bottom-20 right-1/4 w-72 h-72 bg-orange-500/10 blur-[120px] rounded-full" />
 
             <div className="w-full max-w-md relative z-10">
                 {view === 'login' ? (
                     <>
                         <div className="text-center mb-10">
-                            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
-                                <Box size={48} className="text-white" />
+                            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
+                                <Box size={48} className="text-primary-foreground" />
                             </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                            <p className="text-slate-400">Sign in to your account</p>
+                            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+                            <p className="text-muted">Sign in to your account</p>
                         </div>
 
                         <div className="space-y-4">
@@ -275,11 +275,11 @@ export const LoginPage = () => {
                             <div className="flex justify-between items-center text-sm">
                                 <button
                                     onClick={() => setView('resume')}
-                                    className="text-slate-400 hover:text-white transition-colors"
+                                    className="text-muted hover:text-foreground transition-colors"
                                 >
                                     Continue Verification?
                                 </button>
-                                <Link to="/forgot-password" className="text-amber-500 hover:text-amber-400">
+                                <Link to="/forgot-password" className="text-primary hover:text-primary/80">
                                     Forgot Password?
                                 </Link>
                             </div>
@@ -292,11 +292,11 @@ export const LoginPage = () => {
                 ) : (
                     <>
                         <div className="text-center mb-10">
-                            <div className="w-20 h-20 mx-auto bg-slate-800 rounded-2xl flex items-center justify-center mb-6">
-                                <Mail size={40} className="text-amber-500" />
+                            <div className="w-20 h-20 mx-auto bg-surface-highlight rounded-2xl flex items-center justify-center mb-6">
+                                <Mail size={40} className="text-primary" />
                             </div>
-                            <h1 className="text-2xl font-bold text-white mb-2">Resume Verification</h1>
-                            <p className="text-slate-400">
+                            <h1 className="text-2xl font-bold text-foreground mb-2">Resume Verification</h1>
+                            <p className="text-muted">
                                 {resumeStep === 'email'
                                     ? 'Enter email to receive a new code'
                                     : `Enter code sent to ${resumeEmail}`}
@@ -338,7 +338,7 @@ export const LoginPage = () => {
                                     setResumeStep('email');
                                     setOtp('');
                                 }}
-                                className="w-full text-slate-400 text-sm hover:text-white mt-4"
+                                className="w-full text-muted text-sm hover:text-foreground mt-4"
                             >
                                 Back to Login
                             </button>
@@ -346,10 +346,10 @@ export const LoginPage = () => {
                     </>
                 )}
 
-                <div className="mt-10 pt-6 border-t border-slate-800 text-center">
-                    <p className="text-slate-400">
+                <div className="mt-10 pt-6 border-t border-border text-center">
+                    <p className="text-muted">
                         Don't have an account?{' '}
-                        <Link to="/register" className="text-amber-500 font-bold hover:underline">
+                        <Link to="/register" className="text-primary font-bold hover:underline">
                             Sign Up
                         </Link>
                     </p>
@@ -451,18 +451,18 @@ export const RegisterPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-950 to-slate-950" />
-            <div className="absolute top-20 left-1/4 w-72 h-72 bg-amber-500/10 blur-[120px] rounded-full" />
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+            <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 blur-[120px] rounded-full" />
 
             <div className="w-full max-w-md relative z-10">
                 {/* Logo */}
                 <div className="text-center mb-10">
-                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
-                        <Box size={48} className="text-white" />
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 mb-6 transform rotate-3 hover:rotate-0 transition-transform">
+                        <Box size={48} className="text-primary-foreground" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">{stepTitles[step - 1].title}</h1>
-                    <p className="text-slate-400">{stepTitles[step - 1].subtitle}</p>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">{stepTitles[step - 1].title}</h1>
+                    <p className="text-muted">{stepTitles[step - 1].subtitle}</p>
                 </div>
 
                 <StepIndicator current={step - 1} total={5} />
@@ -498,7 +498,7 @@ export const RegisterPage = () => {
                             <ActionButton onClick={handleEmailSubmit} disabled={!email}>
                                 Continue <ArrowRight size={20} />
                             </ActionButton>
-                            <button onClick={() => setStep(1)} className="w-full text-center text-slate-500 hover:text-white text-sm py-2">
+                            <button onClick={() => setStep(1)} className="w-full text-center text-muted hover:text-foreground text-sm py-2">
                                 <ArrowLeft size={16} className="inline mr-1" /> Back
                             </button>
                         </>
@@ -610,9 +610,9 @@ export const ForgotPasswordPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md">
-                <Link to="/login" className="flex items-center gap-2 text-slate-400 hover:text-white mb-8">
+                <Link to="/login" className="flex items-center gap-2 text-muted hover:text-foreground mb-8">
                     <ArrowLeft size={20} /> Back to login
                 </Link>
 
@@ -621,13 +621,13 @@ export const ForgotPasswordPage = () => {
                         <div className="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
                             <Mail className="text-emerald-500" size={40} />
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Check Your Email</h1>
-                        <p className="text-slate-400">We've sent a password reset link to <span className="text-white">{email}</span></p>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Check Your Email</h1>
+                        <p className="text-muted">We've sent a password reset link to <span className="text-foreground">{email}</span></p>
                     </div>
                 ) : (
                     <>
-                        <h1 className="text-2xl font-bold text-white mb-2">Forgot Password?</h1>
-                        <p className="text-slate-400 mb-6">Enter your email and we'll send you a reset link.</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Forgot Password?</h1>
+                        <p className="text-muted mb-6">Enter your email and we'll send you a reset link.</p>
                         <div className="space-y-4">
                             <AnimatedInput
                                 type="email"
@@ -683,23 +683,23 @@ export const ResetPasswordPage = () => {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
                 <div className="text-center animate-fade-in">
                     <div className="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
                         <CheckCircle className="text-emerald-500" size={40} />
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Password Reset!</h1>
-                    <p className="text-slate-400">Redirecting to login...</p>
+                    <h1 className="text-2xl font-bold text-foreground mb-2">Password Reset!</h1>
+                    <p className="text-muted">Redirecting to login...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md">
-                <h1 className="text-2xl font-bold text-white mb-2">Create New Password</h1>
-                <p className="text-slate-400 mb-6">Enter your new password below.</p>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Create New Password</h1>
+                <p className="text-muted mb-6">Enter your new password below.</p>
                 <div className="space-y-4">
                     <AnimatedInput
                         type="password"
@@ -751,12 +751,12 @@ export const VerifyEmailPage = () => {
     }, [token, navigate]);
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
             <div className="text-center animate-fade-in">
                 {status === 'loading' && (
                     <>
-                        <Loader2 className="w-12 h-12 mx-auto text-amber-500 animate-spin mb-4" />
-                        <h1 className="text-xl font-bold text-white">Verifying your email...</h1>
+                        <Loader2 className="w-12 h-12 mx-auto text-primary animate-spin mb-4" />
+                        <h1 className="text-xl font-bold text-foreground">Verifying your email...</h1>
                     </>
                 )}
                 {status === 'success' && (
@@ -764,8 +764,8 @@ export const VerifyEmailPage = () => {
                         <div className="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
                             <CheckCircle className="text-emerald-500" size={40} />
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Email Verified!</h1>
-                        <p className="text-slate-400">Redirecting to login...</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Email Verified!</h1>
+                        <p className="text-muted">Redirecting to login...</p>
                     </>
                 )}
                 {status === 'error' && (
@@ -773,9 +773,9 @@ export const VerifyEmailPage = () => {
                         <div className="w-20 h-20 mx-auto bg-red-500/20 rounded-full flex items-center justify-center mb-6">
                             <Mail className="text-red-500" size={40} />
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Verification Failed</h1>
-                        <p className="text-slate-400 mb-4">The link may be expired or invalid.</p>
-                        <Link to="/login" className="text-amber-500 hover:underline">Go to Login</Link>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Verification Failed</h1>
+                        <p className="text-muted mb-4">The link may be expired or invalid.</p>
+                        <Link to="/login" className="text-primary hover:underline">Go to Login</Link>
                     </>
                 )}
             </div>

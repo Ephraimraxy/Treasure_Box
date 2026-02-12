@@ -132,7 +132,7 @@ export const HistoryPage = () => {
         if (!receiptRef.current) return null;
         try {
             const canvas = await html2canvas(receiptRef.current, {
-                backgroundColor: '#0f172a', // Match slate-950/900 theme
+                backgroundColor: '#0f172a', // Keep dark for receipt export consistency or use theme var if supported
                 scale: 3, // Higher quality
                 useCORS: true,
                 logging: false,
@@ -206,39 +206,39 @@ export const HistoryPage = () => {
         <div className="space-y-4 animate-fade-in max-w-2xl mx-auto">
             {/* Header */}
             <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-amber-500/10 rounded-xl">
-                    <Receipt size={22} className="text-amber-500" />
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                    <Receipt size={22} className="text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold text-white">Transaction History</h1>
-                    <p className="text-xs text-slate-500">Tap any transaction to view receipt</p>
+                    <h1 className="text-xl font-bold text-foreground">Transaction History</h1>
+                    <p className="text-xs text-muted">Tap any transaction to view receipt</p>
                 </div>
             </div>
 
             {/* Search */}
             <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search transactions..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-surface border border-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-primary"
                 />
                 {search && (
-                    <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                    <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground">
                         <X size={16} />
                     </button>
                 )}
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-1.5 p-1 bg-slate-900/50 border border-slate-800 rounded-xl">
+            <div className="flex gap-1.5 p-1 bg-surface-highlight border border-border rounded-xl">
                 {(['all', 'deposit', 'withdrawal', 'investment'] as const).map((f) => (
                     <button
                         key={f}
                         onClick={() => handleFilterChange(f)}
-                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${filter === f ? 'bg-amber-500 text-slate-900' : 'text-slate-400 hover:text-white'
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${filter === f ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-foreground'
                             }`}
                     >
                         {f}
@@ -252,8 +252,8 @@ export const HistoryPage = () => {
                     <div className="flex justify-center py-16"><Spinner /></div>
                 ) : transactions.length === 0 ? (
                     <div className="text-center py-16">
-                        <Receipt size={40} className="mx-auto text-slate-700 mb-3" />
-                        <p className="text-slate-400 text-sm font-medium">No transactions found</p>
+                        <Receipt size={40} className="mx-auto text-muted mb-3" />
+                        <p className="text-muted text-sm font-medium">No transactions found</p>
                     </div>
                 ) : (
                     transactions.map(tx => {
@@ -263,17 +263,17 @@ export const HistoryPage = () => {
                             <button
                                 key={tx.id}
                                 onClick={() => setSelectedTx(tx)}
-                                className="w-full p-3 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 rounded-xl flex items-center gap-3 transition-all text-left group"
+                                className="w-full p-3 bg-card hover:bg-surface-highlight border border-border hover:border-primary/30 rounded-xl flex items-center gap-3 transition-all text-left group"
                             >
                                 <div className={`p-2.5 rounded-xl shrink-0 ${debit ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
                                     {getTypeIcon(tx.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-semibold text-white truncate">{tx.description}</div>
-                                    <div className="text-[10px] text-slate-500">{formatDate(tx.createdAt)} • {formatTime(tx.createdAt)}</div>
+                                    <div className="text-sm font-semibold text-foreground truncate">{tx.description}</div>
+                                    <div className="text-[10px] text-muted">{formatDate(tx.createdAt)} • {formatTime(tx.createdAt)}</div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <div className={`font-bold text-sm ${debit ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    <div className={`font-bold text-sm ${debit ? 'text-red-500' : 'text-emerald-500'}`}>
                                         {debit ? '-' : '+'}<FormatCurrency amount={tx.amount} />
                                     </div>
                                     <div className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
@@ -291,7 +291,7 @@ export const HistoryPage = () => {
                 <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={loading}
-                    className="w-full py-3 text-sm text-amber-500 hover:text-amber-400 font-bold transition-colors"
+                    className="w-full py-3 text-sm text-primary hover:text-primary/80 font-bold transition-colors"
                 >
                     {loading ? 'Loading...' : 'Load More'}
                 </button>
@@ -311,21 +311,21 @@ export const HistoryPage = () => {
 
                         <div className="relative z-10 w-full max-w-sm flex flex-col h-[85vh]">
                             {/* Scrollable Container for Receipt */}
-                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-t-2xl bg-slate-900 border border-slate-700 border-b-0 shadow-2xl">
-                                <div id="receipt-content" ref={receiptRef} className="bg-slate-900 p-6 min-h-full flex flex-col relative overflow-hidden">
+                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-t-2xl bg-surface border border-border border-b-0 shadow-2xl">
+                                <div id="receipt-content" ref={receiptRef} className="bg-surface p-6 min-h-full flex flex-col relative overflow-hidden">
                                     {/* Top Decoration */}
                                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500" />
 
                                     {/* Header: Logo & Title */}
                                     <div className="flex justify-between items-start mb-8 mt-2">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
-                                                <div className="text-white font-bold text-xs">TB</div>
+                                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                                                <div className="text-primary-foreground font-bold text-xs">TB</div>
                                             </div>
-                                            <span className="font-bold text-white leading-tight text-sm">Treasure<br />Box</span>
+                                            <span className="font-bold text-foreground leading-tight text-sm">Treasure<br />Box</span>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">Transaction Receipt</div>
+                                            <div className="text-xs font-bold text-muted uppercase tracking-wide">Transaction Receipt</div>
                                         </div>
                                     </div>
 
@@ -341,7 +341,7 @@ export const HistoryPage = () => {
                                     </div>
 
                                     {/* Divider */}
-                                    <div className="relative h-px bg-slate-800 w-full mb-6">
+                                    <div className="relative h-px bg-border w-full mb-6">
                                         <div className="absolute -left-8 -top-3 w-6 h-6 rounded-full bg-slate-950" />
                                         <div className="absolute -right-8 -top-3 w-6 h-6 rounded-full bg-slate-950" />
                                     </div>
@@ -401,11 +401,11 @@ export const HistoryPage = () => {
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="mt-8 pt-6 border-t border-slate-800 text-center">
-                                        <p className="text-[10px] text-slate-500 leading-relaxed max-w-[200px] mx-auto">
+                                    <div className="mt-8 pt-6 border-t border-border text-center">
+                                        <p className="text-[10px] text-muted leading-relaxed max-w-[200px] mx-auto">
                                             Enjoy a better life with Treasure Box. Get free transfers, withdrawals, bill payments, and good annual interest on your savings.
                                         </p>
-                                        <p className="text-[10px] text-slate-600 mt-2 font-bold opacity-50">Licensed by Central Bank of Nigeria</p>
+                                        <p className="text-[10px] text-muted mt-2 font-bold opacity-50">Licensed by Central Bank of Nigeria</p>
                                     </div>
                                 </div>
                             </div>
@@ -424,14 +424,14 @@ export const HistoryPage = () => {
                                 <button
                                     onClick={handleShareImage}
                                     disabled={!!sharing}
-                                    className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
                                     {sharing === 'image' ? <Spinner className="w-4 h-4" /> : <><Share2 size={18} /> Share Image</>}
                                 </button>
                                 <button
                                     onClick={handleSharePDF}
                                     disabled={!!sharing}
-                                    className="flex items-center justify-center gap-2 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 py-3.5 bg-surface-highlight hover:bg-surface text-foreground text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                                 >
                                     {sharing === 'pdf' ? <Spinner className="w-4 h-4" /> : <><Download size={18} /> Share PDF</>}
                                 </button>

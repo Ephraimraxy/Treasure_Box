@@ -167,13 +167,13 @@ export const FeaturedCarousel = () => {
                 <div className="flex items-center gap-1">
                     <button
                         onClick={() => goTo((current - 1 + FEATURED_SLIDES.length) % FEATURED_SLIDES.length)}
-                        className="p-1 rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 rounded-full bg-surface/60 hover:bg-surface text-muted hover:text-foreground transition-colors"
                     >
                         <ChevronLeft size={14} />
                     </button>
                     <button
                         onClick={() => goTo((current + 1) % FEATURED_SLIDES.length)}
-                        className="p-1 rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 rounded-full bg-surface/60 hover:bg-surface text-muted hover:text-foreground transition-colors"
                     >
                         <ChevronRight size={14} />
                     </button>

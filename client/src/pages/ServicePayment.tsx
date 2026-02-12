@@ -61,11 +61,11 @@ export const ServicePaymentPage = () => {
     if (!service || !type) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
-                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                    <Search size={32} className="text-slate-500" />
+                <div className="w-16 h-16 bg-surface-highlight rounded-full flex items-center justify-center mb-4">
+                    <Search size={32} className="text-muted" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Service Not Found</h2>
-                <p className="text-slate-400 mb-6">The service you're looking for doesn't exist.</p>
+                <h2 className="text-xl font-bold text-foreground mb-2">Service Not Found</h2>
+                <p className="text-muted mb-6">The service you're looking for doesn't exist.</p>
                 <Button onClick={() => navigate('/services')}>Back to Services</Button>
             </div>
         );
@@ -128,51 +128,51 @@ export const ServicePaymentPage = () => {
         return (
             <div className="max-w-lg mx-auto animate-fade-in space-y-6 py-8">
                 <div className="text-center">
-                    <div className="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle size={40} className="text-emerald-400" />
+                    <div className="w-20 h-20 mx-auto bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle size={40} className="text-emerald-500" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-1">Transaction Successful</h2>
-                    <p className="text-slate-400">{service.name} completed successfully</p>
+                    <h2 className="text-2xl font-bold text-foreground mb-1">Transaction Successful</h2>
+                    <p className="text-muted">{service.name} completed successfully</p>
                 </div>
 
                 {verificationResult && (
                     <Card>
-                        <h3 className="font-bold text-white mb-4">Verification Details</h3>
+                        <h3 className="font-bold text-foreground mb-4">Verification Details</h3>
                         <div className="space-y-3">
                             {verificationResult.firstName && (
-                                <div className="flex justify-between border-b border-slate-700 pb-2">
-                                    <span className="text-slate-400">First Name</span>
-                                    <span className="font-bold text-white">{verificationResult.firstName}</span>
+                                <div className="flex justify-between border-b border-border pb-2">
+                                    <span className="text-muted">First Name</span>
+                                    <span className="font-bold text-foreground">{verificationResult.firstName}</span>
                                 </div>
                             )}
                             {verificationResult.lastName && (
-                                <div className="flex justify-between border-b border-slate-700 pb-2">
-                                    <span className="text-slate-400">Last Name</span>
-                                    <span className="font-bold text-white">{verificationResult.lastName}</span>
+                                <div className="flex justify-between border-b border-border pb-2">
+                                    <span className="text-muted">Last Name</span>
+                                    <span className="font-bold text-foreground">{verificationResult.lastName}</span>
                                 </div>
                             )}
                             {verificationResult.valid !== undefined && (
-                                <div className="flex justify-between border-b border-slate-700 pb-2">
-                                    <span className="text-slate-400">Valid</span>
-                                    <span className="font-bold text-emerald-400">{verificationResult.valid ? 'Yes' : 'No'}</span>
+                                <div className="flex justify-between border-b border-border pb-2">
+                                    <span className="text-muted">Valid</span>
+                                    <span className="font-bold text-emerald-500">{verificationResult.valid ? 'Yes' : 'No'}</span>
                                 </div>
                             )}
                             {verificationResult.bvn && (
-                                <div className="flex justify-between border-b border-slate-700 pb-2">
-                                    <span className="text-slate-400">BVN</span>
-                                    <span className="font-bold text-white">{verificationResult.bvn}</span>
+                                <div className="flex justify-between border-b border-border pb-2">
+                                    <span className="text-muted">BVN</span>
+                                    <span className="font-bold text-foreground">{verificationResult.bvn}</span>
                                 </div>
                             )}
                             {verificationResult.status && (
-                                <div className="flex justify-between border-b border-slate-700 pb-2">
-                                    <span className="text-slate-400">Status</span>
-                                    <span className="font-bold text-white">{verificationResult.status}</span>
+                                <div className="flex justify-between border-b border-border pb-2">
+                                    <span className="text-muted">Status</span>
+                                    <span className="font-bold text-foreground">{verificationResult.status}</span>
                                 </div>
                             )}
                             {verificationResult.reference && (
                                 <div className="flex justify-between">
-                                    <span className="text-slate-400">Ref ID</span>
-                                    <span className="font-bold text-amber-500 font-mono">{verificationResult.reference}</span>
+                                    <span className="text-muted">Ref ID</span>
+                                    <span className="font-bold text-primary font-mono">{verificationResult.reference}</span>
                                 </div>
                             )}
                         </div>
@@ -197,18 +197,18 @@ export const ServicePaymentPage = () => {
             {/* Back Button */}
             <button
                 onClick={() => navigate('/services')}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+                className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group"
             >
                 <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-sm font-medium">Back to Services</span>
             </button>
 
             {/* Service Header */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
                 <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${type.includes('nin') || type.includes('bvn') ? 'from-orange-500 to-teal-500'
-                        : type === 'power' ? 'from-yellow-500 to-amber-500'
-                            : type === 'cable' ? 'from-purple-500 to-indigo-500'
-                                : 'from-blue-500 to-emerald-500'
+                    : type === 'power' ? 'from-yellow-500 to-amber-500'
+                        : type === 'cable' ? 'from-purple-500 to-indigo-500'
+                            : 'from-blue-500 to-emerald-500'
                     }`} />
                 <div className="p-6">
                     <div className="flex items-center gap-4 mb-4">
@@ -216,16 +216,16 @@ export const ServicePaymentPage = () => {
                             <ServiceIcon size={28} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">{service.name}</h1>
-                            <p className="text-sm text-slate-400">{service.description}</p>
+                            <h1 className="text-2xl font-bold text-foreground">{service.name}</h1>
+                            <p className="text-sm text-muted">{service.description}</p>
                         </div>
                     </div>
 
                     {/* Wallet Balance */}
-                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                        <Wallet size={16} className="text-amber-400" />
-                        <span className="text-sm text-slate-400">Wallet Balance:</span>
-                        <span className="font-bold text-white">₦{(user?.balance || 0).toLocaleString()}</span>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border border-border/50 rounded-xl">
+                        <Wallet size={16} className="text-primary" />
+                        <span className="text-sm text-muted">Wallet Balance:</span>
+                        <span className="font-bold text-foreground">₦{(user?.balance || 0).toLocaleString()}</span>
                     </div>
                 </div>
             </div>
@@ -236,15 +236,15 @@ export const ServicePaymentPage = () => {
                     {/* Network Provider (Airtime / Data) */}
                     {(type === 'data' || type === 'airtime') && (
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-300">Select Network</label>
+                            <label className="text-sm font-medium text-muted">Select Network</label>
                             <div className="grid grid-cols-4 gap-2">
                                 {['MTN', 'AIRTEL', 'GLO', '9MOBILE'].map(net => (
                                     <button
                                         key={net}
                                         onClick={() => { setSelectedProvider(net); setSelectedPlan(null); setAmount(''); }}
                                         className={`py-3 rounded-xl text-sm font-bold transition-all border ${selectedProvider === net
-                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                                                : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                                            ? 'bg-primary/20 border-primary/50 text-primary'
+                                            : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
                                             }`}
                                     >
                                         {net}
@@ -257,11 +257,11 @@ export const ServicePaymentPage = () => {
                     {/* Electricity Provider */}
                     {type === 'power' && (
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-300">Select Provider</label>
+                            <label className="text-sm font-medium text-muted">Select Provider</label>
                             <select
                                 value={selectedProvider}
                                 onChange={(e) => setSelectedProvider(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 appearance-none"
+                                className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary appearance-none"
                             >
                                 <option value="">Select Disco</option>
                                 {electricityProviders.map(p => (
@@ -274,19 +274,19 @@ export const ServicePaymentPage = () => {
                     {/* Data Plan */}
                     {type === 'data' && selectedProvider && (
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-300">Select Data Plan</label>
+                            <label className="text-sm font-medium text-muted">Select Data Plan</label>
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                 {dataPlans[selectedProvider]?.map(plan => (
                                     <button
                                         key={plan.id}
                                         onClick={() => { setSelectedPlan(plan); setAmount(plan.price.toString()); }}
                                         className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedPlan?.id === plan.id
-                                                ? 'bg-amber-500/10 border-amber-500/40 text-white'
-                                                : 'bg-slate-800/50 border-slate-700/50 text-slate-300 hover:border-slate-600'
+                                            ? 'bg-primary/10 border-primary/40 text-foreground'
+                                            : 'bg-card border-border text-muted hover:border-primary/40 hover:text-foreground'
                                             }`}
                                     >
                                         <span className="text-sm font-medium">{plan.name}</span>
-                                        <span className={`text-sm font-bold ${selectedPlan?.id === plan.id ? 'text-amber-400' : 'text-slate-400'}`}>₦{plan.price.toLocaleString()}</span>
+                                        <span className={`text-sm font-bold ${selectedPlan?.id === plan.id ? 'text-primary' : 'text-muted'}`}>₦{plan.price.toLocaleString()}</span>
                                     </button>
                                 ))}
                             </div>
@@ -299,7 +299,7 @@ export const ServicePaymentPage = () => {
                         type="number"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        icon={<span className="text-slate-400 font-bold">₦</span>}
+                        icon={<span className="text-muted font-bold">₦</span>}
                         placeholder="0.00"
                         readOnly={!!selectedPlan}
                         className={selectedPlan ? "opacity-70 cursor-not-allowed" : ""}
@@ -318,11 +318,11 @@ export const ServicePaymentPage = () => {
                     {/* Details for modifications */}
                     {requiresDetails && (
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-300">Request Details</label>
+                            <label className="text-sm font-medium text-muted">Request Details</label>
                             <textarea
                                 value={details}
                                 onChange={(e) => setDetails(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors h-24 resize-none"
+                                className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors h-24 resize-none"
                                 placeholder="Describe the changes required..."
                             />
                         </div>
@@ -340,20 +340,20 @@ export const ServicePaymentPage = () => {
 
                     {/* Summary */}
                     {amount && (
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-2">
+                        <div className="bg-muted/50 border border-border/50 rounded-xl p-4 space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-400">Service</span>
-                                <span className="text-white font-medium">{service.name}</span>
+                                <span className="text-muted">Service</span>
+                                <span className="text-foreground font-medium">{service.name}</span>
                             </div>
                             {selectedProvider && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-400">Provider</span>
-                                    <span className="text-white font-medium">{selectedProvider}</span>
+                                    <span className="text-muted">Provider</span>
+                                    <span className="text-foreground font-medium">{selectedProvider}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between text-sm border-t border-slate-700 pt-2 mt-2">
-                                <span className="text-slate-400">Total</span>
-                                <span className="text-amber-400 font-bold text-lg">₦{parseFloat(amount || '0').toLocaleString()}</span>
+                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
+                                <span className="text-muted">Total</span>
+                                <span className="text-primary font-bold text-lg">₦{parseFloat(amount || '0').toLocaleString()}</span>
                             </div>
                         </div>
                     )}

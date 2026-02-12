@@ -36,21 +36,7 @@ export const Layout = ({ children }: LayoutProps) => {
     const navigate = useNavigate();
     const navItems = user?.role === 'ADMIN' ? adminNavItems : userNavItems;
 
-    // Apply Theme
-    React.useEffect(() => {
-        if (user?.preferences?.theme) {
-            const themes: Record<string, string> = {
-                amber: '245 158 11',
-                blue: '59 130 246',
-                emerald: '16 185 129',
-                rose: '244 63 94',
-                purple: '168 85 247',
-                cyan: '6 182 212',
-            };
-            const color = themes[user.preferences.theme] || themes.amber;
-            document.documentElement.style.setProperty('--color-primary', color);
-        }
-    }, [user]);
+    // Theme is handled globally by ThemeProvider
 
     const handleLogout = () => {
         logout();
@@ -58,10 +44,10 @@ export const Layout = ({ children }: LayoutProps) => {
     };
 
     return (
-        <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
+        <div className="flex h-screen bg-background text-foreground font-sans overflow-hidden">
             <NetworkStatus />
             {/* Sidebar (Desktop) */}
-            <div className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl">
+            <div className="hidden md:flex w-64 flex-col border-r border-border bg-surface/50 backdrop-blur-xl">
 // ... rest of file
                 <div className="p-6">
                     <div className="flex items-center gap-3 mb-8">
@@ -69,7 +55,7 @@ export const Layout = ({ children }: LayoutProps) => {
                             <Box className="text-white" size={24} />
                         </div>
                         <div>
-                            <h1 className="font-bold text-white leading-none">Treasure<br />Box</h1>
+                            <h1 className="font-bold text-foreground leading-none">Treasure<br />Box</h1>
                         </div>
                     </div>
 
@@ -81,8 +67,8 @@ export const Layout = ({ children }: LayoutProps) => {
                                 end={item.to === '/' || item.to === '/admin'}
                                 className={({ isActive }) =>
                                     `w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${isActive
-                                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                        ? 'bg-primary/10 text-primary border border-primary/20'
+                                        : 'text-muted hover:text-foreground hover:bg-surface-highlight'
                                     }`
                                 }
                             >
@@ -92,21 +78,21 @@ export const Layout = ({ children }: LayoutProps) => {
                     </nav>
                 </div>
 
-                <div className="mt-auto p-6 border-t border-slate-800">
+                <div className="mt-auto p-6 border-t border-border">
                     <div className="flex items-center gap-3 mb-4">
                         {user?.kycPhotoUrl ? (
-                            <img src={user.kycPhotoUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-slate-700" />
+                            <img src={user.kycPhotoUrl} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-border" />
                         ) : (
-                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                                <User size={20} className="text-slate-400" />
+                            <div className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center border border-border">
+                                <User size={20} className="text-muted" />
                             </div>
                         )}
                         <div className="overflow-hidden">
-                            <div className="text-sm font-bold text-white truncate">{user?.username || user?.name || user?.email}</div>
-                            <div className="text-xs text-slate-500 capitalize">{user?.role?.toLowerCase()} Account</div>
+                            <div className="text-sm font-bold text-foreground truncate">{user?.username || user?.name || user?.email}</div>
+                            <div className="text-xs text-muted capitalize">{user?.role?.toLowerCase()} Account</div>
                         </div>
                     </div>
-                    <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-red-400 hover:bg-red-500/10">
+                    <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-red-500 hover:bg-red-500/10">
                         <LogOut size={18} /> Sign Out
                     </Button>
                 </div>
@@ -115,29 +101,29 @@ export const Layout = ({ children }: LayoutProps) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Header */}
-                <div className="h-12 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/80 backdrop-blur-md z-20 shrink-0">
+                <div className="h-12 border-b border-border flex items-center justify-between px-3 bg-surface/80 backdrop-blur-md z-20 shrink-0">
                     <div className="flex items-center gap-2 md:hidden">
                         {user?.kycPhotoUrl ? (
-                            <img src={user.kycPhotoUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-amber-500" />
+                            <img src={user.kycPhotoUrl} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-primary" />
                         ) : (
-                            <Box className="text-amber-500" size={24} />
+                            <Box className="text-primary" size={24} />
                         )}
-                        <span className="font-bold text-white">Treasure Box</span>
+                        <span className="font-bold text-foreground">Treasure Box</span>
                     </div>
 
-                    <div className="hidden md:block text-slate-400 text-sm font-medium">
+                    <div className="hidden md:block text-muted text-sm font-medium">
                         Dashboard
                     </div>
 
                     <div className="flex items-center gap-3 ml-auto">
                         {user?.role === 'ADMIN' ? (
-                            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-400 hover:bg-red-500/10 gap-2">
+                            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-500 hover:bg-red-500/10 gap-2">
                                 <LogOut size={16} /> <span className="hidden md:inline">Sign Out</span>
                             </Button>
                         ) : (
                             <>
                                 <div
-                                    className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer mr-2"
+                                    className="w-9 h-9 rounded-full bg-surface-highlight flex items-center justify-center border border-border hover:border-primary transition-colors cursor-pointer mr-2"
                                     onClick={() => navigate('/dispute')}
                                     title="Report Issue"
                                 >
@@ -147,15 +133,15 @@ export const Layout = ({ children }: LayoutProps) => {
                                     <img
                                         src={user.photoUrl || user.kycPhotoUrl}
                                         alt="Profile"
-                                        className="w-9 h-9 rounded-full object-cover border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                        className="w-9 h-9 rounded-full object-cover border border-border hover:border-primary transition-colors cursor-pointer"
                                         onClick={() => navigate('/profile')}
                                     />
                                 ) : (
                                     <div
-                                        className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                                        className="w-9 h-9 rounded-full bg-surface-highlight flex items-center justify-center border border-border hover:border-primary transition-colors cursor-pointer"
                                         onClick={() => navigate('/profile')}
                                     >
-                                        <User size={20} className="text-slate-400" />
+                                        <User size={20} className="text-muted" />
                                     </div>
                                 )}
                             </>
@@ -171,7 +157,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </main>
 
                 {/* Mobile Bottom Nav */}
-                <div className="md:hidden fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-800 pb-safe z-30">
+                <div className="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-border pb-safe z-30">
                     <div className={`flex items-center py-2 px-2 no-scrollbar ${user?.role === 'ADMIN' ? 'overflow-x-auto gap-3' : 'justify-around'}`}>
                         {navItems.map((item) => (
                             <NavLink
@@ -179,7 +165,7 @@ export const Layout = ({ children }: LayoutProps) => {
                                 to={item.to}
                                 end={item.to === '/' || item.to === '/admin'}
                                 className={({ isActive }) =>
-                                    `flex flex-col items-center min-w-[48px] p-2 rounded-lg shrink-0 transition-colors ${isActive ? 'text-amber-500' : 'text-slate-500'}`
+                                    `flex flex-col items-center min-w-[48px] p-2 rounded-lg shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-muted'}`
                                 }
                             >
                                 <item.icon size={20} />

@@ -158,14 +158,14 @@ export const DashboardPage = () => {
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                     <div className="flex items-start gap-3">
                         <div className="p-2 bg-red-500/20 rounded-lg shrink-0">
-                            <Flag className="text-red-400" size={20} />
+                            <Flag className="text-red-500" size={20} />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-red-400 mb-1">Account Suspended</h3>
-                            <p className="text-sm text-slate-300">
+                            <h3 className="font-bold text-red-500 mb-1">Account Suspended</h3>
+                            <p className="text-sm text-foreground/80">
                                 {user.suspensionReason || 'Your account has been suspended.'} You can still receive deposits, but transfers and investments are restricted.
                             </p>
-                            <button onClick={() => setAppealModal(true)} className="mt-2 text-sm text-amber-400 hover:text-amber-300 font-medium underline underline-offset-2">
+                            <button onClick={() => setAppealModal(true)} className="mt-2 text-sm text-primary hover:text-primary/80 font-medium underline underline-offset-2">
                                 Submit an Appeal →
                             </button>
                         </div>
@@ -175,10 +175,10 @@ export const DashboardPage = () => {
 
             {/* Header & Balance Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Main Balance Card */}
-                <Card className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden flex flex-col justify-between">
+                {/* Main Balance Card - Keeping Dark for Premium Feel */}
+                <Card className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden flex flex-col justify-between border-slate-700 shadow-xl">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <DollarSign size={120} />
+                        <DollarSign size={120} className="text-white" />
                     </div>
 
                     <div className="relative z-10">
@@ -254,12 +254,12 @@ export const DashboardPage = () => {
                         onClick={() => { setActiveAction('deposit'); setAmount(''); }}
                         className="flex items-center gap-3 p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all group text-left"
                     >
-                        <div className="p-2 bg-emerald-500 text-slate-900 rounded-lg group-hover:scale-110 transition-transform">
+                        <div className="p-2 bg-emerald-500 text-white rounded-lg group-hover:scale-110 transition-transform">
                             <Plus size={20} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <div className="font-bold text-white">Deposit</div>
-                            <div className="text-xs text-emerald-400">Fund Wallet</div>
+                            <div className="font-bold text-foreground">Deposit</div>
+                            <div className="text-xs text-emerald-500">Fund Wallet</div>
                         </div>
                     </button>
 
@@ -271,8 +271,8 @@ export const DashboardPage = () => {
                             <Send size={20} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <div className="font-bold text-white">Transfer</div>
-                            <div className="text-xs text-blue-400">To Bank</div>
+                            <div className="font-bold text-foreground">Transfer</div>
+                            <div className="text-xs text-blue-500">To Bank</div>
                         </div>
                     </button>
 
@@ -280,12 +280,12 @@ export const DashboardPage = () => {
                         onClick={() => navigate('/investments')}
                         className="flex items-center gap-3 p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all group text-left"
                     >
-                        <div className="p-2 bg-amber-500 text-slate-900 rounded-lg group-hover:scale-110 transition-transform">
+                        <div className="p-2 bg-amber-500 text-white rounded-lg group-hover:scale-110 transition-transform">
                             <TrendingUp size={20} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <div className="font-bold text-white">Invest</div>
-                            <div className="text-xs text-amber-400">Earn Returns</div>
+                            <div className="font-bold text-foreground">Invest</div>
+                            <div className="text-xs text-amber-500">Earn Returns</div>
                         </div>
                     </button>
                 </div>
@@ -298,32 +298,32 @@ export const DashboardPage = () => {
             <div className="max-w-3xl mx-auto w-full">
                 <Card>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-bold text-white flex items-center gap-2">
-                            <Clock size={18} className="text-slate-400" /> Recent Activity
+                        <h3 className="font-bold text-foreground flex items-center gap-2">
+                            <Clock size={18} className="text-muted" /> Recent Activity
                         </h3>
                         <button
                             onClick={() => navigate('/history')}
-                            className="flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 transition-colors font-medium"
+                            className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
                         >
                             View All <ChevronRight size={14} />
                         </button>
                     </div>
                     <div className="space-y-2">
                         {transactions.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-4">No transactions yet</p>
+                            <p className="text-muted text-sm text-center py-4">No transactions yet</p>
                         ) : (
                             transactions.map(tx => (
-                                <div key={tx.id} className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex justify-between items-center">
+                                <div key={tx.id} className="p-3 bg-surface-highlight rounded-lg border border-border flex justify-between items-center">
                                     <div>
-                                        <div className="text-sm font-medium text-white">{tx.description}</div>
-                                        <div className="text-xs text-slate-500">{new Date(tx.createdAt).toLocaleDateString()}</div>
+                                        <div className="text-sm font-medium text-foreground">{tx.description}</div>
+                                        <div className="text-xs text-muted">{new Date(tx.createdAt).toLocaleDateString()}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className={`font-bold ${tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                        <div className={`font-bold ${tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' ? 'text-red-500' : 'text-emerald-500'}`}>
                                             {tx.type.includes('DEBIT') || tx.type === 'WITHDRAWAL' ? '-' : '+'} <FormatCurrency amount={tx.amount} />
                                         </div>
-                                        <div className={`text-[10px] inline-block px-1.5 rounded ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400' :
-                                            tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+                                        <div className={`text-[10px] inline-block px-1.5 rounded ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-500' :
+                                            tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'
                                             }`}>{tx.status}</div>
                                     </div>
                                 </div>
@@ -348,10 +348,10 @@ export const DashboardPage = () => {
                         placeholder="Enter amount"
                     />
                     <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg flex items-start gap-2">
-                        <Info className="text-blue-400 shrink-0 mt-0.5" size={18} />
+                        <Info className="text-blue-500 shrink-0 mt-0.5" size={18} />
                         <div>
-                            <h4 className="text-sm font-bold text-white mb-1">Instant Card Funding</h4>
-                            <p className="text-xs text-slate-400">Fund your wallet instantly using your debit card.</p>
+                            <h4 className="text-sm font-bold text-foreground mb-1">Instant Card Funding</h4>
+                            <p className="text-xs text-muted">Fund your wallet instantly using your debit card.</p>
                         </div>
                     </div>
                     <Button
@@ -369,14 +369,14 @@ export const DashboardPage = () => {
                 <div className="space-y-4">
                     {pinStep === 1 && (
                         <>
-                            <p className="text-sm text-slate-400">Enter a 4-digit PIN for transactions.</p>
+                            <p className="text-sm text-muted">Enter a 4-digit PIN for transactions.</p>
                             <Input type="password" placeholder="Enter PIN" maxLength={4} value={pinInputs.pin} onChange={e => setPinInputs({ ...pinInputs, pin: e.target.value.replace(/\D/g, '') })} className="text-center tracking-widest" />
                             <Button onClick={() => pinInputs.pin.length === 4 ? setPinStep(2) : addToast('error', 'Enter 4 digits')} className="w-full">Next</Button>
                         </>
                     )}
                     {pinStep === 2 && (
                         <>
-                            <p className="text-sm text-slate-400">Confirm your PIN.</p>
+                            <p className="text-sm text-muted">Confirm your PIN.</p>
                             <Input type="password" placeholder="Confirm PIN" maxLength={4} value={pinInputs.confirm} onChange={e => setPinInputs({ ...pinInputs, confirm: e.target.value.replace(/\D/g, '') })} className="text-center tracking-widest" />
                             <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => setPinStep(1)} className="flex-1">Back</Button>
@@ -386,7 +386,7 @@ export const DashboardPage = () => {
                     )}
                     {pinStep === 3 && (
                         <>
-                            <p className="text-sm text-slate-400">Enter login password to authorize.</p>
+                            <p className="text-sm text-muted">Enter login password to authorize.</p>
                             <Input type="password" placeholder="Password" value={pinInputs.password} onChange={e => setPinInputs({ ...pinInputs, password: e.target.value })} />
                             <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => setPinStep(2)} className="flex-1">Back</Button>
@@ -400,9 +400,9 @@ export const DashboardPage = () => {
             {/* Appeal Modal */}
             <Modal isOpen={appealModal} onClose={() => setAppealModal(false)} title="Appeal Suspension">
                 <div className="space-y-4">
-                    <p className="text-sm text-slate-400">Explain why your suspension should be lifted.</p>
+                    <p className="text-sm text-muted">Explain why your suspension should be lifted.</p>
                     <textarea
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white resize-none focus:border-amber-500 outline-none"
+                        className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-foreground resize-none focus:border-primary outline-none"
                         rows={4}
                         value={appealMessage}
                         onChange={e => setAppealMessage(e.target.value)}

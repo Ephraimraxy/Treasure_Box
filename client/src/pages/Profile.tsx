@@ -3,6 +3,7 @@ import { User, Users, TrendingUp, Phone, MapPin, Building2, Shield, Camera, Lock
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { userApi, paymentApi } from '../api';
 import { Button, Input, Card, Modal } from '../components/ui';
 
@@ -181,7 +182,7 @@ export const ProfilePage = () => {
     const BackButton = ({ label }: { label: string }) => (
         <button
             onClick={() => setActivePage(null)}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 group"
+            className="flex items-center gap-2 text-muted hover:text-foreground transition-colors mb-6 group"
         >
             <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-sm font-medium">{label}</span>
@@ -192,16 +193,16 @@ export const ProfilePage = () => {
     const MenuItem = ({ icon: Icon, label, value, onClick, danger }: { icon: any; label: string; value?: string; onClick: () => void; danger?: boolean }) => (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-4 p-4 hover:bg-slate-800/60 transition-colors group ${danger ? '' : ''}`}
+            className={`w-full flex items-center gap-4 p-4 hover:bg-surface-highlight transition-colors group ${danger ? '' : ''}`}
         >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-500/10' : 'bg-slate-800'}`}>
-                <Icon size={18} className={danger ? 'text-red-400' : 'text-slate-400 group-hover:text-amber-400 transition-colors'} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-500/10' : 'bg-surface-highlight'}`}>
+                <Icon size={18} className={danger ? 'text-red-500' : 'text-muted group-hover:text-primary transition-colors'} />
             </div>
             <div className="flex-1 text-left">
-                <span className={`font-medium text-sm ${danger ? 'text-red-400' : 'text-white'}`}>{label}</span>
+                <span className={`font-medium text-sm ${danger ? 'text-red-500' : 'text-foreground'}`}>{label}</span>
             </div>
-            {value && <span className="text-sm text-amber-400 font-medium">{value}</span>}
-            <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
+            {value && <span className="text-sm text-primary font-medium">{value}</span>}
+            <ChevronRight size={16} className="text-muted group-hover:text-foreground transition-colors" />
         </button>
     );
 
@@ -214,12 +215,12 @@ export const ProfilePage = () => {
                 <BackButton label="Back to Profile" />
                 <Card>
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-amber-500/10 rounded-lg"><User size={18} className="text-amber-500" /></div>
-                        <h3 className="font-bold text-white text-lg">Edit Profile</h3>
+                        <div className="p-2 bg-primary/10 rounded-lg"><User size={18} className="text-primary" /></div>
+                        <h3 className="font-bold text-foreground text-lg">Edit Profile</h3>
                     </div>
                     <div className="space-y-4">
-                        <Input label="Username" icon={<span className="text-slate-500 text-sm font-bold">@</span>} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Choose a unique username" disabled={!!user?.username} />
-                        {!!user?.username && <p className="text-xs text-slate-500 -mt-2 ml-1">Username cannot be changed after it's set.</p>}
+                        <Input label="Username" icon={<span className="text-muted text-sm font-bold">@</span>} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Choose a unique username" disabled={!!user?.username} />
+                        {!!user?.username && <p className="text-xs text-muted -mt-2 ml-1">Username cannot be changed after it's set.</p>}
                         <Input label="Full Name" icon={<User size={18} />} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter your full name" />
                         <Input label="Phone Number" icon={<Phone size={18} />} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+234 800 000 0000" />
                         <Input label="Address" icon={<MapPin size={18} />} value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Your address" />
@@ -242,38 +243,38 @@ export const ProfilePage = () => {
                 <Card>
                     <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-2">
-                            <div className="p-2 bg-blue-500/10 rounded-lg"><CreditCard size={18} className="text-blue-400" /></div>
+                            <div className="p-2 bg-blue-500/10 rounded-lg"><CreditCard size={18} className="text-blue-500" /></div>
                             <div>
-                                <h3 className="font-bold text-white text-lg">Bank Accounts</h3>
-                                <p className="text-xs text-slate-500">{linkedBanks.length} account{linkedBanks.length !== 1 ? 's' : ''} linked</p>
+                                <h3 className="font-bold text-foreground text-lg">Bank Accounts</h3>
+                                <p className="text-xs text-muted">{linkedBanks.length} account{linkedBanks.length !== 1 ? 's' : ''} linked</p>
                             </div>
                         </div>
-                        <button onClick={() => setShowAddBank(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-sm font-medium transition-colors">
+                        <button onClick={() => setShowAddBank(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg text-primary text-sm font-medium transition-colors">
                             <Plus size={14} /> Add New
                         </button>
                     </div>
                     {linkedBanks.length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-slate-700 rounded-xl">
-                            <Building2 size={32} className="mx-auto text-slate-600 mb-3" />
-                            <p className="text-slate-400 text-sm">No bank accounts linked yet</p>
-                            <p className="text-xs text-slate-500 mt-1">Add a bank account to enable withdrawals</p>
+                        <div className="text-center py-8 border border-dashed border-border rounded-xl">
+                            <Building2 size={32} className="mx-auto text-muted mb-3" />
+                            <p className="text-muted text-sm">No bank accounts linked yet</p>
+                            <p className="text-xs text-muted mt-1">Add a bank account to enable withdrawals</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {linkedBanks.map((bank) => (
-                                <div key={bank.id} className="flex items-center justify-between p-4 bg-slate-900/70 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors">
+                                <div key={bank.id} className="flex items-center justify-between p-4 bg-surface-highlight border border-border rounded-xl hover:border-primary/30 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0"><Building2 size={18} className="text-blue-400" /></div>
+                                        <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0"><Building2 size={18} className="text-blue-500" /></div>
                                         <div>
-                                            <div className="font-semibold text-white text-sm">{bank.accountName}</div>
+                                            <div className="font-semibold text-foreground text-sm">{bank.accountName}</div>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-xs text-slate-400 font-mono">{bank.accountNumber}</span>
-                                                <span className="text-xs text-slate-600">•</span>
-                                                <span className="text-xs text-slate-500">{bank.bankName}</span>
+                                                <span className="text-xs text-muted font-mono">{bank.accountNumber}</span>
+                                                <span className="text-xs text-muted">•</span>
+                                                <span className="text-xs text-muted">{bank.bankName}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => handleDeleteBank(bank.id)} disabled={deletingBankId === bank.id} className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Remove bank account">
+                                    <button onClick={() => handleDeleteBank(bank.id)} disabled={deletingBankId === bank.id} className="p-2 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Remove bank account">
                                         {deletingBankId === bank.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                                     </button>
                                 </div>
@@ -286,24 +287,24 @@ export const ProfilePage = () => {
                 <Modal isOpen={showAddBank} onClose={() => setShowAddBank(false)} title="Add Bank Account">
                     <div className="space-y-4">
                         <div className="relative">
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Select Bank</label>
-                            <button type="button" onClick={() => setShowBankDropdown(!showBankDropdown)} className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-left hover:border-slate-600 transition-colors">
+                            <label className="block text-sm font-medium text-muted mb-1.5">Select Bank</label>
+                            <button type="button" onClick={() => setShowBankDropdown(!showBankDropdown)} className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-surface border border-border text-left hover:border-primary/50 transition-colors">
                                 <div className="flex items-center gap-2">
-                                    <Building2 size={18} className="text-slate-500" />
-                                    <span className={bankData.bankName ? 'text-white' : 'text-slate-500'}>{bankData.bankName || 'Choose your bank'}</span>
+                                    <Building2 size={18} className="text-muted" />
+                                    <span className={bankData.bankName ? 'text-foreground' : 'text-muted'}>{bankData.bankName || 'Choose your bank'}</span>
                                 </div>
-                                <Search size={16} className="text-slate-500" />
+                                <Search size={16} className="text-muted" />
                             </button>
                             {showBankDropdown && (
-                                <div className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                                <div className="absolute z-20 w-full mt-1 bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
                                     <div className="p-2">
-                                        <input type="text" className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-amber-500" placeholder="Search banks..." value={bankSearch} onChange={(e) => setBankSearch(e.target.value)} autoFocus />
+                                        <input type="text" className="w-full px-3 py-2 rounded-lg bg-surface-highlight border border-border text-foreground placeholder:text-muted text-sm focus:outline-none focus:border-primary" placeholder="Search banks..." value={bankSearch} onChange={(e) => setBankSearch(e.target.value)} autoFocus />
                                     </div>
                                     <div className="max-h-48 overflow-y-auto">
                                         {filteredBanks.length === 0 ? (
-                                            <div className="px-4 py-3 text-sm text-slate-500">No banks found</div>
+                                            <div className="px-4 py-3 text-sm text-muted">No banks found</div>
                                         ) : filteredBanks.map((bank: any) => (
-                                            <button key={bank.code} onClick={() => selectBank(bank)} className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 transition-colors ${bankData.bankCode === bank.code ? 'bg-amber-500/10 text-amber-400' : 'text-white'}`}>
+                                            <button key={bank.code} onClick={() => selectBank(bank)} className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface-highlight transition-colors ${bankData.bankCode === bank.code ? 'bg-primary/10 text-primary' : 'text-foreground'}`}>
                                                 {bank.name}
                                             </button>
                                         ))}
@@ -313,9 +314,9 @@ export const ProfilePage = () => {
                         </div>
                         <Input label="Account Number" value={bankData.accountNumber} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); setBankData({ ...bankData, accountNumber: val }); }} placeholder="Enter 10-digit account number" maxLength={10} />
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Account Name</label>
-                            <div className={`px-4 py-3 rounded-xl border flex items-center gap-2 ${accountVerified ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-slate-900 border-slate-700'}`}>
-                                {verifyingAccount ? (<><Loader2 size={16} className="text-amber-400 animate-spin" /><span className="text-sm text-slate-400">Verifying account...</span></>) : accountVerified ? (<><CheckCircle size={16} className="text-emerald-400" /><span className="text-white font-medium">{bankData.accountName}</span></>) : (<span className="text-sm text-slate-500">{bankData.bankCode && bankData.accountNumber.length === 10 ? 'Could not verify account' : 'Select bank & enter account number'}</span>)}
+                            <label className="block text-sm font-medium text-muted mb-1.5">Account Name</label>
+                            <div className={`px-4 py-3 rounded-xl border flex items-center gap-2 ${accountVerified ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface border-border'}`}>
+                                {verifyingAccount ? (<><Loader2 size={16} className="text-primary animate-spin" /><span className="text-sm text-muted">Verifying account...</span></>) : accountVerified ? (<><CheckCircle size={16} className="text-emerald-500" /><span className="text-foreground font-medium">{bankData.accountName}</span></>) : (<span className="text-sm text-muted">{bankData.bankCode && bankData.accountNumber.length === 10 ? 'Could not verify account' : 'Select bank & enter account number'}</span>)}
                             </div>
                         </div>
                         <Button onClick={handleAddBank} disabled={bankLoading || !accountVerified} className="w-full">
@@ -337,45 +338,45 @@ export const ProfilePage = () => {
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="p-2 bg-emerald-500/10 rounded-lg"><Building2 size={18} className="text-emerald-400" /></div>
-                            <h3 className="font-bold text-white text-lg">Virtual Account</h3>
+                            <div className="p-2 bg-emerald-500/10 rounded-lg"><Building2 size={18} className="text-emerald-500" /></div>
+                            <h3 className="font-bold text-foreground text-lg">Virtual Account</h3>
                         </div>
-                        {user?.virtualAccount && <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-medium border border-emerald-500/30">Active</span>}
+                        {user?.virtualAccount && <span className="text-xs bg-emerald-500/20 text-emerald-500 px-2.5 py-1 rounded-full font-medium border border-emerald-500/30">Active</span>}
                     </div>
                     {user?.virtualAccount ? (
-                        <div className="bg-slate-900 rounded-xl p-4 border border-slate-700 space-y-3">
+                        <div className="bg-surface-highlight rounded-xl p-4 border border-border space-y-3">
                             <div className="flex justify-between items-center">
-                                <span className="text-slate-400 text-sm">Bank Name</span>
-                                <span className="font-bold text-white">{user.virtualAccount.bankName}</span>
+                                <span className="text-muted text-sm">Bank Name</span>
+                                <span className="font-bold text-foreground">{user.virtualAccount.bankName}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-slate-400 text-sm">Account Number</span>
+                                <span className="text-muted text-sm">Account Number</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xl text-amber-500 font-bold">{user.virtualAccount.accountNumber}</span>
-                                    <button onClick={() => { navigator.clipboard.writeText(user?.virtualAccount?.accountNumber || ''); addToast('success', 'Copied!'); }} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors">
+                                    <span className="font-mono text-xl text-primary font-bold">{user.virtualAccount.accountNumber}</span>
+                                    <button onClick={() => { navigator.clipboard.writeText(user?.virtualAccount?.accountNumber || ''); addToast('success', 'Copied!'); }} className="p-1 hover:bg-surface rounded text-muted hover:text-foreground transition-colors">
                                         <Shield size={14} className="rotate-180" />
                                     </button>
                                 </div>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-slate-400 text-sm">Account Name</span>
-                                <span className="font-medium text-white">{user.virtualAccount.accountName}</span>
+                                <span className="text-muted text-sm">Account Name</span>
+                                <span className="font-medium text-foreground">{user.virtualAccount.accountName}</span>
                             </div>
-                            <div className="pt-2 border-t border-slate-800 mt-2">
-                                <p className="text-xs text-slate-500 text-center">Transfers to this account will automatically fund your wallet.</p>
+                            <div className="pt-2 border-t border-border mt-2">
+                                <p className="text-xs text-muted text-center">Transfers to this account will automatically fund your wallet.</p>
                             </div>
                         </div>
                     ) : (
                         <div className="text-center py-6">
-                            <div className="w-12 h-12 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-3"><Building2 className="text-slate-400" size={24} /></div>
-                            <p className="text-slate-300 mb-4">Get a dedicated bank account to fund your wallet easily.</p>
+                            <div className="w-12 h-12 mx-auto bg-surface-highlight rounded-full flex items-center justify-center mb-3"><Building2 className="text-muted" size={24} /></div>
+                            <p className="text-muted mb-4">Get a dedicated bank account to fund your wallet easily.</p>
                             {user?.kycVerified ? (
                                 <Button onClick={async () => { setVirtualAccountLoading(true); try { await paymentApi.createVirtualAccount(); await refreshUser(); addToast('success', 'Virtual Account created!'); } catch (error: any) { addToast('error', error.response?.data?.error || 'Failed'); } finally { setVirtualAccountLoading(false); } }} disabled={virtualAccountLoading} className="w-full">
                                     {virtualAccountLoading ? 'Creating Account...' : 'Generate Virtual Account'}
                                 </Button>
                             ) : (
-                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-                                    <p className="text-sm text-amber-500">Complete KYC verification to generate a virtual account.</p>
+                                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+                                    <p className="text-sm text-primary">Complete KYC verification to generate a virtual account.</p>
                                 </div>
                             )}
                         </div>
@@ -395,14 +396,14 @@ export const ProfilePage = () => {
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="p-2 bg-red-500/10 rounded-lg"><Lock size={18} className="text-red-400" /></div>
-                            <h3 className="font-bold text-white text-lg">Security</h3>
+                            <div className="p-2 bg-red-500/10 rounded-lg"><Lock size={18} className="text-red-500" /></div>
+                            <h3 className="font-bold text-foreground text-lg">Security</h3>
                         </div>
-                        <div className={`text-xs px-2.5 py-1 rounded-full font-medium ${user?.transactionPin ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                        <div className={`text-xs px-2.5 py-1 rounded-full font-medium ${user?.transactionPin ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}>
                             {user?.transactionPin ? 'PIN Active' : 'No PIN'}
                         </div>
                     </div>
-                    <p className="text-sm text-slate-400 mb-4">
+                    <p className="text-sm text-muted mb-4">
                         {user?.transactionPin ? 'Your transaction PIN is set. You can change it below.' : 'Set a 4-digit PIN to secure your withdrawals.'}
                     </p>
                     {user?.transactionPin ? (
@@ -456,19 +457,19 @@ export const ProfilePage = () => {
                 <BackButton label="Back to Profile" />
                 <Card>
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-amber-500/10 rounded-lg"><Bell size={18} className="text-amber-500" /></div>
-                        <h3 className="font-bold text-white text-lg">Notification Settings</h3>
+                        <div className="p-2 bg-primary/10 rounded-lg"><Bell size={18} className="text-primary" /></div>
+                        <h3 className="font-bold text-foreground text-lg">Notification Settings</h3>
                     </div>
-                    <div className="divide-y divide-slate-800/50">
+                    <div className="divide-y divide-border">
                         {settings.map(setting => (
                             <div key={setting.id} className="py-4 flex items-center justify-between">
                                 <div className="pr-4">
-                                    <div className="text-sm font-medium text-white">{setting.label}</div>
-                                    <div className="text-xs text-slate-500 mt-0.5">{setting.desc}</div>
+                                    <div className="text-sm font-medium text-foreground">{setting.label}</div>
+                                    <div className="text-xs text-muted mt-0.5">{setting.desc}</div>
                                 </div>
                                 <button
                                     onClick={() => toggleNotification(setting.id)}
-                                    className={`w-11 h-6 rounded-full transition-colors relative ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'bg-amber-500' : 'bg-slate-700'}`}
+                                    className={`w-11 h-6 rounded-full transition-colors relative ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'bg-primary' : 'bg-surface-highlight'}`}
                                 >
                                     <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notificationSettings[setting.id as keyof typeof notificationSettings] ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </button>
@@ -483,7 +484,12 @@ export const ProfilePage = () => {
     // ═══════════════════════════════════════════
     // SUB-PAGE: Appearance
     // ═══════════════════════════════════════════
+    // ═══════════════════════════════════════════
+    // SUB-PAGE: Appearance
+    // ═══════════════════════════════════════════
     if (activePage === 'appearance') {
+        const { mode, setMode, accent, setAccent } = useTheme();
+
         const themes = [
             { id: 'amber', name: 'Golden Amber', color: '245 158 11', class: 'bg-amber-500' },
             { id: 'blue', name: 'Royal Blue', color: '59 130 246', class: 'bg-blue-500' },
@@ -493,13 +499,9 @@ export const ProfilePage = () => {
             { id: 'cyan', name: 'Cyan Sky', color: '6 182 212', class: 'bg-cyan-500' },
         ];
 
-        const currentTheme = user?.preferences?.theme || 'amber';
-
-        const applyTheme = async (themeId: string, colorRGB: string) => {
-            // Apply immediately
-            document.documentElement.style.setProperty('--color-primary', colorRGB);
-
-            // Save
+        const handleThemeChange = async (themeId: string) => {
+            setAccent(themeId as any);
+            // Save to backend
             try {
                 await userApi.updateProfile({
                     preferences: { ...user?.preferences, theme: themeId }
@@ -516,28 +518,48 @@ export const ProfilePage = () => {
                 <BackButton label="Back to Profile" />
                 <Card>
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-slate-800 rounded-lg"><Moon size={18} className="text-slate-400" /></div>
-                        <h3 className="font-bold text-white text-lg">Appearance</h3>
+                        <div className="p-2 bg-surface-highlight rounded-lg"><Moon size={18} className="text-muted" /></div>
+                        <h3 className="font-bold text-foreground text-lg">Appearance</h3>
                     </div>
 
-                    <div className="space-y-4">
-                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Accent Color</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            {themes.map(theme => (
-                                <button
-                                    key={theme.id}
-                                    onClick={() => applyTheme(theme.id, theme.color)}
-                                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${currentTheme === theme.id
-                                            ? 'bg-slate-800 border-primary shadow-lg shadow-primary/10'
-                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-                                        }`}
-                                >
-                                    <div className={`w-8 h-8 rounded-full ${theme.class} shadow-sm`} />
-                                    <span className={`font-medium ${currentTheme === theme.id ? 'text-white' : 'text-slate-400'}`}>
-                                        {theme.name}
-                                    </span>
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="text-sm font-medium text-muted uppercase tracking-wider mb-3">Theme Mode</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button onClick={() => setMode('light')} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${mode === 'light' ? 'bg-surface border-primary shadow-lg shadow-primary/10' : 'bg-surface-highlight border-border hover:border-muted'}`}>
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-300" />
+                                    <span className={`text-xs font-medium ${mode === 'light' ? 'text-foreground' : 'text-muted'}`}>Light</span>
                                 </button>
-                            ))}
+                                <button onClick={() => setMode('dark')} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${mode === 'dark' ? 'bg-surface border-primary shadow-lg shadow-primary/10' : 'bg-surface-highlight border-border hover:border-muted'}`}>
+                                    <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-slate-700" />
+                                    <span className={`text-xs font-medium ${mode === 'dark' ? 'text-foreground' : 'text-muted'}`}>Dark</span>
+                                </button>
+                                <button onClick={() => setMode('system')} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${mode === 'system' ? 'bg-surface border-primary shadow-lg shadow-primary/10' : 'bg-surface-highlight border-border hover:border-muted'}`}>
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-100 to-slate-900 border-2 border-slate-500" />
+                                    <span className={`text-xs font-medium ${mode === 'system' ? 'text-foreground' : 'text-muted'}`}>System</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-sm font-medium text-muted uppercase tracking-wider mb-3">Accent Color</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                {themes.map(theme => (
+                                    <button
+                                        key={theme.id}
+                                        onClick={() => handleThemeChange(theme.id)}
+                                        className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${accent === theme.id
+                                            ? 'bg-surface border-primary shadow-lg shadow-primary/10'
+                                            : 'bg-surface-highlight border-border hover:border-muted'
+                                            }`}
+                                    >
+                                        <div className={`w-8 h-8 rounded-full ${theme.class} shadow-sm`} />
+                                        <span className={`font-medium ${accent === theme.id ? 'text-foreground' : 'text-muted'}`}>
+                                            {theme.name}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </Card>
@@ -560,21 +582,21 @@ export const ProfilePage = () => {
                 <BackButton label="Back to Profile" />
                 <Card>
                     <div className="flex items-center gap-2 mb-5">
-                        <div className="p-2 bg-blue-500/10 rounded-lg"><HelpCircle size={18} className="text-blue-400" /></div>
-                        <h3 className="font-bold text-white text-lg">Help & Support</h3>
+                        <div className="p-2 bg-blue-500/10 rounded-lg"><HelpCircle size={18} className="text-blue-500" /></div>
+                        <h3 className="font-bold text-foreground text-lg">Help & Support</h3>
                     </div>
 
                     {/* FAQ Section */}
                     <div className="space-y-3 mb-6">
-                        <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Frequently Asked Questions</h4>
+                        <h4 className="text-sm font-bold text-muted uppercase tracking-wider">Frequently Asked Questions</h4>
                         {faqs.map((faq, i) => (
-                            <details key={i} className="group bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                                <summary className="flex items-center justify-between p-4 cursor-pointer list-none hover:bg-slate-800 transition-colors">
-                                    <span className="text-sm font-medium text-white pr-4">{faq.q}</span>
-                                    <ChevronDown size={16} className="text-slate-500 shrink-0 group-open:rotate-180 transition-transform" />
+                            <details key={i} className="group bg-surface-highlight border border-border rounded-xl overflow-hidden">
+                                <summary className="flex items-center justify-between p-4 cursor-pointer list-none hover:bg-surface transition-colors">
+                                    <span className="text-sm font-medium text-foreground pr-4">{faq.q}</span>
+                                    <ChevronDown size={16} className="text-muted shrink-0 group-open:rotate-180 transition-transform" />
                                 </summary>
                                 <div className="px-4 pb-4 pt-0">
-                                    <p className="text-sm text-slate-400 leading-relaxed">{faq.a}</p>
+                                    <p className="text-sm text-muted leading-relaxed">{faq.a}</p>
                                 </div>
                             </details>
                         ))}
@@ -583,43 +605,43 @@ export const ProfilePage = () => {
 
                 {/* Contact Options */}
                 <Card>
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Contact Us</h4>
+                    <h4 className="text-sm font-bold text-muted uppercase tracking-wider mb-4">Contact Us</h4>
                     <div className="space-y-3">
-                        <a href="mailto:support@treasurebox.ng" className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl hover:border-amber-500/30 transition-colors group">
-                            <div className="p-2.5 bg-amber-500/10 rounded-xl"><Mail size={18} className="text-amber-400" /></div>
+                        <a href="mailto:support@treasurebox.ng" className="flex items-center gap-4 p-4 bg-surface-highlight border border-border rounded-xl hover:border-primary/30 transition-colors group">
+                            <div className="p-2.5 bg-primary/10 rounded-xl"><Mail size={18} className="text-primary" /></div>
                             <div className="flex-1">
-                                <div className="text-sm font-bold text-white">Email Support</div>
-                                <div className="text-xs text-slate-500">support@treasurebox.ng</div>
+                                <div className="text-sm font-bold text-foreground">Email Support</div>
+                                <div className="text-xs text-muted">support@treasurebox.ng</div>
                             </div>
-                            <ExternalLink size={14} className="text-slate-600 group-hover:text-amber-400 transition-colors" />
+                            <ExternalLink size={14} className="text-muted group-hover:text-primary transition-colors" />
                         </a>
-                        <a href="https://wa.me/2349000000000" target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl hover:border-emerald-500/30 transition-colors group">
-                            <div className="p-2.5 bg-emerald-500/10 rounded-xl"><MessageCircle size={18} className="text-emerald-400" /></div>
+                        <a href="https://wa.me/2349000000000" target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-surface-highlight border border-border rounded-xl hover:border-emerald-500/30 transition-colors group">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl"><MessageCircle size={18} className="text-emerald-500" /></div>
                             <div className="flex-1">
-                                <div className="text-sm font-bold text-white">WhatsApp</div>
-                                <div className="text-xs text-slate-500">Chat with us on WhatsApp</div>
+                                <div className="text-sm font-bold text-foreground">WhatsApp</div>
+                                <div className="text-xs text-muted">Chat with us on WhatsApp</div>
                             </div>
-                            <ExternalLink size={14} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                            <ExternalLink size={14} className="text-muted group-hover:text-emerald-500 transition-colors" />
                         </a>
-                        <a href="https://twitter.com/treasurebox" target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl hover:border-blue-500/30 transition-colors group">
-                            <div className="p-2.5 bg-blue-500/10 rounded-xl"><Globe size={18} className="text-blue-400" /></div>
+                        <a href="https://twitter.com/treasurebox" target="_blank" rel="noreferrer" className="flex items-center gap-4 p-4 bg-surface-highlight border border-border rounded-xl hover:border-blue-500/30 transition-colors group">
+                            <div className="p-2.5 bg-blue-500/10 rounded-xl"><Globe size={18} className="text-blue-500" /></div>
                             <div className="flex-1">
-                                <div className="text-sm font-bold text-white">Social Media</div>
-                                <div className="text-xs text-slate-500">Follow us @treasurebox</div>
+                                <div className="text-sm font-bold text-foreground">Social Media</div>
+                                <div className="text-xs text-muted">Follow us @treasurebox</div>
                             </div>
-                            <ExternalLink size={14} className="text-slate-600 group-hover:text-blue-400 transition-colors" />
+                            <ExternalLink size={14} className="text-muted group-hover:text-blue-500 transition-colors" />
                         </a>
                     </div>
                 </Card>
 
                 {/* Rate Us */}
-                <div className="bg-gradient-to-r from-amber-900/20 to-slate-900 border border-amber-500/20 rounded-2xl p-5 text-center">
-                    <Star size={28} className="text-amber-400 mx-auto mb-2" />
-                    <h4 className="font-bold text-white mb-1">Enjoying Treasure Box?</h4>
-                    <p className="text-sm text-slate-400 mb-4">Rate us and help others discover the app!</p>
+                <div className="bg-gradient-to-r from-primary/20 to-surface border border-primary/20 rounded-2xl p-5 text-center">
+                    <Star size={28} className="text-primary mx-auto mb-2" />
+                    <h4 className="font-bold text-foreground mb-1">Enjoying Treasure Box?</h4>
+                    <p className="text-sm text-muted mb-4">Rate us and help others discover the app!</p>
                     <div className="flex justify-center gap-1">
                         {[1, 2, 3, 4, 5].map(s => (
-                            <button key={s} className="p-1.5 hover:scale-125 transition-transform"><Star size={24} className="text-amber-400 fill-amber-400" /></button>
+                            <button key={s} className="p-1.5 hover:scale-125 transition-transform"><Star size={24} className="text-primary fill-primary" /></button>
                         ))}
                     </div>
                 </div>
@@ -646,26 +668,26 @@ export const ProfilePage = () => {
                 <BackButton label="Back to Profile" />
                 <Card>
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="p-2 bg-indigo-500/10 rounded-lg"><FileText size={18} className="text-indigo-400" /></div>
-                        <h3 className="font-bold text-white text-lg">Privacy Policy</h3>
+                        <div className="p-2 bg-indigo-500/10 rounded-lg"><FileText size={18} className="text-indigo-500" /></div>
+                        <h3 className="font-bold text-foreground text-lg">Privacy Policy</h3>
                     </div>
-                    <p className="text-xs text-slate-500 mb-6">Last updated: February 2026</p>
+                    <p className="text-xs text-muted mb-6">Last updated: February 2026</p>
 
                     <div className="space-y-5">
                         {sections.map((sec, i) => (
                             <div key={i}>
-                                <h4 className="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
-                                    <span className="w-5 h-5 bg-indigo-500/20 text-indigo-400 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
+                                <h4 className="text-sm font-bold text-foreground mb-1.5 flex items-center gap-2">
+                                    <span className="w-5 h-5 bg-indigo-500/20 text-indigo-500 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
                                     {sec.title}
                                 </h4>
-                                <p className="text-sm text-slate-400 leading-relaxed pl-7">{sec.content}</p>
+                                <p className="text-sm text-muted leading-relaxed pl-7">{sec.content}</p>
                             </div>
                         ))}
                     </div>
                 </Card>
 
                 <div className="text-center py-2">
-                    <p className="text-xs text-slate-600">For questions about this policy, contact <a href="mailto:privacy@treasurebox.ng" className="text-amber-500 hover:underline">privacy@treasurebox.ng</a></p>
+                    <p className="text-xs text-muted">For questions about this policy, contact <a href="mailto:privacy@treasurebox.ng" className="text-primary hover:underline">privacy@treasurebox.ng</a></p>
                 </div>
             </div>
         );
@@ -684,18 +706,18 @@ export const ProfilePage = () => {
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iYSIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJ1cmwoI2EpIi8+PC9zdmc+')] opacity-40" />
                         {/* Curved bottom */}
                         <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 500 40" preserveAspectRatio="none">
-                            <path d="M0,40 L0,20 Q250,-10 500,20 L500,40 Z" className="fill-slate-950" />
+                            <path d="M0,40 L0,20 Q250,-10 500,20 L500,40 Z" className="fill-background" />
                         </svg>
                     </div>
                 </div>
 
                 {/* Avatar — overlapping the header */}
                 <div className="absolute left-1/2 -translate-x-1/2 -bottom-12 z-10">
-                    <div className="w-24 h-24 rounded-full bg-slate-800 border-4 border-slate-950 flex items-center justify-center overflow-hidden relative group shadow-2xl">
+                    <div className="w-24 h-24 rounded-full bg-surface-highlight border-4 border-background flex items-center justify-center overflow-hidden relative group shadow-2xl">
                         {formData.photoUrl || user?.photoUrl || user?.kycPhotoUrl ? (
                             <img src={formData.photoUrl || user?.photoUrl || user?.kycPhotoUrl} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                            <User size={40} className="text-slate-400" />
+                            <User size={40} className="text-muted" />
                         )}
                         <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
                             <Camera size={20} className="text-white" />
@@ -707,18 +729,18 @@ export const ProfilePage = () => {
 
             {/* ─── Name & Email ─── */}
             <div className="text-center pt-14">
-                <h2 className="text-xl font-bold text-white">{user?.name || user?.email}</h2>
-                {user?.username && <p className="text-sm text-amber-400 font-medium">@{user.username}</p>}
-                <p className="text-sm text-slate-400 mt-0.5">{user?.email}</p>
-                {user?.phone && <p className="text-sm text-slate-500">{user.phone}</p>}
-                <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-xs font-bold ${user?.kycVerified ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                <h2 className="text-xl font-bold text-foreground">{user?.name || user?.email}</h2>
+                {user?.username && <p className="text-sm text-primary font-medium">@{user.username}</p>}
+                <p className="text-sm text-muted mt-0.5">{user?.email}</p>
+                {user?.phone && <p className="text-sm text-muted">{user.phone}</p>}
+                <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-xs font-bold ${user?.kycVerified ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' : 'bg-primary/20 text-primary border border-primary/30'}`}>
                     <Shield size={12} />
                     {user?.kycVerified ? 'Verified Account' : 'Verification Pending'}
                 </div>
             </div>
 
             {/* ─── Group 1: Account ─── */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden divide-y divide-border">
                 <MenuItem icon={User} label="Edit Profile" onClick={() => setActivePage('edit-profile')} />
 
                 <MenuItem icon={Building2} label="Virtual Account" value={user?.virtualAccount ? 'Active' : 'Setup'} onClick={() => setActivePage('virtual-account')} />
@@ -728,28 +750,28 @@ export const ProfilePage = () => {
             </div>
 
             {/* ─── Group 2: Security & App ─── */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden divide-y divide-border">
                 <MenuItem icon={Lock} label="Security & PIN" value={user?.transactionPin ? 'Active' : 'Set PIN'} onClick={() => setActivePage('security')} />
                 <MenuItem icon={Bell} label="Notifications" value="On" onClick={() => setActivePage('notifications')} />
                 <MenuItem icon={Moon} label="Appearance" value="Theme" onClick={() => setActivePage('appearance')} />
             </div>
 
             {/* ─── Group 3: Support & Legal ─── */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden divide-y divide-border">
                 <MenuItem icon={HelpCircle} label="Help & Support" onClick={() => setActivePage('help-support')} />
 
                 <MenuItem icon={FileText} label="Privacy Policy" onClick={() => setActivePage('privacy-policy')} />
             </div>
 
             {/* ─── Logout ─── */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
                 <MenuItem icon={LogOut} label="Log Out" onClick={() => { localStorage.clear(); window.location.href = '/login'; }} danger />
             </div>
 
             {/* ─── App Version Footer ─── */}
             <div className="text-center py-4 space-y-1">
-                <p className="text-xs text-slate-600 font-medium">Treasure Box</p>
-                <p className="text-[10px] text-slate-700">Version 1.0.0 • by <a href="https://www.burstbrainconcepts.site/" target="_blank" rel="noreferrer" className="hover:text-amber-500 transition-colors">Burst Brain Concept</a></p>
+                <p className="text-xs text-muted font-medium">Treasure Box</p>
+                <p className="text-[10px] text-muted">Version 1.0.0 • by <a href="https://www.burstbrainconcepts.site/" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">Burst Brain Concept</a></p>
             </div>
         </div>
     );

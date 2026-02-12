@@ -30,10 +30,10 @@ export const ServicesPage = () => {
     return (
         <div className="space-y-8 animate-fade-in relative pb-10">
             {/* ─── Hero / Header ─── */}
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8">
+            <div className="relative overflow-hidden rounded-3xl bg-card border border-border p-8">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-                <h1 className="text-3xl font-bold text-white mb-2 relative z-10">Services Hub</h1>
-                <p className="text-slate-400 max-w-lg relative z-10">
+                <h1 className="text-3xl font-bold text-foreground mb-2 relative z-10">Services Hub</h1>
+                <p className="text-muted max-w-lg relative z-10">
                     Access all your essential services in one place. Fast, secure, and reliable transactions.
                 </p>
             </div>
@@ -41,7 +41,7 @@ export const ServicesPage = () => {
             {/* ─── Research Services Promo ─── */}
             <div
                 onClick={() => navigate('/research-services')}
-                className="group relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 cursor-pointer transition-all hover:scale-[1.01] hover:border-indigo-500/50"
+                className="group relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/50 to-surface border border-indigo-500/30 cursor-pointer transition-all hover:scale-[1.01] hover:border-indigo-500/50"
             >
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                     <GraduationCap size={120} />
@@ -50,8 +50,8 @@ export const ServicesPage = () => {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-4 border border-indigo-500/30">
                         <BookOpen size={12} /> ACADEMIC SUPPORT
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Research & Academic Services</h2>
-                    <p className="text-slate-400 max-w-xl mb-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">Research & Academic Services</h2>
+                    <p className="text-muted max-w-xl mb-6">
                         Professional support for students, researchers, and institutions.
                     </p>
                     <div className="flex items-center gap-2 text-indigo-400 font-bold group-hover:text-indigo-300 transition-colors">
@@ -66,7 +66,7 @@ export const ServicesPage = () => {
                 const catServices = services.filter(s => cat.ids.includes(s.id));
                 return (
                     <div key={cat.title} className="space-y-4">
-                        <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-muted flex items-center gap-2">
                             <CatIcon size={20} className={cat.iconColor} />
                             {cat.title}
                         </h3>
@@ -77,16 +77,16 @@ export const ServicesPage = () => {
                                     <button
                                         key={service.id}
                                         onClick={() => navigate(`/services/payment/${service.id}`)}
-                                        className="w-full flex items-center gap-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-amber-500/40 hover:bg-slate-800/80 transition-all group active:scale-[0.98]"
+                                        className="w-full flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-surface-highlight transition-all group active:scale-[0.98]"
                                     >
                                         <div className={`p-3 rounded-xl ${service.bg} ${service.color} group-hover:scale-110 transition-transform shrink-0`}>
                                             <Icon size={22} />
                                         </div>
                                         <div className="flex-1 text-left">
-                                            <div className="font-bold text-white text-sm">{service.name}</div>
-                                            <div className="text-xs text-slate-500">{service.desc}</div>
+                                            <div className="font-bold text-foreground text-sm">{service.name}</div>
+                                            <div className="text-xs text-muted">{service.desc}</div>
                                         </div>
-                                        <ChevronRight size={18} className="text-slate-600 group-hover:text-amber-400 transition-colors" />
+                                        <ChevronRight size={18} className="text-muted group-hover:text-primary transition-colors" />
                                     </button>
                                 );
                             })}

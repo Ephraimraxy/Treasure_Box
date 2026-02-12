@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ToastContainer, Spinner } from './components/ui';
 import { Layout } from './components/Layout';
@@ -137,13 +138,15 @@ const App = () => {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <ToastProvider>
-                    {showSplash ? (
-                        <SplashScreen onComplete={handleSplashComplete} />
-                    ) : (
-                        <AppContent />
-                    )}
-                </ToastProvider>
+                <ThemeProvider>
+                    <ToastProvider>
+                        {showSplash ? (
+                            <SplashScreen onComplete={handleSplashComplete} />
+                        ) : (
+                            <AppContent />
+                        )}
+                    </ToastProvider>
+                </ThemeProvider>
             </AuthProvider>
         </BrowserRouter>
     );

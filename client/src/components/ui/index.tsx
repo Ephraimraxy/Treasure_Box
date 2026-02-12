@@ -10,13 +10,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) => {
     const variants: Record<string, string> = {
-        primary: "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-900 shadow-lg shadow-orange-500/20",
-        secondary: "bg-slate-700 hover:bg-slate-600 text-white",
-        outline: "border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white",
-        ghost: "text-slate-400 hover:text-white hover:bg-slate-800/50",
-        danger: "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20",
+        primary: "bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/20",
+        secondary: "bg-surface-highlight hover:bg-border text-foreground border border-border",
+        outline: "border border-border text-foreground hover:bg-surface-highlight hover:text-foreground",
+        ghost: "text-muted hover:text-foreground hover:bg-surface-highlight",
+        danger: "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20",
         success: "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/20"
     };
+
 
     const sizes: Record<string, string> = {
         sm: "px-2 py-1 text-[10px]",
@@ -50,19 +51,19 @@ export const Input = ({ label, icon, className = '', error, success, hint, type,
 
     return (
         <div className="space-y-1.5 w-full">
-            {label && <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</label>}
+            {label && <label className="text-xs font-bold text-muted uppercase tracking-wider">{label}</label>}
             <div className="relative">
                 <input
                     type={inputType}
-                    className={`w-full bg-slate-900 border ${error ? 'border-red-500/50 focus:border-red-500' : success ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-slate-700 focus:border-amber-500'} rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-600 transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
+                    className={`w-full bg-surface border ${error ? 'border-red-500/50 focus:border-red-500' : success ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-border focus:border-primary'} rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
                     {...props}
                 />
-                {icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">{icon}</div>}
+                {icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">{icon}</div>}
                 {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors focus:outline-none p-1"
                     >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -71,7 +72,7 @@ export const Input = ({ label, icon, className = '', error, success, hint, type,
                 {success && !isPassword && <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"><CheckCircle size={16} /></div>}
             </div>
             {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
-            {hint && !error && <p className="text-[10px] text-slate-500 font-medium">{hint}</p>}
+            {hint && !error && <p className="text-[10px] text-muted font-medium">{hint}</p>}
         </div>
     );
 };
@@ -86,7 +87,7 @@ interface CardProps {
 export const Card = ({ children, className = '', onClick }: CardProps) => (
     <div
         onClick={onClick}
-        className={`bg-slate-800 border border-slate-700 rounded-xl p-3 ${onClick ? 'cursor-pointer hover:border-slate-600 transition-colors' : ''} ${className}`}
+        className={`bg-surface border border-border rounded-xl p-3 ${onClick ? 'cursor-pointer hover:border-border/80 transition-colors' : ''} ${className}`}
     >
         {children}
     </div>
@@ -104,15 +105,15 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative z-10 bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-3 border-b border-slate-800">
-                    <h3 className="font-bold text-white text-base">{title}</h3>
-                    <button onClick={onClose} className="p-1.5 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative z-10 bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+                <div className="flex items-center justify-between p-3 border-b border-border">
+                    <h3 className="font-bold text-foreground text-base">{title}</h3>
+                    <button onClick={onClose} className="p-1.5 hover:bg-surface-highlight rounded-full text-muted hover:text-foreground transition-colors">
                         <X size={18} />
                     </button>
                 </div>
-                <div className="p-4 overflow-y-auto">
+                <div className="p-4 overflow-y-auto text-foreground">
                     {children}
                 </div>
             </div>
@@ -134,7 +135,7 @@ interface ToastContainerProps {
 export const ToastContainer = ({ toasts }: ToastContainerProps) => (
     <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4 md:px-0">
         {toasts.map((t) => (
-            <div key={t.id} className="pointer-events-auto bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
+            <div key={t.id} className="pointer-events-auto bg-surface border border-border text-foreground px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
                 {t.type === 'error' ? <AlertCircle size={18} className="text-red-400" /> :
                     t.type === 'warning' ? <AlertTriangle size={18} className="text-amber-400" /> :
                         t.type === 'info' ? <Info size={18} className="text-blue-400" /> :
@@ -159,5 +160,5 @@ export const FormatCurrency = ({ amount }: { amount: number }) => (
 
 // Loading Spinner
 export const Spinner = ({ className = '' }: { className?: string }) => (
-    <div className={`animate-spin rounded-full border-2 border-slate-600 border-t-amber-500 h-6 w-6 ${className}`} />
+    <div className={`animate-spin rounded-full border-2 border-border border-t-primary h-6 w-6 ${className}`} />
 );
