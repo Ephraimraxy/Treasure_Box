@@ -655,11 +655,11 @@ export const ProfilePage = () => {
             {/* ─── Group 1: Account ─── */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50">
                 <MenuItem icon={User} label="Edit Profile" onClick={() => setActivePage('edit-profile')} />
-                <MenuItem icon={CreditCard} label="Bank Accounts" value={`${linkedBanks.length}`} onClick={() => setActivePage('bank-accounts')} />
+
                 <MenuItem icon={Building2} label="Virtual Account" value={user?.virtualAccount ? 'Active' : 'Setup'} onClick={() => setActivePage('virtual-account')} />
                 <MenuItem icon={Fingerprint} label="KYC Verification" value={user?.kycVerified ? 'Verified' : 'Pending'} onClick={() => navigate('/kyc')} />
                 <MenuItem icon={Users} label="Referrals" onClick={() => navigate('/referrals')} />
-                <MenuItem icon={TrendingUp} label="Investments" onClick={() => navigate('/investments')} />
+
             </div>
 
             {/* ─── Group 2: Security ─── */}
