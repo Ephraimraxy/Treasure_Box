@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
 import { Card, FormatCurrency, Spinner, Button, Modal, Input } from '../components/ui';
 import { FeaturedCarousel } from '../components/FeaturedCarousel';
+import { AdsPopup } from '../components/AdsPopup';
 
 interface Transaction {
     id: string;
@@ -414,6 +415,9 @@ export const DashboardPage = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Ads Popup */}
+            <AdsPopup />
         </div>
     );
 };

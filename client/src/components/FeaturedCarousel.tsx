@@ -105,9 +105,43 @@ export const FeaturedCarousel = () => {
     const navigate = useNavigate();
     const [current, setCurrent] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const touchStart = useRef<number | null>(null);
     const touchEnd = useRef<number | null>(null);
+
+    // Initial Image Load Check
+    useEffect(() => {
+        const checkImages = async () => {
+            const loadPromises = FEATURED_SLIDES.map(slide => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.src = slide.image;
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    // Timeout for slow network
+                    setTimeout(() => reject(new Error('Timeout')), 3000);
+                });
+            });
+
+            try {
+                // If the first few images load fast, we consider network "strong" enough to attempt showing images
+                // We don't need to wait for ALL, just enough to start. But for simplicity and strictness "strong network only", let's try all.
+                // Or maybe just the first 2-3?
+                // Let's try loading all but proceed if most load.
+                // Actually, if ANY fail, we might want to fallback to gradients for consistency?
+                // User said "it should always load on strong network only".
+                // We'll enforce strict check.
+                await Promise.all(loadPromises);
+                setImagesLoaded(true);
+            } catch (err) {
+                console.log('Carousel images skipped due to network/loading issues', err);
+                setImagesLoaded(false); // Fallback to gradients
+            }
+        };
+
+        checkImages();
+    }, []);
 
     // Auto-rotate
     useEffect(() => {
@@ -197,19 +231,25 @@ export const FeaturedCarousel = () => {
                             key={slide.id}
                             className={`absolute inset-0 transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-105'}`}
                         >
-                            {/* Background Image with Gradient Overlay */}
-                            <div className="absolute inset-0 bg-slate-900">
-                                <img
-                                    src={slide.image}
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
-                                {/* <div className={`absolute inset-0 bg-gradient-to-br ${slide.color}`} /> */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
-                                {/* Decorative glow */}
-                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                            {/* Background: Image (Strong Network) or Gradient (Weak/Fallback) */}
+                            <div className={`absolute inset-0 bg-slate-900 overflow-hidden`}>
+                                {imagesLoaded ? (
+                                    <>
+                                        <img
+                                            src={slide.image}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
+                                    </>
+                                ) : (
+                                    // Fallback Gradient
+                                    <div className={`w-full h-full bg-gradient-to-br ${slide.color || 'from-slate-800 to-slate-900'}`} />
+                                )}
+
+                                {/* Decorative glow - Keep consistent */}
+                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl opacity-50" />
+                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl opacity-50" />
                             </div>
 
                             {/* Content */}
