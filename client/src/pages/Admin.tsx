@@ -1174,8 +1174,8 @@ export const AdminUsersPage = () => {
                         </p>
                     ) : (
                         <>
-                            <p className="text-sm text-slate-300">
-                                Suspend <strong className="text-white">{suspendUser?.name || suspendUser?.email}</strong>?
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                Suspend <strong className="text-slate-900 dark:text-white">{suspendUser?.name || suspendUser?.email}</strong>?
                                 They will be unable to withdraw, invest, or purchase services. Deposits will still work.
                             </p>
                             <Input

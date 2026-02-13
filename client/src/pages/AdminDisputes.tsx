@@ -64,8 +64,8 @@ export const AdminDisputesPage = () => {
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Dispute Management</h1>
-                    <p className="text-slate-400">Handle user reports and issues</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dispute Management</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Handle user reports and issues</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="ghost" onClick={fetchDisputes}><Clock size={16} /> Refresh</Button>
@@ -74,16 +74,16 @@ export const AdminDisputesPage = () => {
 
             <div className="flex gap-4 mb-6">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-3 text-slate-500" size={18} />
+                    <Search className="absolute left-3 top-3 text-slate-400" size={18} />
                     <input
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-white focus:border-amber-500 outline-none"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 dark:text-white focus:border-amber-500 outline-none"
                         placeholder="Search by subject or user email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <select
-                    className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-500"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white outline-none focus:border-amber-500"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
                 >
@@ -97,32 +97,32 @@ export const AdminDisputesPage = () => {
             {loading ? (
                 <div className="flex justify-center p-12"><Spinner /></div>
             ) : filteredDisputes.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800">
+                <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
                     No disputes found matching criteria.
                 </div>
             ) : (
                 <div className="grid gap-4">
                     {filteredDisputes.map(dispute => (
-                        <Card key={dispute.id} className="hover:border-slate-600 transition-colors">
+                        <Card key={dispute.id} className="hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-4">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${dispute.status === 'OPEN' ? 'bg-rose-500/10 text-rose-500' :
-                                            dispute.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                'bg-slate-700 text-slate-400'
+                                        dispute.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' :
+                                            'bg-slate-100 dark:bg-slate-700 text-slate-400'
                                         }`}>
                                         {dispute.status === 'OPEN' ? <AlertCircle size={20} /> : <CheckCircle size={20} />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-white">{dispute.subject}</h3>
+                                            <h3 className="font-bold text-slate-900 dark:text-white">{dispute.subject}</h3>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${dispute.status === 'OPEN' ? 'bg-rose-500/20 text-rose-500' :
-                                                    dispute.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-500' :
-                                                        'bg-slate-700 text-slate-400'
+                                                dispute.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-500' :
+                                                    'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                                                 }`}>
                                                 {dispute.status}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-slate-300 mb-2">{dispute.message}</p>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">{dispute.message}</p>
                                         <div className="flex items-center gap-4 text-xs text-slate-500">
                                             <span>User: {dispute.user.email}</span>
                                             <span>•</span>
@@ -130,7 +130,7 @@ export const AdminDisputesPage = () => {
                                             {dispute.snapshotUrl && (
                                                 <>
                                                     <span>•</span>
-                                                    <a href={`http://localhost:5000${dispute.snapshotUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline flex items-center gap-1">
+                                                    <a href={`http://localhost:5000${dispute.snapshotUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 hover:underline flex items-center gap-1">
                                                         <ExternalLink size={12} /> View Snapshot
                                                     </a>
                                                 </>
@@ -146,11 +146,11 @@ export const AdminDisputesPage = () => {
                             </div>
 
                             {dispute.adminReply && (
-                                <div className="mt-4 pt-4 border-t border-slate-800 ml-14">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 mb-1">
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 ml-14">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-500 dark:text-indigo-400 mb-1">
                                         <MessageSquare size={12} /> Admin Reply
                                     </div>
-                                    <p className="text-sm text-slate-400">{dispute.adminReply}</p>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">{dispute.adminReply}</p>
                                 </div>
                             )}
                         </Card>
@@ -161,23 +161,23 @@ export const AdminDisputesPage = () => {
             {/* Resolve Modal */}
             <Modal isOpen={!!selectedDispute} onClose={() => setSelectedDispute(null)} title="Resolve Dispute">
                 <div className="space-y-4">
-                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 text-sm">
+                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-sm">
                         <span className="text-slate-500 block text-xs mb-1">User Message:</span>
-                        <p className="text-slate-300">{selectedDispute?.message}</p>
+                        <p className="text-slate-700 dark:text-slate-300">{selectedDispute?.message}</p>
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-slate-300 mb-1 block">Action</label>
-                        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Action</label>
+                        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
                             <button
                                 onClick={() => setReplyStatus('RESOLVED')}
-                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${replyStatus === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-400 hover:text-white'}`}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${replyStatus === 'RESOLVED' ? 'bg-white dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                             >
                                 Mark Resolved
                             </button>
                             <button
                                 onClick={() => setReplyStatus('CLOSED')}
-                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${replyStatus === 'CLOSED' ? 'bg-slate-700 text-slate-300' : 'text-slate-400 hover:text-white'}`}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${replyStatus === 'CLOSED' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                             >
                                 Close Ticket
                             </button>
@@ -185,9 +185,9 @@ export const AdminDisputesPage = () => {
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-slate-300 mb-1 block">Reply Message</label>
+                        <label className="text-sm font-medium text-slate-900 dark:text-slate-300 mb-1 block">Reply Message</label>
                         <textarea
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500 min-h-[100px]"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white outline-none focus:border-amber-500 min-h-[100px]"
                             placeholder="Enter your response to the user..."
                             value={replyMessage}
                             onChange={(e) => setReplyMessage(e.target.value)}
