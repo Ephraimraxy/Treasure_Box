@@ -66,6 +66,7 @@ export const userApi = {
     changePin: (oldPin: string, newPin: string) => api.post('/users/change-pin', { oldPin, newPin }),
     getReferrals: () => api.get('/users/referrals'),
     getSettings: () => api.get('/users/settings'),
+    getPublicSettings: () => api.get('/users/public-settings'),
     submitAppeal: (message: string) => api.post('/users/appeal', { message }),
 };
 
@@ -134,6 +135,8 @@ export const adminApi = {
     getResearchRequests: () => api.get('/research/admin/requests'),
     updateResearchRequest: (id: string, data: any) => api.patch(`/research/admin/requests/${id}`, data),
     createSnapshot: () => api.post('/admin/reconciliation/snapshot'),
+    withdrawPaystack: (data: any) => api.post('/admin/paystack/withdraw', data),
+    fundPaystack: (amount: number) => api.post('/admin/paystack/fund', { amount }),
     getProtectionStatus: () => api.get('/admin/protection-status'),
     downloadStatement: (start: string, end: string) =>
         api.get(`/admin/statement?start=${start}&end=${end}`, { responseType: 'blob' }),

@@ -228,7 +228,7 @@ export const TransferPage = () => {
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0"
-                            className="w-full bg-input border border-input rounded-2xl pl-12 pr-4 py-5 text-3xl font-black text-foreground text-center focus:outline-none focus:border-primary placeholder:text-muted/50 font-mono"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-5 text-3xl font-black text-slate-900 dark:text-white text-center focus:outline-none focus:border-amber-500 placeholder:text-slate-300 dark:placeholder:text-slate-700 font-mono"
                         />
                     </div>
 
@@ -298,7 +298,7 @@ export const TransferPage = () => {
                         </button>
 
                         {showBankDropdown && (
-                            <div className="absolute z-20 w-full mt-1 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden">
+                            <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden">
                                 <div className="p-2">
                                     <div className="relative">
                                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />

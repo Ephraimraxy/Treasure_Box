@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart } from 'lucide-react';
-import { adminApi } from '../api';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building } from 'lucide-react';
+import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
 
@@ -143,8 +143,83 @@ export const AdminDashboardPage = () => {
             }
         };
         fetchStats();
+        fetchStats();
         fetchProtection();
     }, []);
+
+    // Paystack Operations State
+    const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+    const [fundModalOpen, setFundModalOpen] = useState(false);
+    const [withdrawForm, setWithdrawForm] = useState({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '' });
+    const [fundAmount, setFundAmount] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [banks, setBanks] = useState<any[]>([]);
+    const [accountVerification, setAccountVerification] = useState<{ loading: boolean, name: string | null, error: string | null }>({ loading: false, name: null, error: null });
+
+    // Fetch banks when modal opens
+    useEffect(() => {
+        if (withdrawModalOpen && banks.length === 0) {
+            paymentApi.getBanks().then(res => setBanks(res.data.data)).catch(console.error);
+        }
+    }, [withdrawModalOpen]);
+
+    const handleVerifyAccount = async () => {
+        if (!withdrawForm.accountNumber || !withdrawForm.bankCode || withdrawForm.accountNumber.length < 10) return;
+        setAccountVerification({ loading: true, name: null, error: null });
+        try {
+            const res = await paymentApi.verifyAccount(withdrawForm.accountNumber, withdrawForm.bankCode);
+            setAccountVerification({ loading: false, name: res.data.data.account_name, error: null });
+            setWithdrawForm(prev => ({ ...prev, accountName: res.data.data.account_name }));
+        } catch (error) {
+            setAccountVerification({ loading: false, name: null, error: 'Invalid account' });
+        }
+    };
+
+    // Auto-verify when account number changes
+    useEffect(() => {
+        if (withdrawForm.accountNumber.length === 10 && withdrawForm.bankCode) {
+            handleVerifyAccount();
+        }
+    }, [withdrawForm.accountNumber, withdrawForm.bankCode]);
+
+    const handleWithdraw = async () => {
+        if (!withdrawForm.amount || !withdrawForm.accountNumber || !withdrawForm.bankCode) return;
+        setProcessing(true);
+        try {
+            await adminApi.withdrawPaystack({
+                amount: parseFloat(withdrawForm.amount),
+                bankCode: withdrawForm.bankCode,
+                accountNumber: withdrawForm.accountNumber,
+                accountName: withdrawForm.accountName,
+                description: withdrawForm.description
+            });
+            addToast('success', 'Withdrawal initiated successfully');
+            setWithdrawModalOpen(false);
+            setWithdrawForm({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '' });
+            // Refresh stats
+            const statsRes = await adminApi.getStats();
+            setStats(statsRes.data);
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Withdrawal failed');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleFund = async () => {
+        if (!fundAmount || parseFloat(fundAmount) < 100) {
+            addToast('error', 'Minimum amount is ₦100');
+            return;
+        }
+        setProcessing(true);
+        try {
+            const res = await adminApi.fundPaystack(parseFloat(fundAmount));
+            window.location.href = res.data.authorization_url; // Direct redirect for simplicity
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Funding failed');
+            setProcessing(false);
+        }
+    };
 
     const handleSnapshot = async () => {
         setSnapshotLoading(true);
@@ -258,8 +333,18 @@ export const AdminDashboardPage = () => {
             {/* ── Financial Health ── */}
             {fin && (
                 <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Heart size={12} /> Financial Health
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <Heart size={12} /> Financial Health
+                        </div>
+                        <div className="ml-auto flex gap-2">
+                            <button onClick={() => setFundModalOpen(true)} className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium border border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+                                <Plus size={12} /> Fund Balance
+                            </button>
+                            <button onClick={() => setWithdrawModalOpen(true)} className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <Building size={12} /> Withdraw
+                            </button>
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <Card className="bg-white dark:bg-gradient-to-br dark:from-emerald-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
@@ -631,6 +716,91 @@ export const AdminDashboardPage = () => {
                     onClose={() => setShowReportModal(false)}
                 />
             )}
+
+            {/* Paystack Withdraw Modal */}
+            <Modal isOpen={withdrawModalOpen} onClose={() => setWithdrawModalOpen(false)} title="Withdraw Paystack Balance">
+                <div className="space-y-4">
+                    <Input
+                        label="Amount (₦)"
+                        type="number"
+                        value={withdrawForm.amount}
+                        onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+                        placeholder="e.g. 50000"
+                    />
+                    <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Select Bank</label>
+                        <select
+                            value={withdrawForm.bankCode}
+                            onChange={(e) => setWithdrawForm({ ...withdrawForm, bankCode: e.target.value, accountNumber: '', accountName: '' })}
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+                        >
+                            <option value="">Select Bank</option>
+                            {banks.map((bank: any) => (
+                                <option key={bank.code} value={bank.code}>{bank.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="relative">
+                        <Input
+                            label="Account Number"
+                            value={withdrawForm.accountNumber}
+                            onChange={(e) => setWithdrawForm({ ...withdrawForm, accountNumber: e.target.value })}
+                            placeholder="e.g. 0123456789"
+                            maxLength={10}
+                        />
+                        {accountVerification.loading && <div className="absolute right-3 top-9"><Loader2 size={16} className="animate-spin text-slate-400" /></div>}
+                    </div>
+
+                    {accountVerification.name && (
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
+                            <Check size={16} className="text-emerald-500" />
+                            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{accountVerification.name}</span>
+                        </div>
+                    )}
+                    {accountVerification.error && (
+                        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+                            <X size={16} className="text-red-500" />
+                            <span className="text-sm font-bold text-red-700 dark:text-red-400">{accountVerification.error}</span>
+                        </div>
+                    )}
+
+                    <Input
+                        label="Description (Optional)"
+                        value={withdrawForm.description}
+                        onChange={(e) => setWithdrawForm({ ...withdrawForm, description: e.target.value })}
+                        placeholder="e.g. Monthly Profit Withdrawal"
+                    />
+
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setWithdrawModalOpen(false)} className="flex-1">Cancel</Button>
+                        <Button onClick={handleWithdraw} disabled={processing || !accountVerification.name} className="flex-1">
+                            {processing ? 'Processing...' : 'Withdraw Funds'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Paystack Fund Modal */}
+            <Modal isOpen={fundModalOpen} onClose={() => setFundModalOpen(false)} title="Fund Paystack Balance">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Add funds to your Paystack balance to ensure liquidity for withdrawals and payouts. This will redirect you to Paystack secure checkout.
+                    </p>
+                    <Input
+                        label="Amount to Fund (₦)"
+                        type="number"
+                        value={fundAmount}
+                        onChange={(e) => setFundAmount(e.target.value)}
+                        placeholder="e.g. 100000"
+                    />
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setFundModalOpen(false)} className="flex-1">Cancel</Button>
+                        <Button onClick={handleFund} disabled={processing || !fundAmount} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">
+                            {processing ? 'Redirecting...' : 'Proceed to Payment'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
         </div >
     );
@@ -1436,6 +1606,22 @@ export const AdminSettingsPage = () => {
                                 />
                                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div className="font-medium text-slate-900 dark:text-white">Global Default Theme</div>
+                                <div className="text-xs text-slate-400">Default appearance for new users</div>
+                            </div>
+                            <select
+                                value={(settings as any).defaultTheme || 'system'}
+                                onChange={e => setSettings({ ...settings, defaultTheme: e.target.value } as any)}
+                                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block p-2"
+                            >
+                                <option value="system">System Default</option>
+                                <option value="light">Light Mode</option>
+                                <option value="dark">Dark Mode</option>
+                            </select>
                         </div>
                     </div>
                 </Card>

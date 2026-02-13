@@ -18,11 +18,27 @@ router.get('/settings', authenticate, async (req: Request, res: Response) => {
             minWithdrawal: settings?.minWithdrawal || 1000,
             minInvestment: 5000, // Hardcoded for now as not in schema
             isSystemPaused: settings?.isSystemPaused || false,
-            kycRequiredForAccount: settings?.kycRequiredForAccount ?? true
+            kycRequiredForAccount: settings?.kycRequiredForAccount ?? true,
+            defaultTheme: settings?.defaultTheme || 'system'
         });
     } catch (error) {
         console.error('Settings fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// Public Settings (Unauthenticated) - for global theme & maintenance mode
+router.get('/public-settings', async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
+        res.json({
+            defaultTheme: settings?.defaultTheme || 'system',
+            isSystemPaused: settings?.isSystemPaused || false
+        });
+    } catch (error) {
+        console.error('Public settings error:', error);
+        // Fail gracefully with defaults
+        res.json({ defaultTheme: 'system', isSystemPaused: false });
     }
 });
 

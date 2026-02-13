@@ -1013,8 +1013,73 @@ router.get('/protection-status', async (req: AuthRequest, res, next) => {
 });
 
 // ═══════════════════════════════════════════════
-//  FINANCIAL STATEMENT EXPORT (CSV)
+//  PAYSTACK OPERATIONS (WITHDRAW & FUND)
 // ═══════════════════════════════════════════════
+
+// Withdraw from Paystack Balance (Admin Only)
+router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
+    try {
+        const { amount, bankCode, accountNumber, accountName, description } = req.body;
+
+        if (!amount || !bankCode || !accountNumber || !accountName) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // 1. Create Transfer Recipient
+        const { createTransferRecipient, initiateTransfer } = await import('../services/paystack.service');
+
+        // Create unique ref or reuse if recipient exists (Paystack handles dupes gracefully typically, but good to just create)
+        const recipientResponse = await createTransferRecipient(accountName, accountNumber, bankCode);
+        const recipientCode = recipientResponse.data.recipient_code;
+
+        // 2. Initiate Transfer
+        const reference = `ADM_WDR_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const transferResponse = await initiateTransfer(amount, recipientCode, reference, description || 'Admin Withdrawal');
+
+        // 3. Log Audit
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'ADMIN_PAYSTACK_WITHDRAWAL',
+                details: `Withdrew ₦${amount} to ${accountNumber} (${recipientResponse.data.details.bank_name}). Ref: ${reference}`
+            }
+        });
+
+        res.json({ message: 'Withdrawal initiated successfully', data: transferResponse.data });
+
+    } catch (error: any) {
+        console.error("Admin Paystack Withdrawal Error", error);
+        res.status(500).json({ error: error.response?.data?.message || 'Failed to process withdrawal' });
+    }
+});
+
+// Fund Paystack Balance (Admin Only) -> Returns Payment Link
+router.post('/paystack/fund', async (req: AuthRequest, res, next) => {
+    try {
+        const { amount } = req.body;
+        if (!amount || amount < 100) {
+            return res.status(400).json({ error: 'Invalid amount (min 100)' });
+        }
+
+        const { initializeTransaction } = await import('../services/paystack.service');
+
+        const reference = `ADM_FUND_${Date.now()}`;
+        // Use admin email for the transaction
+        const email = req.user!.email;
+
+        // Initialize transaction
+        const response = await initializeTransaction(email, amount, reference, {
+            type: 'ADMIN_FUNDING',
+            adminId: req.user!.id
+        });
+
+        res.json({ authorization_url: response.data.authorization_url, reference });
+
+    } catch (error: any) {
+        console.error("Admin Paystack Funding Error", error);
+        res.status(500).json({ error: 'Failed to initialize funding' });
+    }
+});
 router.get('/statement', async (req: AuthRequest, res, next) => {
     try {
         const startDate = req.query.start ? new Date(req.query.start as string) : new Date(new Date().setDate(1)); // default: 1st of current month
