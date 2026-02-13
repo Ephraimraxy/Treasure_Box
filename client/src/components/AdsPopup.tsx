@@ -124,15 +124,6 @@ export const AdsPopup = () => {
                         ))}
                     </div>
 
-                    {/* Main Close/Action Area Below */}
-                    <div className="absolute bottom-0 inset-x-0 p-5 z-20 flex flex-col gap-3">
-                        <button
-                            onClick={handleClose}
-                            className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg active:scale-95"
-                        >
-                            Close
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

@@ -158,11 +158,24 @@ export const TransferPage = () => {
 
     const canProceedStep1 = () => {
         const amt = parseFloat(amount.replace(/,/g, ''));
-        if (isNaN(amt)) return false;
-        // Ensure user is loaded before checking balance, otherwise default to allowing (server will catch)
-        // actually better to block if balance is known to be insufficient
+        if (isNaN(amt) || amt <= 0) return false;
+
+        // Debugging logs to help identify why it might be false
+        // console.log('Transfer Debug:', { amt, min: settings.minWithdrawal, max: settings.maxWithdrawal, bal: user?.balance });
+
+        // Ensure we have settings loaded, otherwise default to typical values to avoid blocking if API fails
+        const min = settings.minWithdrawal || 0;
+        const max = settings.maxWithdrawal || 10000000;
+
+        // Ensure user balance is checked safely. If user is null, we can't really proceed, but let's safely check.
         const balance = user?.balance ?? 0;
-        return amt >= settings.minWithdrawal && amt <= settings.maxWithdrawal && amt <= balance;
+
+        // Check conditions
+        const isAboveMin = amt >= min;
+        const isBelowMax = amt <= max;
+        const hasBalance = amt <= balance;
+
+        return isAboveMin && isBelowMax && hasBalance;
     };
 
     const canProceedStep2 = () => accountVerified;
@@ -219,9 +232,19 @@ export const TransferPage = () => {
                         />
                     </div>
 
-                    {parseFloat(amount) > (user?.balance || 0) && (
-                        <p className="text-xs text-red-400 text-center mb-2">Insufficient balance</p>
-                    )}
+                    {(() => {
+                        const amt = parseFloat(amount.replace(/,/g, ''));
+                        const bal = user?.balance ?? 0;
+                        const min = settings.minWithdrawal || 0;
+                        const max = settings.maxWithdrawal || 10000000;
+
+                        if (!amount) return null;
+                        if (isNaN(amt)) return <p className="text-xs text-red-400 text-center mb-2">Invalid amount</p>;
+                        if (amt > bal) return <p className="text-xs text-red-400 text-center mb-2">Insufficient balance</p>;
+                        if (amt < min) return <p className="text-xs text-red-400 text-center mb-2">Minimum withdrawal is <FormatCurrency amount={min} /></p>;
+                        if (amt > max) return <p className="text-xs text-red-400 text-center mb-2">Maximum withdrawal is <FormatCurrency amount={max} /></p>;
+                        return null;
+                    })()}
 
                     <div className="flex gap-2 mb-6">
                         {[1000, 5000, 10000, 50000].map(preset => (
