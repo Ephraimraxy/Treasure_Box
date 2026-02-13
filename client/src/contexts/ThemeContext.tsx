@@ -9,6 +9,7 @@ interface ThemeContextType {
     setMode: (mode: ThemeMode) => void;
     accent: AccentColor;
     setAccent: (accent: AccentColor) => void;
+    refetchGlobalTheme: () => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -45,23 +46,23 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user]);
 
-    // Fetch Global Theme Default
-    useEffect(() => {
-        const fetchGlobalTheme = async () => {
-            try {
-                // Dynamically import api to avoid circular dependency
-                const { userApi } = await import('../api');
-                const { data } = await userApi.getPublicSettings();
+    const [globalTheme, setGlobalTheme] = useState<ThemeMode>('system');
 
-                // If the user has NO local preference, apply the global default
-                // We check if the item exists in localStorage specifically
-                if (!localStorage.getItem('theme-mode') && data.defaultTheme && ['light', 'dark', 'system'].includes(data.defaultTheme)) {
-                    setModeState(data.defaultTheme as ThemeMode);
-                }
-            } catch (error) {
-                console.error('Failed to fetch global theme', error);
+    // Fetch Global Theme Default
+    const fetchGlobalTheme = async () => {
+        try {
+            const { userApi } = await import('../api'); // Dynamic import to avoid cycles
+            const { data } = await userApi.getPublicSettings();
+
+            if (data.defaultTheme && ['light', 'dark', 'system'].includes(data.defaultTheme)) {
+                setGlobalTheme(data.defaultTheme as ThemeMode);
             }
-        };
+        } catch (error) {
+            console.error('Failed to fetch global theme', error);
+        }
+    };
+
+    useEffect(() => {
         fetchGlobalTheme();
     }, []);
 
@@ -83,9 +84,16 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.classList.remove('light', 'dark');
 
         let effectiveMode = mode;
+
+        // If user chose 'system' (or hasn't chosen), look at Global Default first
         if (mode === 'system') {
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            effectiveMode = systemTheme;
+            if (globalTheme === 'light' || globalTheme === 'dark') {
+                effectiveMode = globalTheme;
+            } else {
+                // Global is 'system' or unset -> fallback to OS
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                effectiveMode = systemTheme;
+            }
         }
 
         root.classList.add(effectiveMode);
@@ -95,30 +103,31 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.style.setProperty('--color-primary', colorValue);
 
         // 3. Handle Computed Contrast (Foreground for Primary)
-        // Amber/Cyan are light -> use dark text. Others -> use white text.
         const lightAccents = ['amber', 'cyan', 'lime', 'yellow'];
-        const contrastColor = lightAccents.includes(accent) ? '15 23 42' : '255 255 255'; // slate-900 vs white
+        const contrastColor = lightAccents.includes(accent) ? '15 23 42' : '255 255 255';
         root.style.setProperty('--color-primary-foreground', contrastColor);
 
-    }, [mode, accent]);
+    }, [mode, accent, globalTheme]);
 
-    // Listen for system changes if in system mode
+    // Listen for system changes if effective mode depends on system
     useEffect(() => {
-        if (mode !== 'system') return;
+        // We only care about OS changes if we are effectively using system
+        // i.e., mode is system AND globalTheme is system
+        if (mode === 'system' && globalTheme === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => {
+                const root = window.document.documentElement;
+                root.classList.remove('light', 'dark');
+                root.classList.add(mediaQuery.matches ? 'dark' : 'light');
+            };
 
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = () => {
-            const root = window.document.documentElement;
-            root.classList.remove('light', 'dark');
-            root.classList.add(mediaQuery.matches ? 'dark' : 'light');
-        };
-
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [mode]);
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [mode, globalTheme]);
 
     return (
-        <ThemeContext.Provider value={{ mode, setMode, accent, setAccent }}>
+        <ThemeContext.Provider value={{ mode, setMode, accent, setAccent, refetchGlobalTheme: fetchGlobalTheme }}>
             {children}
         </ThemeContext.Provider>
     );

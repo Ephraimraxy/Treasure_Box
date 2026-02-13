@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building } from 'lucide-react';
 import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
 
 interface Stats {
@@ -1482,6 +1483,7 @@ export const AdminQuizPage = () => {
 
 export const AdminSettingsPage = () => {
     const { addToast } = useToast();
+    const { refetchGlobalTheme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
         minDeposit: 1000,
@@ -1521,7 +1523,7 @@ export const AdminSettingsPage = () => {
         try {
             await adminApi.updateSettings(settings);
             addToast('success', 'Settings saved successfully');
-            setTimeout(() => window.location.reload(), 1500);
+            await refetchGlobalTheme();
         } catch (error: any) {
             console.error('Failed to save settings:', error);
             addToast('error', 'Failed to save settings');
