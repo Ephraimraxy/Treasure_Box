@@ -136,6 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleLoginSuccess = async (newToken: string) => {
         setIsLoading(true);
         localStorage.setItem('token', newToken);
+        // Track login time for ads popup detection
+        localStorage.setItem('last_login_time', Date.now().toString());
         setToken(newToken);
 
         // Force update axios header immediately

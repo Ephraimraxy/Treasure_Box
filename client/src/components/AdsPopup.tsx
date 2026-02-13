@@ -19,8 +19,8 @@ export const AdsPopup = () => {
     // Close Handler
     const handleClose = () => {
         setIsOpen(false);
-        // Save timestamp to localStorage to manage frequency
-        localStorage.setItem('ads_last_shown', Date.now().toString());
+        // Update last visit time when closed
+        localStorage.setItem('ads_last_visit', Date.now().toString());
     };
 
     // Auto-rotate effect
@@ -37,21 +37,27 @@ export const AdsPopup = () => {
     // Check conditions to show ad
     useEffect(() => {
         const checkShouldShow = async () => {
-            // 1. Frequency Check
-            const lastShown = localStorage.getItem('ads_last_shown');
-            if (lastShown) {
-                const timeDiff = Date.now() - parseInt(lastShown);
-                const oneHour = 60 * 60 * 1000;
-                // Don't show if shown in last 1 hour
-                if (timeDiff < oneHour) return;
-            }
+            // Check if user is logged in (has token)
+            const token = localStorage.getItem('token');
+            if (!token) return; // Don't show if not logged in
 
-            // 2. Random Chance (e.g. 70% chance to show if frequency check passed)
-            // This makes it "unpredicted" as requested
-            if (Math.random() > 0.7) return;
+            const currentTime = Date.now();
 
-            // 3. Network/Image Check
-            // Attempt to pre-load images to ensure "good network"
+            // 1. Check if it's a new login (within 5 minutes of login)
+            const lastLoginTime = localStorage.getItem('last_login_time');
+            const isNewLogin = lastLoginTime && (currentTime - parseInt(lastLoginTime)) < (5 * 60 * 1000); // Within 5 minutes of login
+
+            // 2. Check if user is returning after a long time (7+ days since last visit)
+            const lastVisitTime = localStorage.getItem('ads_last_visit');
+            const isLongTimeReturning = lastVisitTime ? (currentTime - parseInt(lastVisitTime)) > (7 * 24 * 60 * 60 * 1000) : true; // 7 days or never visited
+
+            // 3. Always show on dashboard refresh (this component mounts on dashboard)
+            // Show if: new login OR long-time returning OR dashboard refresh (always)
+            const shouldShow = isNewLogin || isLongTimeReturning || true; // Always show on dashboard refresh
+
+            if (!shouldShow) return;
+
+            // 4. Network/Image Check - Ensure images load quickly
             try {
                 const loadPromises = ADS.map(ad => {
                     return new Promise((resolve, reject) => {
