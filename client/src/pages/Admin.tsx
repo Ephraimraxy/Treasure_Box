@@ -1494,8 +1494,6 @@ export const AdminSettingsPage = () => {
         paystackPublicKey: '',
         kycRequiredForAccount: true,
         enableEmailLoginAlerts: true,
-        kycRequiredForAccount: true,
-        enableEmailLoginAlerts: true,
         enableWithdrawalApproval: true,
         defaultTheme: 'system'
     });
