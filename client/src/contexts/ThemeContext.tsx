@@ -48,17 +48,18 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Fetch Global Theme Default
     useEffect(() => {
         const fetchGlobalTheme = async () => {
-            // Only fetch if no local preference is set
-            if (!localStorage.getItem('theme-mode')) {
-                try {
-                    const { userApi } = await import('../api'); // Dynamic import to avoid cycles if any
-                    const { data } = await userApi.getPublicSettings();
-                    if (data.defaultTheme && ['light', 'dark', 'system'].includes(data.defaultTheme)) {
-                        setModeState(data.defaultTheme as ThemeMode);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch global theme', error);
+            try {
+                // Dynamically import api to avoid circular dependency
+                const { userApi } = await import('../api');
+                const { data } = await userApi.getPublicSettings();
+
+                // If the user has NO local preference, apply the global default
+                // We check if the item exists in localStorage specifically
+                if (!localStorage.getItem('theme-mode') && data.defaultTheme && ['light', 'dark', 'system'].includes(data.defaultTheme)) {
+                    setModeState(data.defaultTheme as ThemeMode);
                 }
+            } catch (error) {
+                console.error('Failed to fetch global theme', error);
             }
         };
         fetchGlobalTheme();

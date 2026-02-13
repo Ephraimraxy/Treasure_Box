@@ -159,7 +159,7 @@ export const AdminDashboardPage = () => {
     // Fetch banks when modal opens
     useEffect(() => {
         if (withdrawModalOpen && banks.length === 0) {
-            paymentApi.getBanks().then(res => setBanks(res.data.data)).catch(console.error);
+            paymentApi.getBanks().then(res => setBanks(res.data)).catch(console.error);
         }
     }, [withdrawModalOpen]);
 
@@ -1494,7 +1494,10 @@ export const AdminSettingsPage = () => {
         paystackPublicKey: '',
         kycRequiredForAccount: true,
         enableEmailLoginAlerts: true,
-        enableWithdrawalApproval: true
+        kycRequiredForAccount: true,
+        enableEmailLoginAlerts: true,
+        enableWithdrawalApproval: true,
+        defaultTheme: 'system'
     });
 
     const [saveLoading, setSaveLoading] = useState(false);
@@ -1520,6 +1523,7 @@ export const AdminSettingsPage = () => {
         try {
             await adminApi.updateSettings(settings);
             addToast('success', 'Settings saved successfully');
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error: any) {
             console.error('Failed to save settings:', error);
             addToast('error', 'Failed to save settings');
