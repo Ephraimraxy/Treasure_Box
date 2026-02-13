@@ -220,7 +220,7 @@ export const AdminDashboardPage = () => {
     return (
         <div className="space-y-5 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-bold text-white">Financial Control Center</h1>
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Financial Control Center</h1>
                 <Button
                     onClick={handleSnapshot}
                     disabled={snapshotLoading}
@@ -234,8 +234,8 @@ export const AdminDashboardPage = () => {
             {/* ── Capital Protection Banner ── */}
             {protectionStatus && (
                 <div className={`p-3 rounded-xl border text-sm flex items-center gap-2 ${protectionStatus.active
-                    ? 'bg-red-950/60 border-red-500/50 text-red-300'
-                    : 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                    ? 'bg-red-100 border-red-200 text-red-800 dark:bg-red-950/60 dark:border-red-500/50 dark:text-red-300'
+                    : 'bg-emerald-100 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-500/30 dark:text-emerald-300'
                     }`}>
                     <Shield size={16} />
                     <span className="font-semibold">
@@ -601,7 +601,7 @@ export const AdminDashboardPage = () => {
                             type="date"
                             value={statementRange.start}
                             onChange={(e) => setStatementRange({ ...statementRange, start: e.target.value })}
-                            className="bg-slate-950 border-slate-700 text-white h-9 focus:ring-amber-500"
+                            className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white h-9 focus:ring-amber-500"
                         />
                     </div>
                     <div>
@@ -610,7 +610,7 @@ export const AdminDashboardPage = () => {
                             type="date"
                             value={statementRange.end}
                             onChange={(e) => setStatementRange({ ...statementRange, end: e.target.value })}
-                            className="bg-slate-950 border-slate-700 text-white h-9 focus:ring-amber-500"
+                            className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white h-9 focus:ring-amber-500"
                         />
                     </div>
                     <Button onClick={handleGenerateReport} disabled={isGeneratingReport} variant="primary" className="h-9">

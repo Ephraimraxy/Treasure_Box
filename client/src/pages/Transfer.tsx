@@ -157,8 +157,12 @@ export const TransferPage = () => {
     };
 
     const canProceedStep1 = () => {
-        const amt = parseFloat(amount);
-        return amt >= settings.minWithdrawal && amt <= settings.maxWithdrawal && amt <= (user?.balance || 0);
+        const amt = parseFloat(amount.replace(/,/g, ''));
+        if (isNaN(amt)) return false;
+        // Ensure user is loaded before checking balance, otherwise default to allowing (server will catch)
+        // actually better to block if balance is known to be insufficient
+        const balance = user?.balance ?? 0;
+        return amt >= settings.minWithdrawal && amt <= settings.maxWithdrawal && amt <= balance;
     };
 
     const canProceedStep2 = () => accountVerified;
