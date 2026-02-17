@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Clock, DollarSign, Eye, EyeOff, RefreshCw, Plus, Copy, Flag, Info, ChevronRight, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +35,44 @@ export const DashboardPage = () => {
     // Loading States
     const [actionLoading, setActionLoading] = useState(false);
     const [accountLoading, setAccountLoading] = useState(false);
+    const [livePayments, setLivePayments] = useState(true);
+    const lastNotifiedAtRef = useRef<number>(0);
+    const lastTopTxIdRef = useRef<string | null>(null);
+
+    const playPaymentReceived = () => {
+        // 1) Short beep (best-effort)
+        try {
+            const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.value = 880;
+                g.gain.value = 0.0001;
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start();
+                const now = ctx.currentTime;
+                g.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+                o.stop(now + 0.2);
+                setTimeout(() => ctx.close().catch(() => { }), 400);
+            }
+        } catch { }
+
+        // 2) Voice prompt (best-effort)
+        try {
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance('Payment received in Treasure Box');
+                u.rate = 1.0;
+                u.pitch = 1.0;
+                u.volume = 1.0;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(u);
+            }
+        } catch { }
+    };
 
     // Settings
     const [settings, setSettings] = useState({
@@ -63,6 +101,7 @@ export const DashboardPage = () => {
                 ]);
                 setTransactions(txRes.data.data);
                 setSettings(settingsRes.data);
+                lastTopTxIdRef.current = txRes.data.data?.[0]?.id || null;
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             } finally {
@@ -71,6 +110,46 @@ export const DashboardPage = () => {
         };
         fetchData();
     }, []);
+
+    // Live virtual account funding listener (polling safety net)
+    useEffect(() => {
+        if (!user?.virtualAccount || !livePayments) return;
+
+        const interval = setInterval(async () => {
+            try {
+                if (document.visibilityState === 'hidden') return;
+
+                const txRes = await transactionApi.getAll(1, 5);
+                const latest: Transaction[] = txRes.data.data || [];
+                const topId = latest[0]?.id || null;
+
+                if (topId && topId !== lastTopTxIdRef.current) {
+                    setTransactions(latest);
+                    lastTopTxIdRef.current = topId;
+                }
+
+                const newestSuccessDeposit = latest.find(t => t.type === 'DEPOSIT' && t.status === 'SUCCESS');
+                if (!newestSuccessDeposit) return;
+
+                const createdAt = new Date(newestSuccessDeposit.createdAt).getTime();
+                const now = Date.now();
+                const isRecent = now - createdAt < 10 * 60 * 1000;
+                const isNew = createdAt > lastNotifiedAtRef.current;
+
+                if (isRecent && isNew) {
+                    lastNotifiedAtRef.current = createdAt;
+                    await refreshUser();
+                    addToast('success', 'Payment received in Treasure Box');
+                    playPaymentReceived();
+                }
+            } catch {
+                // best-effort
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.virtualAccount?.accountNumber, livePayments]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -215,6 +294,24 @@ export const DashboardPage = () => {
                                         <span className="text-xs text-slate-500 dark:text-slate-400">• {user.virtualAccount.bankName}</span>
                                     </div>
                                     <div className="text-xs text-slate-500">{user.virtualAccount.accountName}</div>
+                                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setLivePayments(v => !v);
+                                                addToast('info', !livePayments ? 'Live payments enabled' : 'Live payments paused');
+                                            }}
+                                            className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-colors ${livePayments
+                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                                                : 'bg-slate-200/60 dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                                                }`}
+                                        >
+                                            {livePayments ? '● Listening for payments' : '○ Live payments paused'}
+                                        </button>
+                                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                            Bank transfers can take seconds–minutes. We’ll alert you instantly once received.
+                                        </span>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => { navigator.clipboard.writeText(user.virtualAccount?.accountNumber || ''); addToast('info', 'Copied!'); }}
