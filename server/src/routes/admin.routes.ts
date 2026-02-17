@@ -1019,10 +1019,79 @@ router.get('/protection-status', async (req: AuthRequest, res, next) => {
 // Withdraw from Paystack Balance (Admin Only)
 router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
     try {
-        const { amount, bankCode, accountNumber, accountName, description } = req.body;
+        const { amount, bankCode, accountNumber, accountName, description, withdrawalType, pin } = req.body;
 
-        if (!amount || !bankCode || !accountNumber || !accountName) {
+        if (!amount || !bankCode || !accountNumber || !accountName || !pin) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Verify admin user and PIN
+        const admin = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        if (!admin || admin.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        if (!admin.transactionPin) {
+            return res.status(400).json({ error: 'Transaction PIN not set. Please set a PIN first.' });
+        }
+
+        const bcrypt = await import('bcryptjs');
+        const isPinValid = await bcrypt.compare(pin, admin.transactionPin);
+        if (!isPinValid) {
+            return res.status(401).json({ error: 'Invalid PIN' });
+        }
+
+        // Validate amount based on withdrawal type
+        const withdrawalTypeValue = withdrawalType || 'WHOLE'; // Default to WHOLE for backward compatibility
+        
+        if (withdrawalTypeValue === 'PROFIT') {
+            // Calculate platform profit
+            const [quizFeeAgg, systemWinAgg, investmentProfitAgg] = await Promise.all([
+                prisma.quizGame.aggregate({ _sum: { platformFee: true } }),
+                prisma.quizGame.aggregate({ 
+                    _sum: { prizePool: true },
+                    where: { status: 'COMPLETED', mode: 'SOLO' }
+                }),
+                prisma.investment.findMany({
+                    where: { status: 'MATURED' },
+                    select: { principal: true, baseRate: true, bonusRate: true, durationDays: true }
+                })
+            ]);
+
+            const quizFees = quizFeeAgg._sum.platformFee || 0;
+            const systemWins = systemWinAgg._sum.prizePool || 0;
+            const investmentProfit = investmentProfitAgg.reduce((sum: number, inv: any) => {
+                return sum + inv.principal * ((inv.baseRate + inv.bonusRate) / 100) * (inv.durationDays / 365);
+            }, 0);
+            const totalPlatformProfit = quizFees + systemWins + investmentProfit;
+
+            if (amount > totalPlatformProfit) {
+                return res.status(400).json({ 
+                    error: `Insufficient platform profit. Available: ₦${totalPlatformProfit.toLocaleString()}` 
+                });
+            }
+        } else {
+            // For WHOLE type, check Paystack balance from latest snapshot
+            const latestSnapshot = await prisma.paystackBalanceSnapshot.findFirst({ 
+                orderBy: { createdAt: 'desc' } 
+            });
+            const paystackAvailable = latestSnapshot?.availableBalance || 0;
+
+            if (amount > paystackAvailable) {
+                return res.status(400).json({ 
+                    error: `Insufficient Paystack balance. Available: ₦${paystackAvailable.toLocaleString()}` 
+                });
+            }
+        }
+
+        // ── Capital protection guard ──
+        const { checkLiquidityGuard } = await import('../services/risk.service');
+        const liquidityCheck = await checkLiquidityGuard('ADMIN_WITHDRAWAL');
+        if (!liquidityCheck.allowed) {
+            return res.status(503).json({
+                error: `Capital protection active. Coverage: ${liquidityCheck.coverage.toFixed(2)}x (threshold: ${liquidityCheck.threshold.toFixed(2)}x). Fund Paystack or run reconciliation.`,
+                code: 'LIQUIDITY_PROTECTION'
+            });
         }
 
         // 1. Create Transfer Recipient
@@ -1033,15 +1102,15 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
         const recipientCode = recipientResponse.data.recipient_code;
 
         // 2. Initiate Transfer
-        const reference = `ADM_WDR_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const transferResponse = await initiateTransfer(amount, recipientCode, reference, description || 'Admin Withdrawal');
+        const reference = `ADM_WDR_${withdrawalTypeValue}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const transferResponse = await initiateTransfer(amount, recipientCode, reference, description || `Admin ${withdrawalTypeValue === 'PROFIT' ? 'Profit' : 'Balance'} Withdrawal`);
 
         // 3. Log Audit
         await prisma.auditLog.create({
             data: {
                 adminEmail: req.user!.email,
                 action: 'ADMIN_PAYSTACK_WITHDRAWAL',
-                details: `Withdrew ₦${amount} to ${accountNumber} (${recipientResponse.data.details.bank_name}). Ref: ${reference}`
+                details: `Withdrew ₦${amount} (${withdrawalTypeValue === 'PROFIT' ? 'Platform Profit' : 'Whole Balance'}) to ${accountNumber} (${recipientResponse.data.details.bank_name}). Ref: ${reference}`
             }
         });
 
@@ -1049,7 +1118,7 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
 
     } catch (error: any) {
         console.error("Admin Paystack Withdrawal Error", error);
-        res.status(500).json({ error: error.response?.data?.message || 'Failed to process withdrawal' });
+        res.status(500).json({ error: error.response?.data?.message || error.message || 'Failed to process withdrawal' });
     }
 });
 

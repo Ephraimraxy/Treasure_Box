@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building, ChevronRight, CheckCircle, Building2, Send, Info } from 'lucide-react';
 import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -151,10 +151,14 @@ export const AdminDashboardPage = () => {
     // Paystack Operations State
     const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
     const [fundModalOpen, setFundModalOpen] = useState(false);
-    const [withdrawForm, setWithdrawForm] = useState({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '' });
+    const [withdrawStep, setWithdrawStep] = useState(1); // 1=Type+Amount, 2=Bank, 3=Details+PIN, 4=Confirm
+    const [withdrawType, setWithdrawType] = useState<'PROFIT' | 'WHOLE'>('PROFIT');
+    const [withdrawForm, setWithdrawForm] = useState({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '', pin: '' });
     const [fundAmount, setFundAmount] = useState('');
     const [processing, setProcessing] = useState(false);
     const [banks, setBanks] = useState<any[]>([]);
+    const [bankSearch, setBankSearch] = useState('');
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
     const [accountVerification, setAccountVerification] = useState<{ loading: boolean, name: string | null, error: string | null }>({ loading: false, name: null, error: null });
 
     // Fetch banks when modal opens
@@ -180,11 +184,44 @@ export const AdminDashboardPage = () => {
     useEffect(() => {
         if (withdrawForm.accountNumber.length === 10 && withdrawForm.bankCode) {
             handleVerifyAccount();
+        } else {
+            setAccountVerification({ loading: false, name: null, error: null });
+            setWithdrawForm(prev => ({ ...prev, accountName: '' }));
         }
     }, [withdrawForm.accountNumber, withdrawForm.bankCode]);
 
+    const filteredBanks = banks.filter((b: any) =>
+        b.name?.toLowerCase().includes(bankSearch.toLowerCase())
+    );
+
+    const selectBank = (bank: any) => {
+        setWithdrawForm(prev => ({ ...prev, accountName: '', bankCode: bank.code }));
+        setBankSearch('');
+        setShowBankDropdown(false);
+        setAccountVerification({ loading: false, name: null, error: null });
+    };
+
+    // Calculate available balance based on withdrawal type
+    const getAvailableBalance = () => {
+        if (withdrawType === 'PROFIT') {
+            return stats?.platformProfit.total || 0;
+        } else {
+            return stats?.financials?.paystackAvailable || 0;
+        }
+    };
+
+    const canProceedStep1 = () => {
+        const amt = parseFloat(withdrawForm.amount.replace(/,/g, ''));
+        if (isNaN(amt) || amt <= 0) return false;
+        const available = getAvailableBalance();
+        return amt <= available && amt >= 100; // Minimum 100
+    };
+
+    const canProceedStep2 = () => accountVerification.name && withdrawForm.bankCode;
+    const canProceedStep3 = () => withdrawForm.pin.length === 4;
+
     const handleWithdraw = async () => {
-        if (!withdrawForm.amount || !withdrawForm.accountNumber || !withdrawForm.bankCode) return;
+        if (!withdrawForm.amount || !withdrawForm.accountNumber || !withdrawForm.bankCode || !withdrawForm.pin) return;
         setProcessing(true);
         try {
             await adminApi.withdrawPaystack({
@@ -192,11 +229,16 @@ export const AdminDashboardPage = () => {
                 bankCode: withdrawForm.bankCode,
                 accountNumber: withdrawForm.accountNumber,
                 accountName: withdrawForm.accountName,
-                description: withdrawForm.description
+                description: withdrawForm.description || `Admin ${withdrawType === 'PROFIT' ? 'Profit' : 'Balance'} Withdrawal`,
+                withdrawalType: withdrawType,
+                pin: withdrawForm.pin
             });
             addToast('success', 'Withdrawal initiated successfully');
             setWithdrawModalOpen(false);
-            setWithdrawForm({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '' });
+            setWithdrawStep(1);
+            setWithdrawForm({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '', pin: '' });
+            setBankSearch('');
+            setShowBankDropdown(false);
             // Refresh stats
             const statsRes = await adminApi.getStats();
             setStats(statsRes.data);
@@ -205,6 +247,15 @@ export const AdminDashboardPage = () => {
         } finally {
             setProcessing(false);
         }
+    };
+
+    const resetWithdrawModal = () => {
+        setWithdrawModalOpen(false);
+        setWithdrawStep(1);
+        setWithdrawForm({ amount: '', bankCode: '', accountNumber: '', accountName: '', description: '', pin: '' });
+        setBankSearch('');
+        setShowBankDropdown(false);
+        setAccountVerification({ loading: false, name: null, error: null });
     };
 
     const handleFund = async () => {
@@ -617,55 +668,55 @@ export const AdminDashboardPage = () => {
             {/* Profit Breakdown Modal */}
             <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit Breakdown">
                 <div className="space-y-4">
-                    <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-4 rounded-xl">
-                        <div className="text-slate-400 text-sm mb-1">Total Platform Profit</div>
-                        <div className="text-3xl font-bold text-white">
+                    <div className="bg-slate-900 dark:bg-slate-800 border border-slate-800 dark:border-slate-700 p-4 rounded-xl">
+                        <div className="text-slate-400 dark:text-slate-300 text-sm mb-1">Total Platform Profit</div>
+                        <div className="text-3xl font-bold text-white dark:text-white">
                             <FormatCurrency amount={stats?.platformProfit.total || 0} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                    <DollarSign size={18} className="text-emerald-500" />
+                                <div className="p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-lg">
+                                    <DollarSign size={18} className="text-emerald-500 dark:text-emerald-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-white">Investment Profit</div>
-                                    <div className="text-xs text-slate-500">Computed from matured plans</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Investment Profit</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">Computed from matured plans</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-white">
+                            <div className="font-bold text-slate-900 dark:text-slate-100">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.investmentProfit || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-500/10 rounded-lg">
-                                    <Activity size={18} className="text-purple-500" />
+                                <div className="p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-lg">
+                                    <Activity size={18} className="text-purple-500 dark:text-purple-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-white">Quiz Fees</div>
-                                    <div className="text-xs text-slate-500">Platform commission</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Quiz Fees</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">Platform commission</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-white">
+                            <div className="font-bold text-slate-900 dark:text-slate-100">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.quizFees || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-800">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-amber-500/10 rounded-lg">
-                                    <Shield size={18} className="text-amber-500" />
+                                <div className="p-2 bg-amber-500/10 dark:bg-amber-500/20 rounded-lg">
+                                    <Shield size={18} className="text-amber-500 dark:text-amber-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-white">System Wins</div>
-                                    <div className="text-xs text-slate-500">Solo mode losses</div>
+                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">System Wins</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">Solo mode losses</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-white">
+                            <div className="font-bold text-slate-900 dark:text-slate-100">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.systemWins || 0} />
                             </div>
                         </div>
@@ -718,66 +769,284 @@ export const AdminDashboardPage = () => {
                 />
             )}
 
-            {/* Paystack Withdraw Modal */}
-            <Modal isOpen={withdrawModalOpen} onClose={() => setWithdrawModalOpen(false)} title="Withdraw Paystack Balance">
+            {/* Paystack Withdraw Modal - Multi-step */}
+            <Modal isOpen={withdrawModalOpen} onClose={resetWithdrawModal} title="Withdraw Funds">
                 <div className="space-y-4">
-                    <Input
-                        label="Amount (₦)"
-                        type="number"
-                        value={withdrawForm.amount}
-                        onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
-                        placeholder="e.g. 50000"
-                    />
-                    <div>
-                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Select Bank</label>
-                        <select
-                            value={withdrawForm.bankCode}
-                            onChange={(e) => setWithdrawForm({ ...withdrawForm, bankCode: e.target.value, accountNumber: '', accountName: '' })}
-                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-slate-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
-                        >
-                            <option value="">Select Bank</option>
-                            {banks.map((bank: any) => (
-                                <option key={bank.code} value={bank.code}>{bank.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="relative">
-                        <Input
-                            label="Account Number"
-                            value={withdrawForm.accountNumber}
-                            onChange={(e) => setWithdrawForm({ ...withdrawForm, accountNumber: e.target.value })}
-                            placeholder="e.g. 0123456789"
-                            maxLength={10}
-                        />
-                        {accountVerification.loading && <div className="absolute right-3 top-9"><Loader2 size={16} className="animate-spin text-slate-400" /></div>}
+                    {/* Step Indicator */}
+                    <div className="flex items-center gap-1 mb-4">
+                        {['Type & Amount', 'Bank', 'Details', 'Confirm'].map((label, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                                <div className={`w-full h-1 rounded-full transition-all ${i + 1 <= withdrawStep ? 'bg-amber-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                                <span className={`text-[8px] font-bold uppercase tracking-widest ${i + 1 === withdrawStep ? 'text-amber-500' : i + 1 < withdrawStep ? 'text-amber-500/50' : 'text-slate-400 dark:text-slate-500'}`}>{label}</span>
+                            </div>
+                        ))}
                     </div>
 
-                    {accountVerification.name && (
-                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
-                            <Check size={16} className="text-emerald-500" />
-                            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{accountVerification.name}</span>
+                    {/* STEP 1: Withdrawal Type & Amount */}
+                    {withdrawStep === 1 && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Withdrawal Type</label>
+                                <select
+                                    value={withdrawType}
+                                    onChange={(e) => {
+                                        setWithdrawType(e.target.value as 'PROFIT' | 'WHOLE');
+                                        setWithdrawForm(prev => ({ ...prev, amount: '' }));
+                                    }}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+                                >
+                                    <option value="PROFIT">Platform Profit Only</option>
+                                    <option value="WHOLE">Whole Money in System (Paystack Balance)</option>
+                                </select>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                    {withdrawType === 'PROFIT' 
+                                        ? 'Withdraw only platform profit (quiz fees, system wins, investment profit)'
+                                        : 'Withdraw from entire Paystack balance'}
+                                </p>
+                            </div>
+
+                            <div>
+                                <div className="text-center mb-3">
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Available Balance</p>
+                                    <p className="text-xl font-bold text-slate-900 dark:text-white">
+                                        <FormatCurrency amount={getAvailableBalance()} />
+                                    </p>
+                                </div>
+
+                                <Input
+                                    label="Amount (₦)"
+                                    type="number"
+                                    value={withdrawForm.amount}
+                                    onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+                                    placeholder="0"
+                                />
+
+                                {(() => {
+                                    const amt = parseFloat(withdrawForm.amount.replace(/,/g, ''));
+                                    const available = getAvailableBalance();
+                                    if (!withdrawForm.amount) return null;
+                                    if (isNaN(amt)) return <p className="text-xs text-red-400 mt-1">Invalid amount</p>;
+                                    if (amt > available) return <p className="text-xs text-red-400 mt-1">Insufficient balance</p>;
+                                    if (amt < 100) return <p className="text-xs text-red-400 mt-1">Minimum withdrawal is ₦100</p>;
+                                    return null;
+                                })()}
+
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 text-center">
+                                    Min: ₦100 • Max: <FormatCurrency amount={getAvailableBalance()} />
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button variant="outline" onClick={resetWithdrawModal} className="flex-1">Cancel</Button>
+                                <Button onClick={() => setWithdrawStep(2)} disabled={!canProceedStep1()} className="flex-1">Continue</Button>
+                            </div>
                         </div>
                     )}
-                    {accountVerification.error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
-                            <X size={16} className="text-red-500" />
-                            <span className="text-sm font-bold text-red-700 dark:text-red-400">{accountVerification.error}</span>
+
+                    {/* STEP 2: Bank Details */}
+                    {withdrawStep === 2 && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Where should we send <span className="text-amber-500 font-bold"><FormatCurrency amount={parseFloat(withdrawForm.amount)} /></span>?
+                            </p>
+
+                            {/* Bank Selector */}
+                            <div className="relative">
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Select Bank</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBankDropdown(!showBankDropdown)}
+                                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-left hover:border-amber-500/50 transition-colors text-sm"
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <Building2 size={16} className="text-slate-400 dark:text-slate-500" />
+                                        <span className={withdrawForm.bankCode ? 'text-slate-900 dark:text-white font-medium' : 'text-slate-400 dark:text-slate-500'}>
+                                            {banks.find((b: any) => b.code === withdrawForm.bankCode)?.name || 'Choose your bank'}
+                                        </span>
+                                    </div>
+                                    <ChevronRight size={14} className={`text-slate-400 dark:text-slate-500 transition-transform ${showBankDropdown ? 'rotate-90' : ''}`} />
+                                </button>
+
+                                {showBankDropdown && (
+                                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                                        <div className="p-2">
+                                            <div className="relative">
+                                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-9 pr-3 py-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:border-amber-500"
+                                                    placeholder="Search banks..."
+                                                    value={bankSearch}
+                                                    onChange={(e) => setBankSearch(e.target.value)}
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="max-h-40 overflow-y-auto">
+                                            {filteredBanks.length === 0 ? (
+                                                <div className="px-4 py-3 text-sm text-slate-400 dark:text-slate-500">No banks found</div>
+                                            ) : filteredBanks.slice(0, 30).map((bank: any) => (
+                                                <button
+                                                    key={bank.code}
+                                                    onClick={() => selectBank(bank)}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between ${withdrawForm.bankCode === bank.code ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}
+                                                >
+                                                    {bank.name}
+                                                    {withdrawForm.bankCode === bank.code && <CheckCircle size={14} />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Account Number */}
+                            <div>
+                                <Input
+                                    label="Account Number"
+                                    value={withdrawForm.accountNumber}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        setWithdrawForm({ ...withdrawForm, accountNumber: val });
+                                    }}
+                                    placeholder="Enter 10-digit account number"
+                                    maxLength={10}
+                                />
+                            </div>
+
+                            {/* Account Verification Status */}
+                            <div className={`px-4 py-3 rounded-xl border flex items-center gap-2.5 ${accountVerification.name
+                                ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/30 dark:border-emerald-500/20'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                                }`}>
+                                {accountVerification.loading ? (
+                                    <><Loader2 size={16} className="text-amber-500 animate-spin" /><span className="text-slate-400 dark:text-slate-500 text-xs">Verifying account...</span></>
+                                ) : accountVerification.name ? (
+                                    <>
+                                        <div className="w-8 h-8 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
+                                            <Users size={14} className="text-emerald-500 dark:text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-900 dark:text-white font-semibold text-sm">{accountVerification.name}</div>
+                                            <div className="text-[10px] text-emerald-500 dark:text-emerald-400">✓ Account verified</div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">
+                                        {withdrawForm.bankCode && withdrawForm.accountNumber.length === 10
+                                            ? 'Could not verify account'
+                                            : 'Select a bank & enter account number to verify'}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button variant="outline" onClick={() => setWithdrawStep(1)} className="flex-1">Back</Button>
+                                <Button onClick={() => setWithdrawStep(3)} disabled={!canProceedStep2()} className="flex-1">Continue</Button>
+                            </div>
                         </div>
                     )}
 
-                    <Input
-                        label="Description (Optional)"
-                        value={withdrawForm.description}
-                        onChange={(e) => setWithdrawForm({ ...withdrawForm, description: e.target.value })}
-                        placeholder="e.g. Monthly Profit Withdrawal"
-                    />
+                    {/* STEP 3: Description + PIN */}
+                    {withdrawStep === 3 && (
+                        <div className="space-y-4">
+                            {/* Transfer Summary Card */}
+                            <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/20 p-4 rounded-xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sending</div>
+                                        <div className="text-xl font-black text-slate-900 dark:text-white"><FormatCurrency amount={parseFloat(withdrawForm.amount)} /></div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-semibold text-slate-900 dark:text-white">{accountVerification.name}</div>
+                                        <div className="text-[10px] text-amber-400 dark:text-amber-500">{withdrawForm.accountNumber} • {banks.find((b: any) => b.code === withdrawForm.bankCode)?.name}</div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setWithdrawModalOpen(false)} className="flex-1">Cancel</Button>
-                        <Button onClick={handleWithdraw} disabled={processing || !accountVerification.name} className="flex-1">
-                            {processing ? 'Processing...' : 'Withdraw Funds'}
-                        </Button>
-                    </div>
+                            {/* Description */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Description <span className="text-slate-400 dark:text-slate-500">(optional)</span></label>
+                                <input
+                                    type="text"
+                                    value={withdrawForm.description}
+                                    onChange={(e) => setWithdrawForm({ ...withdrawForm, description: e.target.value })}
+                                    placeholder="e.g. Monthly Profit Withdrawal"
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                    maxLength={60}
+                                />
+                            </div>
+
+                            {/* PIN */}
+                            <div>
+                                <Input
+                                    label="Transaction PIN"
+                                    type="password"
+                                    maxLength={4}
+                                    value={withdrawForm.pin}
+                                    onChange={(e) => setWithdrawForm({ ...withdrawForm, pin: e.target.value.replace(/\D/g, '') })}
+                                    placeholder="Enter 4-digit PIN"
+                                    className="tracking-[0.3em] text-center text-lg"
+                                />
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button variant="outline" onClick={() => setWithdrawStep(2)} className="flex-1">Back</Button>
+                                <Button onClick={() => setWithdrawStep(4)} disabled={!canProceedStep3()} className="flex-1">Review</Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 4: Confirmation */}
+                    {withdrawStep === 4 && (
+                        <div className="space-y-4">
+                            <div className="text-center mb-4">
+                                <div className="w-14 h-14 bg-amber-500/10 dark:bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Send size={24} className="text-amber-500 dark:text-amber-400" />
+                                </div>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest">Review & Confirm</p>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+                                {[
+                                    { label: 'Withdrawal Type', value: <span className="text-xs font-bold">{withdrawType === 'PROFIT' ? 'Platform Profit Only' : 'Whole Money in System'}</span> },
+                                    { label: 'Amount', value: <span className="font-bold font-mono"><FormatCurrency amount={parseFloat(withdrawForm.amount)} /></span> },
+                                    { label: 'Recipient', value: <span className="text-xs">{accountVerification.name}</span> },
+                                    { label: 'Account', value: <span className="font-mono text-xs">{withdrawForm.accountNumber}</span> },
+                                    { label: 'Bank', value: <span className="text-xs">{banks.find((b: any) => b.code === withdrawForm.bankCode)?.name}</span> },
+                                    ...(withdrawForm.description ? [{ label: 'Description', value: <span className="text-xs">{withdrawForm.description}</span> }] : []),
+                                    { label: 'PIN', value: <span className="font-mono tracking-widest">••••</span> },
+                                ].map((row, i) => (
+                                    <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700 last:border-0">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">{row.label}</span>
+                                        <span className="text-slate-900 dark:text-white">{row.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="text-xs text-amber-400 dark:text-amber-500 bg-amber-500/5 dark:bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 dark:border-amber-500/20 flex items-start gap-2">
+                                <Info size={14} className="shrink-0 mt-0.5" />
+                                <span>Funds will be sent to the recipient's bank account. Processing may take 1–24 hours.</span>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button variant="outline" onClick={() => setWithdrawStep(3)} className="flex-1">Back</Button>
+                                <Button
+                                    onClick={handleWithdraw}
+                                    disabled={processing}
+                                    className="flex-1"
+                                >
+                                    {processing ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+                                        </span>
+                                    ) : (
+                                        'Confirm & Send'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Modal>
 
