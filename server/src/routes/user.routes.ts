@@ -32,13 +32,13 @@ router.get('/public-settings', async (req: Request, res: Response) => {
     try {
         const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
         res.json({
-            defaultTheme: settings?.defaultTheme || 'system',
+            defaultTheme: settings?.defaultTheme || 'dark',
             isSystemPaused: settings?.isSystemPaused || false
         });
     } catch (error) {
         console.error('Public settings error:', error);
         // Fail gracefully with defaults
-        res.json({ defaultTheme: 'system', isSystemPaused: false });
+        res.json({ defaultTheme: 'dark', isSystemPaused: false });
     }
 });
 

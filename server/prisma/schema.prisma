@@ -160,7 +160,7 @@ model Settings {
   enableEmailLoginAlerts    Boolean @default(true)
   enableWithdrawalApproval Boolean @default(true)
   kycRequiredForAccount     Boolean @default(true)
-  defaultTheme              String  @default("system") // system, light, dark
+  defaultTheme              String  @default("dark") // system, light, dark
 }
 
 // ── Financial Control Center Models ────────────────────────

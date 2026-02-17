@@ -18,15 +18,18 @@ export default {
                 surface: {
                     DEFAULT: 'rgb(var(--bg-surface) / <alpha-value>)',
                     highlight: 'rgb(var(--bg-surface-highlight) / <alpha-value>)',
+                    elevated: 'rgb(var(--bg-surface-elevated) / <alpha-value>)',
                 },
                 foreground: {
                     DEFAULT: 'rgb(var(--text-foreground) / <alpha-value>)',
                     muted: 'rgb(var(--text-muted) / <alpha-value>)',
+                    subtle: 'rgb(var(--text-subtle) / <alpha-value>)',
                     inverted: 'rgb(var(--text-inverted) / <alpha-value>)',
                 },
                 border: {
                     DEFAULT: 'rgb(var(--border-color) / <alpha-value>)',
                     highlight: 'rgb(var(--border-highlight) / <alpha-value>)',
+                    divider: 'rgb(var(--border-divider) / <alpha-value>)',
                 },
             },
         },

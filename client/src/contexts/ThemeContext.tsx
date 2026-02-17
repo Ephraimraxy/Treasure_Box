@@ -26,7 +26,8 @@ const THEME_COLORS: Record<AccentColor, string> = {
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth();
 
-    // Initialize from localStorage or default
+    // Initialize from localStorage or default to 'system' (which will use global default)
+    // Users who explicitly set a preference will have it in localStorage
     const [mode, setModeState] = useState<ThemeMode>(() =>
         (localStorage.getItem('theme-mode') as ThemeMode) || 'system'
     );
@@ -46,7 +47,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user]);
 
-    const [globalTheme, setGlobalTheme] = useState<ThemeMode>('system');
+    const [globalTheme, setGlobalTheme] = useState<ThemeMode>('dark');
 
     // Fetch Global Theme Default
     const fetchGlobalTheme = async () => {
@@ -56,9 +57,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (data.defaultTheme && ['light', 'dark', 'system'].includes(data.defaultTheme)) {
                 setGlobalTheme(data.defaultTheme as ThemeMode);
+            } else {
+                // Default to dark if not set
+                setGlobalTheme('dark');
             }
         } catch (error) {
             console.error('Failed to fetch global theme', error);
+            // Default to dark on error
+            setGlobalTheme('dark');
         }
     };
 
@@ -85,14 +91,18 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
         let effectiveMode = mode;
 
-        // If user chose 'system' (or hasn't chosen), look at Global Default first
+        // If user chose 'system' (or hasn't chosen), use Global Default
+        // Users who explicitly set 'light' or 'dark' in localStorage will override global
         if (mode === 'system') {
             if (globalTheme === 'light' || globalTheme === 'dark') {
                 effectiveMode = globalTheme;
-            } else {
-                // Global is 'system' or unset -> fallback to OS
+            } else if (globalTheme === 'system') {
+                // Global is 'system' -> fallback to OS
                 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 effectiveMode = systemTheme;
+            } else {
+                // Default to dark if globalTheme is unset
+                effectiveMode = 'dark';
             }
         }
 

@@ -10,12 +10,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) => {
     const variants: Record<string, string> = {
-        primary: "bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/20",
-        secondary: "bg-surface-highlight hover:bg-border text-foreground border border-border",
-        outline: "border border-border text-foreground hover:bg-surface-highlight hover:text-foreground",
-        ghost: "text-muted hover:text-foreground hover:bg-surface-highlight",
-        danger: "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20",
-        success: "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/20"
+        primary: "bg-primary hover:bg-primary/90 active:bg-primary/95 text-primary-foreground shadow-lg shadow-primary/25 dark:shadow-primary/15 font-semibold",
+        secondary: "bg-surface-highlight hover:bg-surface-highlight/80 active:bg-surface-highlight/90 text-foreground border border-border hover:border-highlight",
+        outline: "border border-border hover:border-highlight text-foreground hover:bg-surface-highlight active:bg-surface-highlight/80",
+        ghost: "text-foreground-muted hover:text-foreground hover:bg-surface-highlight active:bg-surface-highlight/80",
+        danger: "bg-red-500/15 dark:bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/30 dark:border-red-500/20 hover:bg-red-500/25 dark:hover:bg-red-500/15 hover:border-red-500/40",
+        success: "bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 dark:shadow-emerald-500/15 font-semibold"
     };
 
 
@@ -55,7 +55,7 @@ export const Input = ({ label, icon, className = '', error, success, hint, type,
             <div className="relative">
                 <input
                     type={inputType}
-                    className={`w-full bg-surface border ${error ? 'border-red-500/50 focus:border-red-500' : success ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-border focus:border-primary'} rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
+                    className={`w-full bg-surface dark:bg-surface-highlight border ${error ? 'border-red-500/50 dark:border-red-500/40 focus:border-red-500 dark:focus:border-red-500' : success ? 'border-emerald-500/50 dark:border-emerald-500/40 focus:border-emerald-500 dark:focus:border-emerald-500' : 'border-border dark:border-border focus:border-primary dark:focus:border-primary'} rounded-lg px-3 py-2.5 text-sm text-foreground dark:text-foreground focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-primary/50 placeholder:text-muted dark:placeholder:text-foreground-subtle transition-colors disabled:opacity-50 ${icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
                     {...props}
                 />
                 {icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">{icon}</div>}
@@ -87,7 +87,7 @@ interface CardProps {
 export const Card = ({ children, className = '', onClick }: CardProps) => (
     <div
         onClick={onClick}
-        className={`bg-surface border border-border rounded-xl p-3 ${onClick ? 'cursor-pointer hover:border-border/80 transition-colors' : ''} ${className}`}
+        className={`bg-surface dark:bg-surface border border-border dark:border-border rounded-xl p-3 transition-all ${onClick ? 'cursor-pointer hover:border-highlight dark:hover:border-highlight hover:bg-surface-highlight/50 dark:hover:bg-surface-highlight/30 active:scale-[0.99]' : ''} ${className}`}
     >
         {children}
     </div>
@@ -105,15 +105,19 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative z-10 bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-3 border-b border-border">
-                    <h3 className="font-bold text-foreground text-base">{title}</h3>
-                    <button onClick={onClose} className="p-1.5 hover:bg-surface-highlight rounded-full text-muted hover:text-foreground transition-colors">
+            <div className="absolute inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative z-10 bg-surface dark:bg-surface-elevated border border-border dark:border-border rounded-2xl w-full max-w-md shadow-2xl dark:shadow-black/50 animate-fade-in flex flex-col max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-border-divider">
+                    <h3 className="font-bold text-foreground dark:text-foreground text-lg">{title}</h3>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 hover:bg-surface-highlight dark:hover:bg-surface-highlight rounded-lg text-foreground-muted dark:text-foreground-subtle hover:text-foreground dark:hover:text-foreground transition-colors"
+                        aria-label="Close modal"
+                    >
                         <X size={18} />
                     </button>
                 </div>
-                <div className="p-4 overflow-y-auto text-foreground">
+                <div className="p-5 overflow-y-auto text-foreground dark:text-foreground">
                     {children}
                 </div>
             </div>

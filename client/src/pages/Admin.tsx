@@ -173,8 +173,8 @@ export const AdminDashboardPage = () => {
         setAccountVerification({ loading: true, name: null, error: null });
         try {
             const res = await paymentApi.verifyAccount(withdrawForm.accountNumber, withdrawForm.bankCode);
-            setAccountVerification({ loading: false, name: res.data.data.account_name, error: null });
-            setWithdrawForm(prev => ({ ...prev, accountName: res.data.data.account_name }));
+            setAccountVerification({ loading: false, name: res.data.accountName, error: null });
+            setWithdrawForm(prev => ({ ...prev, accountName: res.data.accountName }));
         } catch (error) {
             setAccountVerification({ loading: false, name: null, error: 'Invalid account' });
         }
@@ -347,7 +347,7 @@ export const AdminDashboardPage = () => {
     return (
         <div className="space-y-5 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Financial Control Center</h1>
+                <h1 className="text-lg font-bold text-slate-900 dark:text-foreground">Financial Control Center</h1>
                 <Button
                     onClick={handleSnapshot}
                     disabled={snapshotLoading}
@@ -360,22 +360,22 @@ export const AdminDashboardPage = () => {
 
             {/* ── Capital Protection Banner ── */}
             {protectionStatus && (
-                <div className={`p-3 rounded-xl border text-sm flex items-center gap-2 ${protectionStatus.active
-                    ? 'bg-red-100 border-red-200 text-red-800 dark:bg-red-950/60 dark:border-red-500/50 dark:text-red-300'
-                    : 'bg-emerald-100 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-500/30 dark:text-emerald-300'
+                <div className={`p-4 rounded-xl border text-sm flex items-center gap-3 ${protectionStatus.active
+                    ? 'bg-red-500/10 dark:bg-red-500/10 border-red-500/30 dark:border-red-500/30 text-red-700 dark:text-red-400'
+                    : 'bg-emerald-500/10 dark:bg-emerald-500/10 border-emerald-500/30 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
                     }`}>
-                    <Shield size={16} />
+                    <Shield size={18} className="shrink-0" />
                     <span className="font-semibold">
                         Capital Protection: {protectionStatus.active ? '🔴 ACTIVE — Transfers Blocked' : '🟢 Inactive — Transfers Allowed'}
                     </span>
                     {protectionStatus.coverage !== null && (
-                        <span className="ml-auto text-xs opacity-80">
+                        <span className="ml-auto text-xs font-medium opacity-90">
                             Coverage: {protectionStatus.coverage === Infinity ? '∞' : protectionStatus.coverage?.toFixed(2)}x
                             {protectionStatus.threshold && ` / ${protectionStatus.threshold}x threshold`}
                         </span>
                     )}
                     {protectionStatus.recentBlocks > 0 && (
-                        <span className="text-xs bg-red-500/20 px-2 py-0.5 rounded-full ml-2">
+                        <span className="text-xs font-semibold bg-red-500/20 dark:bg-red-500/20 px-2.5 py-1 rounded-full ml-2">
                             {protectionStatus.recentBlocks} blocks (24h)
                         </span>
                     )}
@@ -385,48 +385,48 @@ export const AdminDashboardPage = () => {
             {/* ── Financial Health ── */}
             {fin && (
                 <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider flex items-center gap-1.5">
                             <Heart size={12} /> Financial Health
                         </div>
                         <div className="ml-auto flex gap-2">
-                            <button onClick={() => setFundModalOpen(true)} className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium border border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+                            <button onClick={() => setFundModalOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold border border-emerald-500/30 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors">
                                 <Plus size={12} /> Fund Balance
                             </button>
-                            <button onClick={() => setWithdrawModalOpen(true)} className="flex items-center gap-1 h-7 px-3 rounded-lg text-xs font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <button onClick={() => setWithdrawModalOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold border border-border dark:border-border text-slate-700 dark:text-foreground-muted hover:bg-slate-100 dark:hover:bg-surface-highlight transition-colors">
                                 <Building size={12} /> Withdraw
                             </button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <Card className="bg-white dark:bg-gradient-to-br dark:from-emerald-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Paystack Available</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">
-                                {fin.paystackAvailable !== null ? <FormatCurrency amount={fin.paystackAvailable} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack Available</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">
+                                {fin.paystackAvailable !== null ? <FormatCurrency amount={fin.paystackAvailable} /> : <span className="text-slate-400 dark:text-foreground-subtle">N/A</span>}
                             </div>
-                            {fin.snapshotAge && <div className="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Updated: {new Date(fin.snapshotAge).toLocaleString()}</div>}
+                            {fin.snapshotAge && <div className="text-[10px] text-slate-400 dark:text-foreground-subtle mt-1.5">Updated: {new Date(fin.snapshotAge).toLocaleString()}</div>}
                         </Card>
-                        <Card className="bg-white dark:bg-gradient-to-br dark:from-blue-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Paystack Pending</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">
-                                {fin.paystackPending !== null ? <FormatCurrency amount={fin.paystackPending} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack Pending</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">
+                                {fin.paystackPending !== null ? <FormatCurrency amount={fin.paystackPending} /> : <span className="text-slate-400 dark:text-foreground-subtle">N/A</span>}
                             </div>
                         </Card>
-                        <Card className={`bg-white dark:bg-gradient-to-br border ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'border-red-500 dark:from-red-900/60 dark:to-red-950 dark:border-red-500/40' : 'border-slate-200 dark:from-purple-900/40 dark:to-slate-800 dark:border-slate-700'}`}>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Liquidity Ratio</div>
-                            <div className={`text-lg font-bold ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
-                                {fin.liquidityRatio !== null ? fin.liquidityRatio.toFixed(2) + 'x' : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
+                        <Card className={`bg-white dark:bg-surface border ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'border-red-500/50 dark:border-red-500/40' : 'border-slate-200 dark:border-border'}`}>
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Liquidity Ratio</div>
+                            <div className={`text-lg font-bold ${fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-foreground'}`}>
+                                {fin.liquidityRatio !== null ? fin.liquidityRatio.toFixed(2) + 'x' : <span className="text-slate-400 dark:text-foreground-subtle">N/A</span>}
                             </div>
                             {fin.liquidityRatio !== null && fin.liquidityRatio < 1.2 && (
-                                <div className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 mt-1 font-bold">
+                                <div className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 mt-1.5 font-bold">
                                     <AlertTriangle size={10} /> BELOW SAFE THRESHOLD
                                 </div>
                             )}
                         </Card>
-                        <Card className={`bg-white dark:bg-gradient-to-br border ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'border-red-500 dark:from-red-900/60 dark:to-red-950 dark:border-red-500/40' : 'border-slate-200 dark:from-teal-900/40 dark:to-slate-800 dark:border-slate-700'}`}>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Net Platform Equity</div>
-                            <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
-                                {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-400 dark:text-slate-600">N/A</span>}
+                        <Card className={`bg-white dark:bg-surface border ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'border-red-500/50 dark:border-red-500/40' : 'border-slate-200 dark:border-border'}`}>
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Net Platform Equity</div>
+                            <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-foreground'}`}>
+                                {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-400 dark:text-foreground-subtle">N/A</span>}
                             </div>
                         </Card>
                     </div>
@@ -435,13 +435,13 @@ export const AdminDashboardPage = () => {
 
             {/* ── Snapshot Result Banner ── */}
             {snapshotResult && (
-                <Card className={`border ${snapshotResult.status === 'CRITICAL' ? 'border-red-500/50 bg-red-50 dark:bg-red-950/30' : snapshotResult.status === 'WARNING' ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/30' : 'border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/30'}`}>
+                <Card className={`border ${snapshotResult.status === 'CRITICAL' ? 'border-red-500/40 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/10' : snapshotResult.status === 'WARNING' ? 'border-amber-500/40 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/10' : 'border-emerald-500/40 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10'}`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${snapshotResult.status === 'CRITICAL' ? 'bg-red-500' : snapshotResult.status === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">Reconciliation: {snapshotResult.status}</span>
+                        <div className="flex items-center gap-2.5">
+                            <div className={`w-2.5 h-2.5 rounded-full ${snapshotResult.status === 'CRITICAL' ? 'bg-red-500' : snapshotResult.status === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            <span className="text-sm font-bold text-slate-900 dark:text-foreground">Reconciliation: {snapshotResult.status}</span>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="text-xs font-medium text-slate-600 dark:text-foreground-muted">
                             Diff: <FormatCurrency amount={snapshotResult.difference} />
                             {snapshotResult.liquidityRatio !== null && ` • Ratio: ${snapshotResult.liquidityRatio.toFixed(2)}x`}
                         </div>
@@ -450,69 +450,69 @@ export const AdminDashboardPage = () => {
             )}
 
             {/* ── Core Stats ── */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 <Card
-                    className="bg-white dark:bg-gradient-to-br dark:from-indigo-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-500/50 transition-all group"
+                    className="bg-white dark:bg-surface border border-slate-200 dark:border-border cursor-pointer hover:border-primary/30 dark:hover:border-primary/30 transition-all group"
                     onClick={() => setProfitModalOpen(true)}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
-                            <Activity className="text-indigo-600 dark:text-indigo-500" size={24} />
+                        <div className="p-2.5 bg-indigo-100 dark:bg-indigo-500/15 rounded-lg group-hover:scale-105 transition-transform">
+                            <Activity className="text-indigo-600 dark:text-indigo-400" size={20} />
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Platform Profit</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-0.5">Platform Profit</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">
                                 <FormatCurrency amount={stats?.platformProfit.total || 0} />
                             </div>
                         </div>
                     </div>
                 </Card>
-                <Card className="bg-white dark:bg-gradient-to-br dark:from-blue-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
-                            <Users className="text-blue-600 dark:text-blue-500" size={24} />
+                        <div className="p-2.5 bg-blue-100 dark:bg-blue-500/15 rounded-lg">
+                            <Users className="text-blue-600 dark:text-blue-400" size={20} />
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Total Users</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.totalUsers || 0}</div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-0.5">Total Users</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">{stats?.totalUsers || 0}</div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-white dark:bg-gradient-to-br dark:from-emerald-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl">
-                            <DollarSign className="text-emerald-600 dark:text-emerald-500" size={24} />
+                        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-500/15 rounded-lg">
+                            <DollarSign className="text-emerald-600 dark:text-emerald-400" size={20} />
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">User Liability</div>
-                            <div className="text-xl font-bold text-slate-900 dark:text-white">
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-0.5">User Liability</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">
                                 <FormatCurrency amount={stats?.totalBalance || 0} />
                             </div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-white dark:bg-gradient-to-br dark:from-purple-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl">
-                            <TrendingUp className="text-purple-600 dark:text-purple-500" size={24} />
+                        <div className="p-2.5 bg-purple-100 dark:bg-purple-500/15 rounded-lg">
+                            <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Active Plans</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.activeInvestments || 0}</div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-0.5">Active Plans</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">{stats?.activeInvestments || 0}</div>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="bg-white dark:bg-gradient-to-br dark:from-amber-900/40 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-xl">
-                            <Clock className="text-amber-600 dark:text-amber-500" size={24} />
+                        <div className="p-2.5 bg-amber-100 dark:bg-amber-500/15 rounded-lg">
+                            <Clock className="text-amber-600 dark:text-amber-400" size={20} />
                         </div>
-                        <div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Pending Withdrawals</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats?.pendingWithdrawals || 0}</div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-0.5">Pending Withdrawals</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">{stats?.pendingWithdrawals || 0}</div>
                         </div>
                     </div>
                 </Card>
@@ -521,29 +521,29 @@ export const AdminDashboardPage = () => {
             {/* ── Risk Monitor ── */}
             {risk && (
                 <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <Shield size={12} /> Risk Monitor
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <Card className="bg-white dark:bg-gradient-to-br dark:from-rose-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Largest Wallet (Whale)</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Largest Wallet (Whale)</div>
                             {risk.largestWallet ? (
                                 <>
-                                    <div className="text-lg font-bold text-slate-900 dark:text-white"><FormatCurrency amount={risk.largestWallet.balance} /></div>
-                                    <div className="text-[10px] text-slate-500 truncate">{risk.largestWallet.username || risk.largestWallet.name || risk.largestWallet.email}</div>
+                                    <div className="text-lg font-bold text-slate-900 dark:text-foreground"><FormatCurrency amount={risk.largestWallet.balance} /></div>
+                                    <div className="text-[10px] text-slate-500 dark:text-foreground-subtle truncate mt-1">{risk.largestWallet.username || risk.largestWallet.name || risk.largestWallet.email}</div>
                                 </>
                             ) : (
-                                <div className="text-slate-400 dark:text-slate-600">No users</div>
+                                <div className="text-slate-400 dark:text-foreground-subtle">No users</div>
                             )}
                         </Card>
-                        <Card className="bg-white dark:bg-gradient-to-br dark:from-orange-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Locked Capital (Active Investments)</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white"><FormatCurrency amount={risk.lockedCapital} /></div>
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Locked Capital (Active Investments)</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground"><FormatCurrency amount={risk.lockedCapital} /></div>
                         </Card>
-                        <Card className="bg-white dark:bg-gradient-to-br dark:from-yellow-900/30 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Maturing in 7 Days</div>
-                            <div className="text-lg font-bold text-slate-900 dark:text-white">{risk.upcomingMaturities.count} plans</div>
-                            <div className="text-xs text-slate-500"><FormatCurrency amount={risk.upcomingMaturities.totalAmount} /> exposure</div>
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Maturing in 7 Days</div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-foreground">{risk.upcomingMaturities.count} plans</div>
+                            <div className="text-xs text-slate-500 dark:text-foreground-subtle mt-1"><FormatCurrency amount={risk.upcomingMaturities.totalAmount} /> exposure</div>
                         </Card>
                     </div>
                 </div>
@@ -552,25 +552,25 @@ export const AdminDashboardPage = () => {
             {/* ── Profit Timeline ── */}
             {timeline && (
                 <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <BarChart3 size={12} /> Profit Timeline
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
-                            <div className="text-[10px] text-slate-500 uppercase">Today</div>
+                    <div className="grid grid-cols-4 gap-3">
+                        <Card className="bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border text-center">
+                            <div className="text-[10px] font-medium text-slate-500 dark:text-foreground-muted uppercase mb-1.5">Today</div>
                             <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.today} /></div>
                         </Card>
-                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
-                            <div className="text-[10px] text-slate-500 uppercase">This Week</div>
+                        <Card className="bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border text-center">
+                            <div className="text-[10px] font-medium text-slate-500 dark:text-foreground-muted uppercase mb-1.5">This Week</div>
                             <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.thisWeek} /></div>
                         </Card>
-                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
-                            <div className="text-[10px] text-slate-500 uppercase">This Month</div>
+                        <Card className="bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border text-center">
+                            <div className="text-[10px] font-medium text-slate-500 dark:text-foreground-muted uppercase mb-1.5">This Month</div>
                             <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><FormatCurrency amount={timeline.thisMonth} /></div>
                         </Card>
-                        <Card className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
-                            <div className="text-[10px] text-slate-500 uppercase">Lifetime</div>
-                            <div className="text-sm font-bold text-slate-900 dark:text-white"><FormatCurrency amount={timeline.lifetime} /></div>
+                        <Card className="bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border text-center">
+                            <div className="text-[10px] font-medium text-slate-500 dark:text-foreground-muted uppercase mb-1.5">Lifetime</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-foreground"><FormatCurrency amount={timeline.lifetime} /></div>
                         </Card>
                     </div>
                 </div>
@@ -579,31 +579,31 @@ export const AdminDashboardPage = () => {
             {/* ── System Health + Quiz Stats Row ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* System Health */}
-                <Card className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <Zap size={12} /> System Health
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Webhook</span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Webhook</span>
                             <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastWebhookAt) ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs font-medium text-slate-600 dark:text-foreground-subtle">
                                     {health?.lastWebhookAt ? new Date(health.lastWebhookAt).toLocaleString() : 'Never'}
                                 </span>
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Last Transfer</span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Last Transfer</span>
                             <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isHealthy(health?.lastSuccessfulTransferAt, 1440) ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs font-medium text-slate-600 dark:text-foreground-subtle">
                                     {health?.lastSuccessfulTransferAt ? new Date(health.lastSuccessfulTransferAt).toLocaleString() : 'Never'}
                                 </span>
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Failed Transfers (24h)</span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Failed Transfers (24h)</span>
                             <span className={`text-xs font-bold ${(health?.failedTransferCount24h || 0) > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                 {health?.failedTransferCount24h || 0}
                             </span>
@@ -612,22 +612,22 @@ export const AdminDashboardPage = () => {
                 </Card>
 
                 {/* Quiz Stats */}
-                <Card className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <Activity size={12} /> Quiz Economy
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Quiz Pool (Locked)</span>
-                            <span className="font-bold text-slate-900 dark:text-white"><FormatCurrency amount={stats?.quizStats?.pendingPool || 0} /></span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Quiz Pool (Locked)</span>
+                            <span className="font-bold text-slate-900 dark:text-foreground"><FormatCurrency amount={stats?.quizStats?.pendingPool || 0} /></span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Active Games</span>
-                            <span className="font-bold text-slate-900 dark:text-white">{stats?.quizStats?.activeGames || 0}</span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Active Games</span>
+                            <span className="font-bold text-slate-900 dark:text-foreground">{stats?.quizStats?.activeGames || 0}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Completed Games</span>
-                            <span className="font-bold text-slate-900 dark:text-white">{stats?.quizStats?.completedGames || 0}</span>
+                            <span className="text-slate-500 dark:text-foreground-muted">Completed Games</span>
+                            <span className="font-bold text-slate-900 dark:text-foreground">{stats?.quizStats?.completedGames || 0}</span>
                         </div>
                     </div>
                 </Card>
@@ -636,27 +636,27 @@ export const AdminDashboardPage = () => {
             {/* ── Activity Feed ── */}
             {stats?.activityFeed && stats.activityFeed.length > 0 && (
                 <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <Eye size={12} /> Activity Feed (Last 20)
                     </div>
-                    <Card className="bg-white dark:bg-slate-900/50 max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-800">
-                        <div className="space-y-1">
+                    <Card className="bg-white dark:bg-surface max-h-64 overflow-y-auto border border-slate-200 dark:border-border">
+                        <div className="space-y-0">
                             {stats.activityFeed.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                                <div key={item.id} className="flex items-center justify-between py-2.5 px-1 border-b border-slate-100 dark:border-border-divider last:border-0">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                                            item.type === 'WITHDRAWAL' ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' :
-                                                item.type === 'QUIZ_ENTRY' ? 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400' :
-                                                    item.type === 'QUIZ_WINNING' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400' :
-                                                        'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                            item.type === 'WITHDRAWAL' ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' :
+                                                item.type === 'QUIZ_ENTRY' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400' :
+                                                    item.type === 'QUIZ_WINNING' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                        'bg-slate-100 text-slate-600 dark:bg-surface-highlight dark:text-foreground-subtle'
                                             }`}>
                                             {item.type.replace('_', ' ')}
                                         </span>
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.user}</span>
+                                        <span className="text-xs text-slate-600 dark:text-foreground-muted truncate">{item.user}</span>
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
-                                        <div className="text-xs font-bold text-slate-900 dark:text-white"><FormatCurrency amount={item.amount} /></div>
-                                        <div className="text-[10px] text-slate-400 dark:text-slate-600">{new Date(item.timestamp).toLocaleString()}</div>
+                                        <div className="text-xs font-bold text-slate-900 dark:text-foreground"><FormatCurrency amount={item.amount} /></div>
+                                        <div className="text-[10px] text-slate-400 dark:text-foreground-subtle">{new Date(item.timestamp).toLocaleString()}</div>
                                     </div>
                                 </div>
                             ))}
@@ -668,55 +668,55 @@ export const AdminDashboardPage = () => {
             {/* Profit Breakdown Modal */}
             <Modal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} title="Platform Profit Breakdown">
                 <div className="space-y-4">
-                    <div className="bg-slate-900 dark:bg-slate-800 border border-slate-800 dark:border-slate-700 p-4 rounded-xl">
-                        <div className="text-slate-400 dark:text-slate-300 text-sm mb-1">Total Platform Profit</div>
-                        <div className="text-3xl font-bold text-white dark:text-white">
+                    <div className="bg-primary/10 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 p-5 rounded-xl">
+                        <div className="text-slate-600 dark:text-foreground-muted text-sm font-medium mb-2">Total Platform Profit</div>
+                        <div className="text-3xl font-bold text-slate-900 dark:text-foreground">
                             <FormatCurrency amount={stats?.platformProfit.total || 0} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-highlight rounded-xl flex justify-between items-center border border-slate-200 dark:border-border">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-lg">
-                                    <DollarSign size={18} className="text-emerald-500 dark:text-emerald-400" />
+                                <div className="p-2.5 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-lg">
+                                    <DollarSign size={18} className="text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Investment Profit</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400">Computed from matured plans</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-foreground">Investment Profit</div>
+                                    <div className="text-xs text-slate-500 dark:text-foreground-subtle">Computed from matured plans</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                            <div className="font-bold text-slate-900 dark:text-foreground">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.investmentProfit || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-highlight rounded-xl flex justify-between items-center border border-slate-200 dark:border-border">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-lg">
-                                    <Activity size={18} className="text-purple-500 dark:text-purple-400" />
+                                <div className="p-2.5 bg-purple-500/10 dark:bg-purple-500/15 rounded-lg">
+                                    <Activity size={18} className="text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Quiz Fees</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400">Platform commission</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-foreground">Quiz Fees</div>
+                                    <div className="text-xs text-slate-500 dark:text-foreground-subtle">Platform commission</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                            <div className="font-bold text-slate-900 dark:text-foreground">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.quizFees || 0} />
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex justify-between items-center border border-slate-200 dark:border-slate-700">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-highlight rounded-xl flex justify-between items-center border border-slate-200 dark:border-border">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-amber-500/10 dark:bg-amber-500/20 rounded-lg">
-                                    <Shield size={18} className="text-amber-500 dark:text-amber-400" />
+                                <div className="p-2.5 bg-amber-500/10 dark:bg-amber-500/15 rounded-lg">
+                                    <Shield size={18} className="text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">System Wins</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400">Solo mode losses</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-foreground">System Wins</div>
+                                    <div className="text-xs text-slate-500 dark:text-foreground-subtle">Solo mode losses</div>
                                 </div>
                             </div>
-                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                            <div className="font-bold text-slate-900 dark:text-foreground">
                                 <FormatCurrency amount={stats?.platformProfit.breakdown.systemWins || 0} />
                             </div>
                         </div>
@@ -1766,7 +1766,7 @@ export const AdminSettingsPage = () => {
         kycRequiredForAccount: true,
         enableEmailLoginAlerts: true,
         enableWithdrawalApproval: true,
-        defaultTheme: 'system'
+        defaultTheme: 'dark'
     });
 
     const [saveLoading, setSaveLoading] = useState(false);
@@ -1887,13 +1887,13 @@ export const AdminSettingsPage = () => {
                                 <div className="text-xs text-slate-400">Default appearance for new users</div>
                             </div>
                             <select
-                                value={(settings as any).defaultTheme || 'system'}
+                                value={(settings as any).defaultTheme || 'dark'}
                                 onChange={e => setSettings({ ...settings, defaultTheme: e.target.value } as any)}
                                 className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block p-2"
                             >
-                                <option value="system">System Default</option>
+                                <option value="dark">Dark Mode (Default)</option>
                                 <option value="light">Light Mode</option>
-                                <option value="dark">Dark Mode</option>
+                                <option value="system">System Default</option>
                             </select>
                         </div>
                     </div>
