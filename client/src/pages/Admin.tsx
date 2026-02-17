@@ -3,6 +3,7 @@ import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Setti
 import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button, Card, FormatCurrency, Spinner, Modal, Input } from '../components/ui';
 
 interface Stats {
@@ -1753,6 +1754,7 @@ export const AdminQuizPage = () => {
 export const AdminSettingsPage = () => {
     const { addToast } = useToast();
     const { refetchGlobalTheme } = useTheme();
+    const { user, refreshUser } = useAuth();
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
         minDeposit: 1000,
@@ -1770,6 +1772,18 @@ export const AdminSettingsPage = () => {
     });
 
     const [saveLoading, setSaveLoading] = useState(false);
+
+    // Admin transaction PIN management (for admin's own account)
+    const [pinModalOpen, setPinModalOpen] = useState(false);
+    const [pinAction, setPinAction] = useState<'SET' | 'CHANGE' | 'RESET'>('SET');
+    const [pinLoading, setPinLoading] = useState(false);
+    const [pinForm, setPinForm] = useState({
+        pin: '',
+        confirm: '',
+        oldPin: '',
+        newPin: '',
+        password: ''
+    });
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -1798,6 +1812,50 @@ export const AdminSettingsPage = () => {
             addToast('error', 'Failed to save settings');
         } finally {
             setSaveLoading(false);
+        }
+    };
+
+    const openPinModal = (action: 'SET' | 'CHANGE' | 'RESET') => {
+        setPinAction(action);
+        setPinForm({ pin: '', confirm: '', oldPin: '', newPin: '', password: '' });
+        setPinModalOpen(true);
+    };
+
+    const handlePinSubmit = async () => {
+        setPinLoading(true);
+        try {
+            const { userApi } = await import('../api');
+
+            if (pinAction === 'SET') {
+                if (pinForm.pin.length !== 4) throw new Error('PIN must be 4 digits');
+                if (pinForm.pin !== pinForm.confirm) throw new Error('PINs do not match');
+                if (!pinForm.password) throw new Error('Password is required');
+                await userApi.setPin(pinForm.pin, pinForm.password);
+                addToast('success', 'Transaction PIN set');
+            }
+
+            if (pinAction === 'CHANGE') {
+                if (pinForm.oldPin.length !== 4) throw new Error('Old PIN must be 4 digits');
+                if (pinForm.newPin.length !== 4) throw new Error('New PIN must be 4 digits');
+                if (pinForm.newPin !== pinForm.confirm) throw new Error('PINs do not match');
+                await userApi.changePin(pinForm.oldPin, pinForm.newPin);
+                addToast('success', 'Transaction PIN changed');
+            }
+
+            if (pinAction === 'RESET') {
+                if (pinForm.newPin.length !== 4) throw new Error('New PIN must be 4 digits');
+                if (pinForm.newPin !== pinForm.confirm) throw new Error('PINs do not match');
+                if (!pinForm.password) throw new Error('Password is required');
+                await userApi.resetPin(pinForm.password, pinForm.newPin);
+                addToast('success', 'Transaction PIN reset');
+            }
+
+            await refreshUser();
+            setPinModalOpen(false);
+        } catch (error: any) {
+            addToast('error', error?.response?.data?.error || error?.message || 'Failed');
+        } finally {
+            setPinLoading(false);
         }
     };
 
@@ -1900,6 +1958,42 @@ export const AdminSettingsPage = () => {
                 </Card>
 
                 <Card>
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-4">Admin Transaction PIN</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div className="font-medium text-slate-900 dark:text-white">PIN Status</div>
+                                <div className="text-xs text-slate-400">
+                                    {user?.transactionPin ? 'Transaction PIN is set for this admin account.' : 'No transaction PIN set yet.'}
+                                </div>
+                            </div>
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${user?.transactionPin ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30'}`}>
+                                {user?.transactionPin ? 'SET' : 'NOT SET'}
+                            </span>
+                        </div>
+
+                        {!user?.transactionPin ? (
+                            <Button onClick={() => openPinModal('SET')} className="w-full">
+                                Set Transaction PIN
+                            </Button>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <Button variant="outline" onClick={() => openPinModal('CHANGE')} className="w-full">
+                                    Change PIN
+                                </Button>
+                                <Button variant="danger" onClick={() => openPinModal('RESET')} className="w-full">
+                                    Reset PIN
+                                </Button>
+                            </div>
+                        )}
+
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            This PIN is required for admin withdrawals and sensitive financial actions.
+                        </p>
+                    </div>
+                </Card>
+
+                <Card>
                     <h3 className="font-bold text-slate-900 dark:text-white mb-4">Financial Limits (Minimums)</h3>
                     <div className="space-y-4">
                         <Input
@@ -1954,6 +2048,118 @@ export const AdminSettingsPage = () => {
                     {saveLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
+
+            <Modal
+                isOpen={pinModalOpen}
+                onClose={() => setPinModalOpen(false)}
+                title={pinAction === 'SET' ? 'Set Transaction PIN' : pinAction === 'CHANGE' ? 'Change Transaction PIN' : 'Reset Transaction PIN'}
+            >
+                <div className="space-y-4">
+                    {pinAction === 'SET' && (
+                        <>
+                            <Input
+                                label="New PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.pin}
+                                onChange={(e) => setPinForm({ ...pinForm, pin: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Enter 4-digit PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="Confirm PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.confirm}
+                                onChange={(e) => setPinForm({ ...pinForm, confirm: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Re-enter PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="Password"
+                                type="password"
+                                value={pinForm.password}
+                                onChange={(e) => setPinForm({ ...pinForm, password: e.target.value })}
+                                placeholder="Enter account password"
+                            />
+                        </>
+                    )}
+
+                    {pinAction === 'CHANGE' && (
+                        <>
+                            <Input
+                                label="Old PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.oldPin}
+                                onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Enter old PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="New PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.newPin}
+                                onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Enter new PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="Confirm New PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.confirm}
+                                onChange={(e) => setPinForm({ ...pinForm, confirm: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Re-enter new PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                        </>
+                    )}
+
+                    {pinAction === 'RESET' && (
+                        <>
+                            <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs text-slate-600 dark:text-slate-300">
+                                Reset requires your password. Use this only if you forgot the old PIN.
+                            </div>
+                            <Input
+                                label="New PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.newPin}
+                                onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Enter new PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="Confirm New PIN"
+                                type="password"
+                                maxLength={4}
+                                value={pinForm.confirm}
+                                onChange={(e) => setPinForm({ ...pinForm, confirm: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Re-enter new PIN"
+                                className="tracking-[0.35em] text-center text-lg"
+                            />
+                            <Input
+                                label="Password"
+                                type="password"
+                                value={pinForm.password}
+                                onChange={(e) => setPinForm({ ...pinForm, password: e.target.value })}
+                                placeholder="Enter account password"
+                            />
+                        </>
+                    )}
+
+                    <div className="flex gap-2 pt-1">
+                        <Button variant="outline" onClick={() => setPinModalOpen(false)} className="flex-1" disabled={pinLoading}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handlePinSubmit} className="flex-1" disabled={pinLoading}>
+                            {pinLoading ? 'Saving...' : 'Save PIN'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div >
     );
 };
