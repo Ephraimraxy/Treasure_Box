@@ -19,7 +19,7 @@ router.get('/settings', authenticate, async (req: Request, res: Response) => {
             minInvestment: 5000, // Hardcoded for now as not in schema
             isSystemPaused: settings?.isSystemPaused || false,
             kycRequiredForAccount: settings?.kycRequiredForAccount ?? true,
-            defaultTheme: settings?.defaultTheme || 'system'
+            defaultTheme: settings?.defaultTheme || 'dark'
         });
     } catch (error) {
         console.error('Settings fetch error:', error);
