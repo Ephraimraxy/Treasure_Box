@@ -80,7 +80,23 @@ router.get('/verify/:reference', authenticate, async (req: AuthRequest, res, nex
                 await prisma.$transaction([
                     prisma.transaction.update({
                         where: { id: transaction.id },
-                        data: { status: 'SUCCESS' }
+                        data: {
+                            status: 'SUCCESS',
+                            meta: {
+                                ...(transaction.meta as any),
+                                verifiedAt: new Date().toISOString(),
+                                verificationSource: 'verify_endpoint',
+                                paystack: {
+                                    reference,
+                                    status: result.data.status,
+                                    gateway_response: result.data.gateway_response,
+                                    channel: result.data.channel,
+                                    paid_at: result.data.paid_at,
+                                    transaction_date: result.data.transaction_date,
+                                    id: result.data.id
+                                }
+                            }
+                        }
                     }),
                     prisma.user.update({
                         where: { id: userId },
@@ -161,7 +177,23 @@ router.post('/webhook', async (req: any, res: any, next: any) => {
                 await prisma.$transaction([
                     prisma.transaction.update({
                         where: { id: transaction.id },
-                        data: { status: 'SUCCESS' }
+                        data: {
+                            status: 'SUCCESS',
+                            meta: {
+                                ...(transaction.meta as any),
+                                verifiedAt: new Date().toISOString(),
+                                verificationSource: 'webhook_requery',
+                                paystack: {
+                                    reference,
+                                    status: verification.data.status,
+                                    gateway_response: verification.data.gateway_response,
+                                    channel: verification.data.channel,
+                                    paid_at: verification.data.paid_at,
+                                    transaction_date: verification.data.transaction_date,
+                                    id: verification.data.id
+                                }
+                            }
+                        }
                     }),
                     prisma.user.update({
                         where: { id: transaction.userId },
@@ -243,6 +275,114 @@ router.post('/webhook', async (req: any, res: any, next: any) => {
                     }
                 } else {
                     console.error(`Virtual Account deposit received but user not found. Customer: ${event.data.customer.customer_code}`);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // Transfer Webhooks (Withdrawals)
+        // ─────────────────────────────────────────────
+        if (event.event === 'transfer.success' || event.event === 'transfer.failed' || event.event === 'transfer.reversed') {
+            const reference = event?.data?.reference;
+            const transferCode = event?.data?.transfer_code;
+            const amountKobo = Number(event?.data?.amount || 0);
+            const amountInNaira = amountKobo ? amountKobo / 100 : null;
+
+            // Find matching withdrawal by stored reference/transfer code
+            const tx = await prisma.transaction.findFirst({
+                where: {
+                    type: 'WITHDRAWAL',
+                    status: 'PENDING',
+                    OR: [
+                        { meta: { path: ['paystackReference'], equals: reference } },
+                        { meta: { path: ['transferCode'], equals: transferCode } }
+                    ]
+                }
+            });
+
+            // If not found (already processed or unknown), ack safely
+            if (!tx) {
+                return res.sendStatus(200);
+            }
+
+            // Basic sanity check: ensure amounts match (if Paystack included amount)
+            if (amountInNaira !== null && Math.abs(Number(tx.amount) - amountInNaira) > 0.01) {
+                console.error(`Transfer amount mismatch for tx ${tx.id}. DB=${tx.amount} webhook=${amountInNaira}`);
+                return res.sendStatus(200);
+            }
+
+            if (event.event === 'transfer.success') {
+                await prisma.$transaction([
+                    prisma.transaction.update({
+                        where: { id: tx.id },
+                        data: {
+                            status: 'SUCCESS',
+                            meta: { ...(tx.meta as any), transferFinalEvent: 'transfer.success', transferFinalAt: new Date().toISOString() }
+                        }
+                    }),
+                    prisma.notification.create({
+                        data: {
+                            userId: tx.userId,
+                            title: 'Withdrawal Successful',
+                            message: `Your withdrawal of ₦${tx.amount.toLocaleString()} was completed successfully.`,
+                            type: 'SUCCESS'
+                        }
+                    }),
+                    prisma.systemHealth.upsert({
+                        where: { id: 1 },
+                        create: { id: 1, lastSuccessfulTransferAt: new Date() },
+                        update: { lastSuccessfulTransferAt: new Date() }
+                    })
+                ]);
+
+                // Email notification (async)
+                const user = await prisma.user.findUnique({ where: { id: tx.userId } });
+                if (user && process.env.RESEND_API_KEY) {
+                    const { sendTransactionEmail } = await import('../services/email.service');
+                    sendTransactionEmail(user.email, 'withdrawal', tx.amount, 'SUCCESS').catch(console.error);
+                }
+            } else {
+                // failed / reversed -> refund
+                const eventName = event.event;
+                await prisma.$transaction([
+                    prisma.transaction.update({
+                        where: { id: tx.id },
+                        data: {
+                            status: 'FAILED',
+                            meta: { ...(tx.meta as any), transferFinalEvent: eventName, transferFinalAt: new Date().toISOString() }
+                        }
+                    }),
+                    prisma.user.update({
+                        where: { id: tx.userId },
+                        data: { balance: { increment: tx.amount } }
+                    }),
+                    prisma.notification.create({
+                        data: {
+                            userId: tx.userId,
+                            title: 'Withdrawal Failed',
+                            message: `Your withdrawal of ₦${tx.amount.toLocaleString()} failed and your funds were refunded.`,
+                            type: 'ERROR'
+                        }
+                    }),
+                    prisma.systemHealth.upsert({
+                        where: { id: 1 },
+                        create: {
+                            id: 1,
+                            lastFailedTransferAt: new Date(),
+                            failedTransferCount24h: 1
+                        },
+                        update: {
+                            lastFailedTransferAt: new Date(),
+                            failedTransferCount24h: { increment: 1 }
+                        }
+                    })
+                ]);
+
+                // Email notification (async)
+                const user = await prisma.user.findUnique({ where: { id: tx.userId } });
+                if (user && process.env.RESEND_API_KEY) {
+                    const { sendTransactionEmail } = await import('../services/email.service');
+                    sendTransactionEmail(user.email, 'withdrawal', tx.amount, 'FAILED').catch(console.error);
                 }
             }
         }

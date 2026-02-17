@@ -54,7 +54,13 @@ router.get('/withdrawals/pending', async (req: AuthRequest, res, next) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json(withdrawals);
+        // Exclude items already approved/processing (still PENDING until webhook finalizes)
+        const filtered = withdrawals.filter((w: any) => {
+            const meta = w.meta as any;
+            return !(meta?.approvedBy || meta?.transferCode || meta?.paystackReference);
+        });
+
+        res.json(filtered);
     } catch (error) {
         next(error);
     }
@@ -81,6 +87,12 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
 
         if (transaction.status !== 'PENDING') {
             return res.status(400).json({ error: 'Transaction is not pending' });
+        }
+
+        // Prevent double-approval / double-transfer
+        const existingMeta = transaction.meta as any;
+        if (existingMeta?.approvedBy || existingMeta?.transferCode || existingMeta?.paystackReference) {
+            return res.status(400).json({ error: 'Withdrawal is already approved / processing' });
         }
 
         // Initialize Paystack Transfer
@@ -149,7 +161,8 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
         }
 
         // 3. Initiate Transfer
-        const reference = `WDR_APPR_${Date.now()}`;
+        const { generateReference } = await import('../services/paystack.service');
+        const reference = generateReference('WDR_APPR');
         let transferData;
 
         try {
@@ -165,15 +178,17 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
             return res.status(400).json({ error: 'Transfer failed: ' + (error.response?.data?.message || error.message) });
         }
 
-        // Success - Update Transaction
+        // Persist transfer initiation (final status confirmed via Paystack transfer webhook)
         await prisma.transaction.update({
             where: { id },
             data: {
-                status: 'SUCCESS',
+                status: 'PENDING',
                 meta: {
                     ...meta,
                     paystackReference: reference,
                     transferCode: transferData.transfer_code,
+                    transferStatus: transferData.status,
+                    transferResponse: transferData,
                     approvedBy: req.user!.email
                 }
             }
@@ -196,17 +211,17 @@ router.post('/withdrawals/:id/approve', async (req: AuthRequest, res, next) => {
             }
         });
 
-        // Notify user
+        // Notify user (processing)
         await prisma.notification.create({
             data: {
                 userId: transaction.userId,
-                title: 'Withdrawal Approved',
-                message: `Your withdrawal of ₦${transaction.amount.toLocaleString()} has been approved and sent to your bank.`,
-                type: 'SUCCESS'
+                title: 'Withdrawal Processing',
+                message: `Your withdrawal of ₦${transaction.amount.toLocaleString()} is processing. You will be notified once completed.`,
+                type: 'INFO'
             }
         });
 
-        res.json({ message: 'Withdrawal approved and funds transferred', transaction });
+        res.json({ message: 'Withdrawal approved and transfer initiated', transaction });
     } catch (error) {
         next(error);
     }

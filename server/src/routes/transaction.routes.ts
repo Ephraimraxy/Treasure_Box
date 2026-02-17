@@ -104,12 +104,6 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
             return res.status(400).json({ error: 'No bank account linked. Please add one in your Profile.' });
         }
 
-        // Deduct balance FIRST (to prevent double spending)
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { balance: { decrement: amount } }
-        });
-
         const isApprovalEnabled = settings?.enableWithdrawalApproval !== false; // Default true
 
         // ── Capital protection guard ──
@@ -127,83 +121,111 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
             }
         }
 
-        let transactionStatus: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
-        let transactionMeta: any = {
+        const baseMeta: any = {
             bankDetails: {
                 bankName: selectedBank!.bankName,
                 accountNumber: selectedBank!.accountNumber,
                 accountName: selectedBank!.accountName
-            }
+            },
+            flow: isApprovalEnabled ? 'MANUAL_APPROVAL' : 'AUTO_TRANSFER',
+            createdBy: 'USER'
         };
 
+        // Atomic: create transaction + debit balance together (prevents "missing money" if any write fails)
+        const transaction = await prisma.$transaction(async (tx) => {
+            const debited = await tx.user.updateMany({
+                where: { id: user.id, balance: { gte: amount } },
+                data: { balance: { decrement: amount } }
+            });
+            if (debited.count !== 1) {
+                throw new Error('Insufficient balance');
+            }
+
+            return tx.transaction.create({
+                data: {
+                    userId: user.id,
+                    type: 'WITHDRAWAL',
+                    amount,
+                    status: 'PENDING',
+                    description: isApprovalEnabled ? 'Withdrawal Request' : 'Withdrawal Processing',
+                    meta: baseMeta
+                }
+            });
+        });
+
         if (!isApprovalEnabled) {
-            // Automated Withdrawal
+            // Automated Withdrawal (final status is confirmed via Paystack transfer webhook)
             if (!selectedBank.bankCode) {
-                // Rollback balance if bank code missing (should be validated earlier ideally, but here for safety)
-                await prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } });
+                await prisma.$transaction([
+                    prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } }),
+                    prisma.transaction.update({
+                        where: { id: transaction.id },
+                        data: { status: 'FAILED', meta: { ...(transaction.meta as any), error: 'Missing bank code' } }
+                    })
+                ]);
                 return res.status(400).json({ error: 'Your bank details are missing the Bank Code. Please remove and re-add your bank account to enable instant withdrawals.' });
             }
 
             try {
-                // 1. Create Transfer Recipient
-                const recipient = await import('../services/paystack.service').then(s => s.createTransferRecipient(
+                const { createTransferRecipient, initiateTransfer, generateReference } = await import('../services/paystack.service');
+
+                // 1) Create transfer recipient
+                const recipient = await createTransferRecipient(
                     selectedBank!.accountName,
                     selectedBank!.accountNumber,
                     selectedBank!.bankCode!
-                ));
+                );
 
-                // 2. Initiate Transfer
-                const reference = `WDR_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                const transfer = await import('../services/paystack.service').then(s => s.initiateTransfer(
+                // 2) Initiate transfer
+                const reference = generateReference('WDR');
+                const transfer = await initiateTransfer(
                     amount,
                     recipient.data.recipient_code,
                     reference,
                     'Withdrawal from Treasure Box'
-                ));
+                );
 
-                transactionStatus = 'SUCCESS'; // Or PROCESSING, but let's assume success if API call ok. 
-                // Realistically Paystack returns 'queued' or 'otp' or 'success'. 
-                // For 'queued', we might want PENDING or specialized status. 
-                // But for simplicity/instant feel, if it's queued, it's virtually success.
-                // We'll trust webhook to mark final failures if any? 
-                // Actually, if we mark success here, and it fails later, we need webhook to reverse it?
-                // Paystack transfer status: 'success', 'failed', 'pending'.
-                if (transfer.data.status === 'failed') {
-                    throw new Error('Transfer failed at provider');
-                }
-
-                transactionMeta.paystackReference = reference;
-                transactionMeta.transferCode = transfer.data.transfer_code;
-
+                // Persist Paystack transfer data (do NOT mark SUCCESS here; webhook will finalize)
+                await prisma.transaction.update({
+                    where: { id: transaction.id },
+                    data: {
+                        meta: {
+                            ...(transaction.meta as any),
+                            paystackReference: reference,
+                            transferCode: transfer.data.transfer_code,
+                            transferStatus: transfer.data.status,
+                            transferInitiatedAt: new Date().toISOString(),
+                            transferResponse: transfer.data
+                        }
+                    }
+                });
             } catch (error: any) {
-                // Log only safe info — never dump full Axios error (leaks secret keys in headers)
-                console.error("Automated Withdrawal Error", error.response?.data || error.message);
+                const safeMessage = error.response?.data?.message || error.message || 'Transfer initiation failed';
+                console.error("Automated Withdrawal Error", safeMessage);
 
-                // Refund user
-                await prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } });
+                // Refund + mark failed atomically
+                await prisma.$transaction([
+                    prisma.user.update({ where: { id: user.id }, data: { balance: { increment: amount } } }),
+                    prisma.transaction.update({
+                        where: { id: transaction.id },
+                        data: { status: 'FAILED', meta: { ...(transaction.meta as any), error: safeMessage } }
+                    }),
+                    prisma.notification.create({
+                        data: {
+                            userId: user.id,
+                            title: 'Withdrawal Failed',
+                            message: `Your withdrawal of ₦${amount.toLocaleString()} failed and your funds were refunded. Reason: ${safeMessage}`,
+                            type: 'ERROR'
+                        }
+                    })
+                ]);
 
-                // Return the actual Paystack error message if available
-                const paystackMessage = error.response?.data?.message;
-                if (paystackMessage) {
-                    return res.status(400).json({ error: paystackMessage });
-                }
-                return res.status(500).json({ error: 'Withdrawal failed. Please try again or contact support.' });
+                return res.status(400).json({ error: safeMessage });
             }
         }
 
-        const transaction = await prisma.transaction.create({
-            data: {
-                userId: user.id,
-                type: 'WITHDRAWAL',
-                amount,
-                status: transactionStatus,
-                description: 'Withdrawal Request',
-                meta: transactionMeta
-            }
-        });
-
         // Notify Admins only if PENDING (Manual Approval needed)
-        if (transactionStatus === 'PENDING') {
+        if (isApprovalEnabled) {
             const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
             if (admins.length > 0) {
                 await prisma.notification.createMany({
@@ -216,18 +238,18 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
                 });
             }
         } else {
-            // Notify User of Success
+            // Notify User of Processing (final state set by webhook)
             await prisma.notification.create({
                 data: {
                     userId: user.id,
-                    title: 'Withdrawal Sent',
-                    message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed successfully.`,
-                    type: 'SUCCESS'
+                    title: 'Withdrawal Processing',
+                    message: `Your withdrawal of ₦${amount.toLocaleString()} is processing. You will be notified once it is completed.`,
+                    type: 'INFO'
                 }
             });
         }
 
-        res.status(201).json({ message: transactionStatus === 'SUCCESS' ? 'Withdrawal processed successfully' : 'Withdrawal request submitted', transaction });
+        res.status(201).json({ message: isApprovalEnabled ? 'Withdrawal request submitted' : 'Withdrawal processing', transaction });
     } catch (error) {
         next(error);
     }
