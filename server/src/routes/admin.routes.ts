@@ -732,6 +732,26 @@ router.post('/reconciliation/snapshot', async (req: AuthRequest, res, next) => {
     }
 });
 
+// Requery pending Paystack transactions (Admin Only) - manual trigger
+router.post('/reconciliation/requery-pending', async (req: AuthRequest, res, next) => {
+    try {
+        const { requeryPendingPaystackTransactions } = await import('../jobs/reconciliation.job');
+        await requeryPendingPaystackTransactions();
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'REQUERY_PENDING_TRANSACTIONS',
+                details: 'Manually triggered pending transaction requery job'
+            }
+        });
+
+        res.json({ message: 'Pending transaction requery completed' });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // ═══════════════════════════════════════════════
 //  QUIZ ADMIN ENDPOINTS
 // ═══════════════════════════════════════════════

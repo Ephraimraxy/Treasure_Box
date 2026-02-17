@@ -13,6 +13,7 @@ import paymentRoutes from './routes/payment.routes';
 import quizRoutes from './routes/quiz.routes';
 import researchRoutes from './routes/research.routes';
 import { errorHandler } from './middleware/error.middleware';
+import { startReconciliationJobs } from './jobs/reconciliation.job';
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    startReconciliationJobs();
 });
 
 export default app;
