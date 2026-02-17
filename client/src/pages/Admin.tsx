@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building, ChevronRight, CheckCircle, Building2, Send, Info, ReceiptText } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building, ChevronRight, CheckCircle, Building2, Send, Info, ReceiptText, Wallet } from 'lucide-react';
 import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -123,6 +123,8 @@ export const AdminDashboardPage = () => {
     const [reportData, setReportData] = useState<any>(null);
     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
+    const [agentBalances, setAgentBalances] = useState<{ paystack: { available: number, pending: number, currency: string }, vtpass: { balance: number } } | null>(null);
+
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -144,9 +146,18 @@ export const AdminDashboardPage = () => {
                 console.error('Failed to fetch protection status:', error);
             }
         };
-        fetchStats();
+        const fetchAgentBalances = async () => {
+            try {
+                const res = await adminApi.getAgentBalances();
+                setAgentBalances(res.data);
+            } catch (error) {
+                console.error('Failed to fetch agent balances:', error);
+            }
+        };
+
         fetchStats();
         fetchProtection();
+        fetchAgentBalances();
     }, []);
 
     // Paystack Operations State
@@ -428,6 +439,35 @@ export const AdminDashboardPage = () => {
                             <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Net Platform Equity</div>
                             <div className={`text-lg font-bold ${fin.netPlatformEquity !== null && fin.netPlatformEquity < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-foreground'}`}>
                                 {fin.netPlatformEquity !== null ? <FormatCurrency amount={fin.netPlatformEquity} /> : <span className="text-slate-400 dark:text-foreground-subtle">N/A</span>}
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Agent Balances ── */}
+            {agentBalances && (
+                <div className="mb-5">
+                    <div className="text-xs font-bold text-slate-500 dark:text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <Wallet size={12} className="text-indigo-500" /> Agent Wallets
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Available)</div>
+                            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                <FormatCurrency amount={agentBalances.paystack.available} />
+                            </div>
+                        </Card>
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Pending)</div>
+                            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                <FormatCurrency amount={agentBalances.paystack.pending} />
+                            </div>
+                        </Card>
+                        <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">VTPass (Utility Bal)</div>
+                            <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                <FormatCurrency amount={agentBalances.vtpass.balance} />
                             </div>
                         </Card>
                     </div>
@@ -800,7 +840,7 @@ export const AdminDashboardPage = () => {
                                     <option value="WHOLE">Whole Money in System (Paystack Balance)</option>
                                 </select>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                                    {withdrawType === 'PROFIT' 
+                                    {withdrawType === 'PROFIT'
                                         ? 'Withdraw only platform profit (quiz fees, system wins, investment profit)'
                                         : 'Withdraw from entire Paystack balance'}
                                 </p>
@@ -1573,7 +1613,7 @@ export const AdminTransactionsPage = () => {
                                     onClick={() => action('refund')}
                                     disabled={actionLoading === 'refund' || !reason.trim()}
                                 >
-                                    {actionLoading === 'refund' ? 'Working...' : 'Manual Refund (Withdrawal)'} 
+                                    {actionLoading === 'refund' ? 'Working...' : 'Manual Refund (Withdrawal)'}
                                 </Button>
                                 <Button
                                     variant="danger"

@@ -39,32 +39,60 @@ export const DashboardPage = () => {
     const lastNotifiedAtRef = useRef<number>(0);
     const lastTopTxIdRef = useRef<string | null>(null);
 
-    const playPaymentReceived = () => {
-        // 1) Short beep (best-effort)
+    const playPaymentReceived = (amount?: number) => {
+        // 1) Pleasant Chime (Major Triad)
         try {
             const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             if (AudioCtx) {
                 const ctx = new AudioCtx();
-                const o = ctx.createOscillator();
-                const g = ctx.createGain();
-                o.type = 'sine';
-                o.frequency.value = 880;
-                g.gain.value = 0.0001;
-                o.connect(g);
-                g.connect(ctx.destination);
-                o.start();
                 const now = ctx.currentTime;
-                g.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
-                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-                o.stop(now + 0.2);
-                setTimeout(() => ctx.close().catch(() => { }), 400);
+
+                // Helper to play a tone
+                const playTone = (freq: number, startTime: number, duration: number) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.value = freq;
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    o.start(startTime);
+                    g.gain.setValueAtTime(0, startTime);
+                    g.gain.linearRampToValueAtTime(0.1, startTime + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    o.stop(startTime + duration + 0.1);
+                };
+
+                // Play C5, E5, G5 (C Major)
+                playTone(523.25, now, 0.6); // C5
+                playTone(659.25, now + 0.1, 0.6); // E5
+                playTone(783.99, now + 0.2, 1.2); // G5
+
+                setTimeout(() => ctx.close().catch(() => { }), 2000);
             }
         } catch { }
 
-        // 2) Voice prompt (best-effort)
+        // 2) Voice prompt with dynamic amount
         try {
             if ('speechSynthesis' in window) {
-                const u = new SpeechSynthesisUtterance('Payment received in Treasure Box');
+                const text = amount
+                    ? `Deposit of ${amount.toLocaleString()} Naira received.`
+                    : 'Payment received in Treasure Box.';
+
+                const u = new SpeechSynthesisUtterance(text);
+
+                // Attempt to select a female voice
+                const voices = window.speechSynthesis.getVoices();
+                const femaleVoice = voices.find(v =>
+                    v.name.includes('Female') ||
+                    v.name.includes('Zira') ||
+                    v.name.includes('Google US English') ||
+                    v.lang.includes('en-US') // Fallback to US English which is often clearer
+                );
+
+                if (femaleVoice) {
+                    u.voice = femaleVoice;
+                }
+
                 u.rate = 1.0;
                 u.pitch = 1.0;
                 u.volume = 1.0;
@@ -128,19 +156,28 @@ export const DashboardPage = () => {
                     lastTopTxIdRef.current = topId;
                 }
 
+                // Find the latest successful deposit
                 const newestSuccessDeposit = latest.find(t => t.type === 'DEPOSIT' && t.status === 'SUCCESS');
                 if (!newestSuccessDeposit) return;
 
-                const createdAt = new Date(newestSuccessDeposit.createdAt).getTime();
-                const now = Date.now();
-                const isRecent = now - createdAt < 10 * 60 * 1000;
-                const isNew = createdAt > lastNotifiedAtRef.current;
+                const lastNotifiedId = localStorage.getItem('last_notified_tx_id');
 
-                if (isRecent && isNew) {
+                // If this specific deposit hasn't been notified yet
+                if (newestSuccessDeposit.id !== lastNotifiedId) {
+                    const createdAt = new Date(newestSuccessDeposit.createdAt).getTime();
+                    const now = Date.now();
+                    const isRecent = now - createdAt < 5 * 60 * 1000; // Notify only if within last 5 minutes
+
+                    // Update state immediately to prevent re-runs
+                    localStorage.setItem('last_notified_tx_id', newestSuccessDeposit.id);
                     lastNotifiedAtRef.current = createdAt;
-                    await refreshUser();
-                    addToast('success', 'Payment received in Treasure Box');
-                    playPaymentReceived();
+
+                    // Only play sound/toast if it's actually recent (users don't want alerts for old txs on login)
+                    if (isRecent) {
+                        await refreshUser();
+                        addToast('success', 'Payment received in Treasure Box');
+                        playPaymentReceived(newestSuccessDeposit.amount);
+                    }
                 }
             } catch {
                 // best-effort

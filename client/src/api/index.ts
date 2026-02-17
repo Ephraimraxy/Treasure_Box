@@ -161,6 +161,7 @@ export const adminApi = {
         api.get(`/admin/statement?start=${start}&end=${end}`, { responseType: 'blob' }),
     getStatementData: (start: string, end: string) =>
         api.get(`/admin/statement?start=${start}&end=${end}&format=json`),
+    getAgentBalances: () => api.get('/admin/agent-balances'),
 };
 
 // Quiz API

@@ -41,6 +41,15 @@
   /* slate-200 */
   --border-highlight: 203 213 225;
   /* slate-300 */
+  --border-divider: 241 245 249;
+  /* slate-100 */
+
+  --text-subtle: 100 116 139;
+  /* slate-500 */
+  --bg-surface-elevated: 241 245 249;
+  /* slate-100 */
+  --color-primary-foreground: 255 255 255;
+  /* white on amber */
 }
 
 /* Dark Mode Overrides - Professional Fintech Design System */

@@ -255,7 +255,7 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
     }
 });
 
-// Utility payment (simulated)
+// Utility payment — VTPass Integration + Identity Verification
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
     try {
         const { type, amount, meta, pin } = req.body;
@@ -280,8 +280,9 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         }
 
         let verificationData = null;
+        let vtpassResponse = null;
 
-        // Perform verification if applicable
+        // ── Identity Verification Types (DataVerify / Paystack / Simulation) ──
         const identityTypes = ['NIN', 'BVN', 'NIN_MODIFICATION', 'NIN_VALIDATION', 'NIN_PERSONALIZATION', 'BVN_MODIFICATION', 'BVN_RETRIEVAL'];
 
         if (identityTypes.includes(type)) {
@@ -297,6 +298,81 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
             verificationData = result.data;
         }
 
+        // ── VTU Services (VTPass Integration) ──
+        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE'];
+
+        if (vtuTypes.includes(type)) {
+            const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable } = await import('../services/vtpass.service');
+
+            if (!isVTPassConfigured()) {
+                // Fallback to simulated success if VTPass not configured
+                console.log(`[Utility] VTPass not configured, simulating ${type} success`);
+                vtpassResponse = { simulated: true, status: 'delivered' };
+            } else {
+                try {
+                    if (type === 'AIRTIME') {
+                        const serviceID = meta.serviceID || meta.network || 'mtn';
+                        const result = await purchaseAirtime(meta.phone, amount, serviceID);
+                        if (result.code !== '000') {
+                            return res.status(400).json({
+                                error: result.response_description || 'Airtime purchase failed. Please try again.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    } else if (type === 'DATA') {
+                        const serviceID = meta.serviceID || 'mtn-data';
+                        const result = await purchaseData(meta.phone, serviceID, meta.variationCode, amount);
+                        if (result.code !== '000') {
+                            return res.status(400).json({
+                                error: result.response_description || 'Data purchase failed. Please try again.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    } else if (type === 'POWER') {
+                        const serviceID = meta.serviceID || meta.provider;
+                        const variationCode = meta.variationCode || meta.meterType || 'prepaid';
+                        const result = await purchaseElectricity(
+                            meta.meterNumber || meta.identifier,
+                            serviceID,
+                            variationCode,
+                            amount,
+                            meta.phone || user.phone || ''
+                        );
+                        if (result.code !== '000') {
+                            return res.status(400).json({
+                                error: result.response_description || 'Electricity purchase failed. Please try again.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    } else if (type === 'CABLE') {
+                        const serviceID = meta.serviceID || meta.provider;
+                        const result = await purchaseCable(
+                            meta.smartCardNumber || meta.identifier,
+                            serviceID,
+                            meta.variationCode,
+                            amount,
+                            meta.phone || user.phone || ''
+                        );
+                        if (result.code !== '000') {
+                            return res.status(400).json({
+                                error: result.response_description || 'Cable subscription failed. Please try again.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    }
+                } catch (vtpassError: any) {
+                    console.error(`[Utility] VTPass ${type} error:`, vtpassError.message);
+                    return res.status(500).json({
+                        error: `${type} service temporarily unavailable. Please try again later.`
+                    });
+                }
+            }
+        }
+
         await prisma.user.update({
             where: { id: req.user!.id },
             data: { balance: { decrement: amount } }
@@ -308,8 +384,18 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                 type: 'UTILITY_BILL',
                 amount,
                 status: 'SUCCESS',
-                description: `${type.replace('_', ' ')} Service`,
-                meta: { ...meta, verificationData }
+                description: `${type.replace(/_/g, ' ')} Service`,
+                meta: {
+                    ...meta,
+                    verificationData,
+                    vtpassResponse: vtpassResponse ? {
+                        code: vtpassResponse.code,
+                        requestId: vtpassResponse.requestId,
+                        transactionId: vtpassResponse.content?.transactions?.transactionId,
+                        status: vtpassResponse.content?.transactions?.status,
+                        purchased_code: vtpassResponse.purchased_code,
+                    } : null,
+                }
             }
         });
 
@@ -318,7 +404,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
             data: {
                 userId: req.user!.id,
                 title: 'Service Successful',
-                message: `Your ${type} service of ₦${amount.toLocaleString()} was successful.`,
+                message: `Your ${type.replace(/_/g, ' ')} service of ₦${amount.toLocaleString()} was successful.`,
                 type: 'SUCCESS'
             }
         });
@@ -326,7 +412,8 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         res.status(201).json({
             message: 'Service successful',
             transaction,
-            verificationData
+            verificationData,
+            purchasedCode: vtpassResponse?.purchased_code || null,
         });
     } catch (error) {
         next(error);
@@ -334,3 +421,4 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 export default router;
+

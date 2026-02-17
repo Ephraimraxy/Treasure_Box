@@ -1425,12 +1425,12 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
 
         // Validate amount based on withdrawal type
         const withdrawalTypeValue = withdrawalType || 'WHOLE'; // Default to WHOLE for backward compatibility
-        
+
         if (withdrawalTypeValue === 'PROFIT') {
             // Calculate platform profit
             const [quizFeeAgg, systemWinAgg, investmentProfitAgg] = await Promise.all([
                 prisma.quizGame.aggregate({ _sum: { platformFee: true } }),
-                prisma.quizGame.aggregate({ 
+                prisma.quizGame.aggregate({
                     _sum: { prizePool: true },
                     where: { status: 'COMPLETED', mode: 'SOLO' }
                 }),
@@ -1448,20 +1448,20 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
             const totalPlatformProfit = quizFees + systemWins + investmentProfit;
 
             if (amount > totalPlatformProfit) {
-                return res.status(400).json({ 
-                    error: `Insufficient platform profit. Available: ₦${totalPlatformProfit.toLocaleString()}` 
+                return res.status(400).json({
+                    error: `Insufficient platform profit. Available: ₦${totalPlatformProfit.toLocaleString()}`
                 });
             }
         } else {
             // For WHOLE type, check Paystack balance from latest snapshot
-            const latestSnapshot = await prisma.paystackBalanceSnapshot.findFirst({ 
-                orderBy: { createdAt: 'desc' } 
+            const latestSnapshot = await prisma.paystackBalanceSnapshot.findFirst({
+                orderBy: { createdAt: 'desc' }
             });
             const paystackAvailable = latestSnapshot ? Number(latestSnapshot.available) : 0;
 
             if (amount > paystackAvailable) {
-                return res.status(400).json({ 
-                    error: `Insufficient Paystack balance. Available: ₦${paystackAvailable.toLocaleString()}` 
+                return res.status(400).json({
+                    error: `Insufficient Paystack balance. Available: ₦${paystackAvailable.toLocaleString()}`
                 });
             }
         }
@@ -1723,6 +1723,46 @@ router.get('/statement', async (req: AuthRequest, res, next) => {
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.send(csv);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  AGENT BALANCES — Paystack + VTPass Wallets
+// ═══════════════════════════════════════════════
+
+router.get('/agent-balances', async (req: AuthRequest, res, next) => {
+    try {
+        const paystack = { available: 0, pending: 0, currency: 'NGN' };
+        const vtpass = { balance: 0 };
+
+        // Fetch Paystack balance
+        try {
+            const { getBalance: getPaystackBalance } = await import('../services/paystack.service');
+            const paystackData = await getPaystackBalance();
+            if (paystackData && paystackData.length > 0) {
+                // Paystack returns amounts in kobo (1/100 of NGN)
+                paystack.available = (paystackData[0]?.balance || 0) / 100;
+                paystack.pending = (paystackData[0]?.pending_balance || 0) / 100;
+                paystack.currency = paystackData[0]?.currency || 'NGN';
+            }
+        } catch (err: any) {
+            console.error('[Admin] Paystack balance error:', err.message);
+        }
+
+        // Fetch VTPass balance
+        try {
+            const { getBalance: getVTPassBalance, isVTPassConfigured } = await import('../services/vtpass.service');
+            if (isVTPassConfigured()) {
+                const vtpassData = await getVTPassBalance();
+                vtpass.balance = vtpassData.balance || 0;
+            }
+        } catch (err: any) {
+            console.error('[Admin] VTPass balance error:', err.message);
+        }
+
+        res.json({ paystack, vtpass });
     } catch (error) {
         next(error);
     }
