@@ -1075,7 +1075,7 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
             const latestSnapshot = await prisma.paystackBalanceSnapshot.findFirst({ 
                 orderBy: { createdAt: 'desc' } 
             });
-            const paystackAvailable = latestSnapshot?.availableBalance || 0;
+            const paystackAvailable = latestSnapshot ? Number(latestSnapshot.available) : 0;
 
             if (amount > paystackAvailable) {
                 return res.status(400).json({ 
@@ -1086,7 +1086,7 @@ router.post('/paystack/withdraw', async (req: AuthRequest, res, next) => {
 
         // ── Capital protection guard ──
         const { checkLiquidityGuard } = await import('../services/risk.service');
-        const liquidityCheck = await checkLiquidityGuard('ADMIN_WITHDRAWAL');
+        const liquidityCheck = await checkLiquidityGuard('ADMIN_APPROVAL');
         if (!liquidityCheck.allowed) {
             return res.status(503).json({
                 error: `Capital protection active. Coverage: ${liquidityCheck.coverage.toFixed(2)}x (threshold: ${liquidityCheck.threshold.toFixed(2)}x). Fund Paystack or run reconciliation.`,
