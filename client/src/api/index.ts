@@ -117,6 +117,25 @@ export const adminApi = {
     creditUser: (userId: string, amount: number, description?: string) =>
         api.post(`/admin/users/${userId}/credit`, { amount, description }),
     getAuditLogs: () => api.get('/admin/audit-logs'),
+    getTransactions: (params?: { page?: number; limit?: number; status?: string; type?: string; q?: string; start?: string; end?: string }) => {
+        const sp = new URLSearchParams();
+        if (params?.page) sp.set('page', String(params.page));
+        if (params?.limit) sp.set('limit', String(params.limit));
+        if (params?.status) sp.set('status', params.status);
+        if (params?.type) sp.set('type', params.type);
+        if (params?.q) sp.set('q', params.q);
+        if (params?.start) sp.set('start', params.start);
+        if (params?.end) sp.set('end', params.end);
+        const qs = sp.toString();
+        return api.get(`/admin/transactions${qs ? `?${qs}` : ''}`);
+    },
+    getTransaction: (id: string) => api.get(`/admin/transactions/${id}`),
+    addTransactionNote: (id: string, note: string) => api.post(`/admin/transactions/${id}/note`, { note }),
+    refundTransaction: (id: string, reason: string) => api.post(`/admin/transactions/${id}/refund`, { reason }),
+    forceFailTransaction: (id: string, reason: string) => api.post(`/admin/transactions/${id}/force-fail`, { reason }),
+    forceSuccessTransaction: (id: string, reason: string) => api.post(`/admin/transactions/${id}/force-success`, { reason }),
+    requeryTransaction: (id: string) => api.post(`/admin/transactions/${id}/requery`, {}),
+    requeryPending: () => api.post('/admin/reconciliation/requery-pending', {}),
     getSettings: () => api.get('/admin/settings'),
     updateSettings: (data: any) => api.put('/admin/settings', data),
     updateUser: (id: string, data: any) => api.put(`/admin/users/${id}`, data),

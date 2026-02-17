@@ -28,6 +28,7 @@ import { InvestmentsPage } from './pages/Investments';
 import { TransferPage } from './pages/Transfer';
 import {
     AdminDashboardPage,
+    AdminTransactionsPage,
     AdminWithdrawalsPage,
     AdminUsersPage,
     AdminAuditPage,
@@ -105,6 +106,7 @@ const AppContent = () => {
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>} />
+                <Route path="/admin/transactions" element={<ProtectedRoute adminOnly><AdminTransactionsPage /></ProtectedRoute>} />
                 <Route path="/admin/quiz" element={<ProtectedRoute adminOnly><AdminQuizPage /></ProtectedRoute>} />
                 <Route path="/admin/withdrawals" element={<ProtectedRoute adminOnly><AdminWithdrawalsPage /></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>} />

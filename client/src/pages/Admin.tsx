@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building, ChevronRight, CheckCircle, Building2, Send, Info } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Check, X, Shield, Activity, Settings, AlertTriangle, FileText, Search, ExternalLink, MessageSquare, Edit3, Download, Loader2, Zap, Eye, BarChart3, RefreshCw, Heart, Plus, Building, ChevronRight, CheckCircle, Building2, Send, Info, ReceiptText } from 'lucide-react';
 import { adminApi, paymentApi } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -1210,6 +1210,392 @@ export const AdminWithdrawalsPage = () => {
                         </Button>
                     </div>
                 </div>
+            </Modal>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════
+//  ADMIN TRANSACTIONS EXPLORER
+// ═══════════════════════════════════════════════
+
+type AdminTxStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REJECTED';
+type AdminTxType = 'DEPOSIT' | 'WITHDRAWAL' | 'INVESTMENT_PAYOUT' | 'INVESTMENT_DEBIT' | 'UTILITY_BILL' | 'REFERRAL_BONUS' | 'all';
+
+interface AdminTx {
+    id: string;
+    userId: string;
+    type: string;
+    amount: number;
+    status: AdminTxStatus;
+    description: string;
+    rejectionReason?: string | null;
+    meta?: any;
+    createdAt: string;
+    updatedAt: string;
+    user: {
+        id: string;
+        email: string;
+        name?: string | null;
+        username?: string | null;
+        balance: number;
+        isSuspended?: boolean;
+        suspensionReason?: string | null;
+    };
+}
+
+export const AdminTransactionsPage = () => {
+    const { addToast } = useToast();
+
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<AdminTx[]>([]);
+    const [meta, setMeta] = useState<{ total: number; page: number; limit: number; totalPages: number } | null>(null);
+
+    const [page, setPage] = useState(1);
+    const [limit] = useState(25);
+    const [status, setStatus] = useState<'all' | AdminTxStatus>('all');
+    const [type, setType] = useState<AdminTxType>('all');
+    const [q, setQ] = useState('');
+    const [range, setRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [detail, setDetail] = useState<{ transaction: AdminTx; timeline: { at: string; label: string; details?: string }[] } | null>(null);
+
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [note, setNote] = useState('');
+    const [reason, setReason] = useState('');
+
+    const fetchList = async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getTransactions({
+                page,
+                limit,
+                status,
+                type,
+                q: q.trim() || undefined,
+                start: range.start || undefined,
+                end: range.end || undefined
+            });
+            setData(res.data.data || []);
+            setMeta(res.data.meta || null);
+        } catch (e: any) {
+            addToast('error', e?.response?.data?.error || 'Failed to load transactions');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const openDetails = async (id: string) => {
+        setSelectedId(id);
+        setDetail(null);
+        setNote('');
+        setReason('');
+        setDetailLoading(true);
+        try {
+            const res = await adminApi.getTransaction(id);
+            setDetail(res.data);
+            const existingNote = res.data?.transaction?.meta?.adminNote;
+            if (existingNote) setNote(existingNote);
+        } catch (e: any) {
+            addToast('error', e?.response?.data?.error || 'Failed to load transaction');
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchList();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, status, type]);
+
+    const handleSearch = () => {
+        setPage(1);
+        fetchList();
+    };
+
+    const runPendingRequery = async () => {
+        setActionLoading('requeryPending');
+        try {
+            await adminApi.requeryPending();
+            addToast('success', 'Pending requery completed');
+            fetchList();
+            if (selectedId) openDetails(selectedId);
+        } catch (e: any) {
+            addToast('error', e?.response?.data?.error || 'Requery failed');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const action = async (kind: 'note' | 'refund' | 'forceFail' | 'forceSuccess' | 'requery') => {
+        if (!selectedId) return;
+        setActionLoading(kind);
+        try {
+            if (kind === 'note') {
+                await adminApi.addTransactionNote(selectedId, note);
+                addToast('success', 'Note saved');
+            }
+            if (kind === 'refund') {
+                await adminApi.refundTransaction(selectedId, reason);
+                addToast('success', 'Refund completed');
+            }
+            if (kind === 'forceFail') {
+                await adminApi.forceFailTransaction(selectedId, reason);
+                addToast('success', 'Transaction marked failed');
+            }
+            if (kind === 'forceSuccess') {
+                await adminApi.forceSuccessTransaction(selectedId, reason);
+                addToast('success', 'Transaction marked success');
+            }
+            if (kind === 'requery') {
+                await adminApi.requeryTransaction(selectedId);
+                addToast('success', 'Requery executed');
+            }
+
+            await fetchList();
+            await openDetails(selectedId);
+        } catch (e: any) {
+            addToast('error', e?.response?.data?.error || 'Action failed');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    return (
+        <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <h1 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <ReceiptText size={18} /> Transactions
+                    </h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Search, inspect, and take audited actions on transactions.</p>
+                </div>
+                <Button onClick={runPendingRequery} disabled={actionLoading === 'requeryPending'} className="text-xs">
+                    {actionLoading === 'requeryPending' ? 'Running...' : 'Requery Pending (Safety Net)'}
+                </Button>
+            </div>
+
+            <Card className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="md:col-span-2">
+                        <Input
+                            label="Search"
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="Tx ID, User ID, email, Paystack ref..."
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-muted uppercase tracking-wider">Status</label>
+                        <select
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value as any)}
+                            className="mt-1 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white"
+                        >
+                            <option value="all">All</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="SUCCESS">Success</option>
+                            <option value="FAILED">Failed</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-muted uppercase tracking-wider">Type</label>
+                        <select
+                            value={type}
+                            onChange={(e) => setType(e.target.value as any)}
+                            className="mt-1 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white"
+                        >
+                            <option value="all">All</option>
+                            <option value="DEPOSIT">Deposit</option>
+                            <option value="WITHDRAWAL">Withdrawal</option>
+                            <option value="INVESTMENT_DEBIT">Investment Debit</option>
+                            <option value="INVESTMENT_PAYOUT">Investment Payout</option>
+                            <option value="UTILITY_BILL">Utility Bill</option>
+                            <option value="REFERRAL_BONUS">Referral Bonus</option>
+                        </select>
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <Button onClick={handleSearch} className="w-full">Search</Button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <Input
+                        label="Start Date (optional)"
+                        type="date"
+                        value={range.start}
+                        onChange={(e) => setRange({ ...range, start: e.target.value })}
+                    />
+                    <Input
+                        label="End Date (optional)"
+                        type="date"
+                        value={range.end}
+                        onChange={(e) => setRange({ ...range, end: e.target.value })}
+                    />
+                </div>
+            </Card>
+
+            {loading ? (
+                <div className="flex items-center justify-center h-64"><Spinner /></div>
+            ) : data.length === 0 ? (
+                <Card className="text-center py-12">
+                    <p className="text-slate-500">No transactions found.</p>
+                </Card>
+            ) : (
+                <Card className="p-0 overflow-hidden">
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {data.map((t) => (
+                            <button
+                                key={t.id}
+                                onClick={() => openDetails(t.id)}
+                                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-slate-900 dark:text-white">{t.type}</span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status === 'SUCCESS' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : t.status === 'FAILED' ? 'bg-red-500/15 text-red-700 dark:text-red-400' : t.status === 'REJECTED' ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'}`}>
+                                                {t.status}
+                                            </span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                {t.user.name || t.user.username || t.user.email}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                            {t.id} • {new Date(t.createdAt).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="font-bold text-slate-900 dark:text-white">
+                                            <FormatCurrency amount={t.amount} />
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.description}</div>
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </Card>
+            )}
+
+            {meta && meta.totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                    <Button variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                        Page {meta.page} of {meta.totalPages} • {meta.total} total
+                    </span>
+                    <Button variant="ghost" disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                </div>
+            )}
+
+            <Modal isOpen={!!selectedId} onClose={() => setSelectedId(null)} title="Transaction Details">
+                {detailLoading ? (
+                    <div className="flex items-center justify-center h-48"><Spinner /></div>
+                ) : !detail ? (
+                    <div className="text-sm text-slate-500 dark:text-slate-400">No details.</div>
+                ) : (
+                    <div className="space-y-4">
+                        <Card className="p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="font-bold text-slate-900 dark:text-white">{detail.transaction.type} • <FormatCurrency amount={detail.transaction.amount} /></div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{detail.transaction.id}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                        User: {detail.transaction.user.name || detail.transaction.user.username || detail.transaction.user.email} • Balance: <FormatCurrency amount={detail.transaction.user.balance} />
+                                    </div>
+                                </div>
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${detail.transaction.status === 'SUCCESS' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : detail.transaction.status === 'FAILED' ? 'bg-red-500/15 text-red-700 dark:text-red-400' : detail.transaction.status === 'REJECTED' ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'}`}>
+                                    {detail.transaction.status}
+                                </span>
+                            </div>
+                        </Card>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Card className="p-4">
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Timeline</div>
+                                <div className="space-y-2">
+                                    {detail.timeline?.length ? detail.timeline
+                                        .slice()
+                                        .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+                                        .map((e, i) => (
+                                            <div key={i} className="text-xs">
+                                                <div className="text-slate-900 dark:text-white font-semibold">{e.label}</div>
+                                                <div className="text-slate-500 dark:text-slate-400">{new Date(e.at).toLocaleString()} {e.details ? `• ${e.details}` : ''}</div>
+                                            </div>
+                                        )) : (
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">No timeline events.</div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            <Card className="p-4">
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Paystack refs</div>
+                                <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                    <div><span className="text-slate-500 dark:text-slate-400">reference:</span> {detail.transaction.meta?.reference || '-'}</div>
+                                    <div><span className="text-slate-500 dark:text-slate-400">paystackReference:</span> {detail.transaction.meta?.paystackReference || '-'}</div>
+                                    <div><span className="text-slate-500 dark:text-slate-400">transferCode:</span> {detail.transaction.meta?.transferCode || '-'}</div>
+                                    <div><span className="text-slate-500 dark:text-slate-400">transferFinalEvent:</span> {detail.transaction.meta?.transferFinalEvent || '-'}</div>
+                                </div>
+                            </Card>
+                        </div>
+
+                        <Card className="p-4 space-y-3">
+                            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Admin Actions (Audited)</div>
+
+                            <Input
+                                label="Admin Note"
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="Add an internal note..."
+                            />
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => action('note')} disabled={actionLoading === 'note' || !note.trim()} className="flex-1">
+                                    {actionLoading === 'note' ? 'Saving...' : 'Save Note'}
+                                </Button>
+                                <Button variant="outline" onClick={() => action('requery')} disabled={actionLoading === 'requery'} className="flex-1">
+                                    {actionLoading === 'requery' ? 'Running...' : 'Requery'}
+                                </Button>
+                            </div>
+
+                            <Input
+                                label="Reason (required for refund/force)"
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="Explain why you are taking this action..."
+                            />
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <Button
+                                    variant="danger"
+                                    onClick={() => action('refund')}
+                                    disabled={actionLoading === 'refund' || !reason.trim()}
+                                >
+                                    {actionLoading === 'refund' ? 'Working...' : 'Manual Refund (Withdrawal)'} 
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    onClick={() => action('forceFail')}
+                                    disabled={actionLoading === 'forceFail' || !reason.trim()}
+                                >
+                                    {actionLoading === 'forceFail' ? 'Working...' : 'Force Fail'}
+                                </Button>
+                                <Button
+                                    onClick={() => action('forceSuccess')}
+                                    disabled={actionLoading === 'forceSuccess' || !reason.trim()}
+                                >
+                                    {actionLoading === 'forceSuccess' ? 'Working...' : 'Force Success (Deposit)'}
+                                </Button>
+                            </div>
+
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Safety rules: refunds only apply to pending withdrawals; force success only allowed for deposits.
+                            </p>
+                        </Card>
+                    </div>
+                )}
             </Modal>
         </div>
     );

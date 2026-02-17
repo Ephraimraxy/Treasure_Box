@@ -323,6 +323,353 @@ router.get('/audit-logs', async (req: AuthRequest, res, next) => {
     }
 });
 
+// ═══════════════════════════════════════════════
+//  TRANSACTIONS EXPLORER (Admin Transparency)
+// ═══════════════════════════════════════════════
+
+router.get('/transactions', async (req: AuthRequest, res, next) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 25, 100);
+        const skip = (page - 1) * limit;
+
+        const status = (req.query.status as string) || 'all'; // PENDING|SUCCESS|FAILED|REJECTED|all
+        const type = (req.query.type as string) || 'all'; // DEPOSIT|WITHDRAWAL|...|all
+        const q = (req.query.q as string) || '';
+        const start = req.query.start ? new Date(req.query.start as string) : null;
+        const end = req.query.end ? new Date(req.query.end as string) : null;
+
+        const where: any = {};
+        if (status !== 'all') where.status = status;
+        if (type !== 'all') where.type = type;
+        if (start || end) {
+            where.createdAt = {
+                ...(start ? { gte: start } : {}),
+                ...(end ? { lte: new Date(new Date(end).setHours(23, 59, 59, 999)) } : {})
+            };
+        }
+
+        const or: any[] = [];
+        const trimmed = q.trim();
+        if (trimmed) {
+            // id / userId exact match (best signal)
+            or.push({ id: trimmed });
+            or.push({ userId: trimmed });
+
+            // user search
+            or.push({ user: { email: { contains: trimmed, mode: 'insensitive' } } });
+            or.push({ user: { name: { contains: trimmed, mode: 'insensitive' } } });
+
+            // description search
+            or.push({ description: { contains: trimmed, mode: 'insensitive' } });
+
+            // paystack refs stored in meta
+            or.push({ meta: { path: ['reference'], equals: trimmed } });
+            or.push({ meta: { path: ['paystackReference'], equals: trimmed } });
+            or.push({ meta: { path: ['transferCode'], equals: trimmed } });
+
+            // amount exact match if numeric
+            const maybeAmount = Number(trimmed);
+            if (!Number.isNaN(maybeAmount) && maybeAmount > 0) {
+                or.push({ amount: maybeAmount });
+            }
+
+            where.OR = or;
+        }
+
+        const [data, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+                include: {
+                    user: { select: { id: true, email: true, name: true, username: true, balance: true } }
+                }
+            }),
+            prisma.transaction.count({ where })
+        ]);
+
+        res.json({
+            data,
+            meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.get('/transactions/:id', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const tx = await prisma.transaction.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        username: true,
+                        balance: true,
+                        isSuspended: true,
+                        suspensionReason: true
+                    }
+                }
+            }
+        });
+
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+
+        const meta: any = tx.meta || {};
+        const timeline: { at: string; label: string; details?: string }[] = [];
+        timeline.push({ at: tx.createdAt.toISOString(), label: 'Transaction created', details: `${tx.type} • ₦${tx.amount}` });
+        if (meta.transferInitiatedAt) timeline.push({ at: meta.transferInitiatedAt, label: 'Transfer initiated', details: meta.paystackReference || meta.transferCode });
+        if (meta.approvedAt) timeline.push({ at: meta.approvedAt, label: 'Admin approved', details: meta.approvedBy });
+        if (meta.verifiedAt) timeline.push({ at: meta.verifiedAt, label: 'Paystack verified', details: meta.verificationSource });
+        if (meta.transferFinalAt) timeline.push({ at: meta.transferFinalAt, label: 'Transfer finalized', details: meta.transferFinalEvent });
+        if (meta.requery?.at) timeline.push({ at: meta.requery.at, label: 'Requery ran', details: `status=${meta.requery.status}` });
+        if (meta.adminNoteAt) timeline.push({ at: meta.adminNoteAt, label: 'Admin note added', details: meta.adminNoteBy });
+        if (meta.adminRefundedAt) timeline.push({ at: meta.adminRefundedAt, label: 'Admin refund', details: meta.adminRefundedBy });
+
+        res.json({ transaction: tx, timeline });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/transactions/:id/note', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { note } = req.body;
+        if (!note || String(note).trim().length < 2) return res.status(400).json({ error: 'Note is required' });
+
+        const tx = await prisma.transaction.findUnique({ where: { id } });
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+
+        const updated = await prisma.transaction.update({
+            where: { id },
+            data: {
+                meta: {
+                    ...(tx.meta as any),
+                    adminNote: String(note).trim(),
+                    adminNoteBy: req.user!.email,
+                    adminNoteAt: new Date().toISOString()
+                }
+            }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'ADD_TRANSACTION_NOTE',
+                details: `Added note to transaction ${id}`
+            }
+        });
+
+        res.json({ message: 'Note saved', transaction: updated });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/transactions/:id/refund', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        if (!reason || String(reason).trim().length < 3) return res.status(400).json({ error: 'Reason is required' });
+
+        const tx = await prisma.transaction.findUnique({ where: { id } });
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+
+        if (tx.type !== 'WITHDRAWAL') {
+            return res.status(400).json({ error: 'Refund is only supported for withdrawals currently' });
+        }
+
+        const meta: any = tx.meta || {};
+        if (meta.adminRefundedAt) return res.status(400).json({ error: 'Already refunded' });
+
+        if (tx.status !== 'PENDING') {
+            return res.status(400).json({ error: 'Only pending withdrawals can be refunded safely' });
+        }
+
+        await prisma.$transaction([
+            prisma.transaction.update({
+                where: { id },
+                data: {
+                    status: 'REJECTED',
+                    rejectionReason: String(reason).trim(),
+                    meta: {
+                        ...(tx.meta as any),
+                        adminRefundReason: String(reason).trim(),
+                        adminRefundedBy: req.user!.email,
+                        adminRefundedAt: new Date().toISOString()
+                    }
+                }
+            }),
+            prisma.user.update({
+                where: { id: tx.userId },
+                data: { balance: { increment: tx.amount } }
+            }),
+            prisma.notification.create({
+                data: {
+                    userId: tx.userId,
+                    title: 'Withdrawal Refunded',
+                    message: `Your withdrawal of ₦${tx.amount.toLocaleString()} was refunded. Reason: ${String(reason).trim()}`,
+                    type: 'INFO'
+                }
+            })
+        ]);
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'MANUAL_REFUND',
+                details: `Refunded withdrawal ${id}. Reason: ${String(reason).trim()}`
+            }
+        });
+
+        res.json({ message: 'Refund completed' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/transactions/:id/force-fail', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        if (!reason || String(reason).trim().length < 3) return res.status(400).json({ error: 'Reason is required' });
+
+        const tx = await prisma.transaction.findUnique({ where: { id } });
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+        if (tx.status !== 'PENDING') return res.status(400).json({ error: 'Only pending transactions can be force-failed' });
+
+        if (tx.type === 'WITHDRAWAL') {
+            await prisma.$transaction([
+                prisma.transaction.update({
+                    where: { id },
+                    data: {
+                        status: 'FAILED',
+                        meta: { ...(tx.meta as any), forcedBy: req.user!.email, forcedAt: new Date().toISOString(), forceReason: String(reason).trim(), forceAction: 'FAIL' }
+                    }
+                }),
+                prisma.user.update({
+                    where: { id: tx.userId },
+                    data: { balance: { increment: tx.amount } }
+                }),
+                prisma.notification.create({
+                    data: {
+                        userId: tx.userId,
+                        title: 'Withdrawal Failed',
+                        message: `Your withdrawal of ₦${tx.amount.toLocaleString()} was marked failed and refunded. Reason: ${String(reason).trim()}`,
+                        type: 'ERROR'
+                    }
+                })
+            ]);
+        } else {
+            await prisma.transaction.update({
+                where: { id },
+                data: {
+                    status: 'FAILED',
+                    meta: { ...(tx.meta as any), forcedBy: req.user!.email, forcedAt: new Date().toISOString(), forceReason: String(reason).trim(), forceAction: 'FAIL' }
+                }
+            });
+        }
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'FORCE_FAIL_TRANSACTION',
+                details: `Force failed ${id}. Reason: ${String(reason).trim()}`
+            }
+        });
+
+        res.json({ message: 'Transaction marked failed' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/transactions/:id/force-success', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        if (!reason || String(reason).trim().length < 3) return res.status(400).json({ error: 'Reason is required' });
+
+        const tx = await prisma.transaction.findUnique({ where: { id } });
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+        if (tx.status !== 'PENDING') return res.status(400).json({ error: 'Only pending transactions can be force-marked success' });
+
+        // Safety: only allow force success for deposits (credits wallet) with explicit reason
+        if (tx.type !== 'DEPOSIT') {
+            return res.status(400).json({ error: 'Force success is only allowed for deposits' });
+        }
+
+        await prisma.$transaction([
+            prisma.transaction.update({
+                where: { id },
+                data: {
+                    status: 'SUCCESS',
+                    meta: { ...(tx.meta as any), forcedBy: req.user!.email, forcedAt: new Date().toISOString(), forceReason: String(reason).trim(), forceAction: 'SUCCESS' }
+                }
+            }),
+            prisma.user.update({
+                where: { id: tx.userId },
+                data: { balance: { increment: tx.amount } }
+            }),
+            prisma.notification.create({
+                data: {
+                    userId: tx.userId,
+                    title: 'Deposit Successful',
+                    message: `Your deposit of ₦${tx.amount.toLocaleString()} was marked successful. Reason: ${String(reason).trim()}`,
+                    type: 'SUCCESS'
+                }
+            })
+        ]);
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'FORCE_SUCCESS_TRANSACTION',
+                details: `Force success ${id}. Reason: ${String(reason).trim()}`
+            }
+        });
+
+        res.json({ message: 'Transaction marked success' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/transactions/:id/requery', async (req: AuthRequest, res, next) => {
+    try {
+        const { id } = req.params;
+        const tx = await prisma.transaction.findUnique({ where: { id } });
+        if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+
+        if (tx.status !== 'PENDING') {
+            return res.json({ message: 'No requery needed (not pending)', status: tx.status });
+        }
+
+        const { requeryPendingPaystackTransactions } = await import('../jobs/reconciliation.job');
+        await requeryPendingPaystackTransactions();
+
+        await prisma.auditLog.create({
+            data: {
+                adminEmail: req.user!.email,
+                action: 'REQUERY_TRANSACTION',
+                details: `Triggered requery job for transaction ${id}`
+            }
+        });
+
+        const refreshed = await prisma.transaction.findUnique({ where: { id } });
+        res.json({ message: 'Requery executed', transaction: refreshed });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Edit user details
 router.put('/users/:id', async (req: AuthRequest, res, next) => {
     try {
