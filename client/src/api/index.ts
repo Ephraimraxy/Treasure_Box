@@ -117,17 +117,18 @@ export const adminApi = {
     creditUser: (userId: string, amount: number, description?: string) =>
         api.post(`/admin/users/${userId}/credit`, { amount, description }),
     getAuditLogs: () => api.get('/admin/audit-logs'),
-    getTransactions: (params?: { page?: number; limit?: number; status?: string; type?: string; q?: string; start?: string; end?: string }) => {
-        const sp = new URLSearchParams();
-        if (params?.page) sp.set('page', String(params.page));
-        if (params?.limit) sp.set('limit', String(params.limit));
-        if (params?.status) sp.set('status', params.status);
-        if (params?.type) sp.set('type', params.type);
-        if (params?.q) sp.set('q', params.q);
-        if (params?.start) sp.set('start', params.start);
-        if (params?.end) sp.set('end', params.end);
-        const qs = sp.toString();
-        return api.get(`/admin/transactions${qs ? `?${qs}` : ''}`);
+    getTransactions: (params: { page?: number; limit?: number; status?: string; type?: string; provider?: string; q?: string; start?: string; end?: string }) => {
+        const query = new URLSearchParams();
+        if (params.page) query.append('page', params.page.toString());
+        if (params.limit) query.append('limit', params.limit.toString());
+        if (params.status && params.status !== 'all') query.append('status', params.status);
+        if (params.type && params.type !== 'all') query.append('type', params.type);
+        if (params.provider && params.provider !== 'all') query.append('provider', params.provider);
+        if (params.q) query.append('q', params.q);
+        if (params.start) query.append('start', params.start);
+        if (params.end) query.append('end', params.end);
+
+        return api.get(`/admin/transactions?${query.toString()}`);
     },
     getTransaction: (id: string) => api.get(`/admin/transactions/${id}`),
     addTransactionNote: (id: string, note: string) => api.post(`/admin/transactions/${id}/note`, { note }),
