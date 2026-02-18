@@ -82,6 +82,7 @@ export const DashboardPage = () => {
                 u.rate = 1.0;
                 u.pitch = 1.0;
                 u.volume = 1.0;
+                u.lang = 'en-US';
 
                 const speak = () => {
                     const voices = window.speechSynthesis.getVoices();
