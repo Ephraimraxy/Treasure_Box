@@ -453,13 +453,13 @@ export const AdminDashboardPage = () => {
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
-                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Available)</div>
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Payout Ready)</div>
                             <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                                 <FormatCurrency amount={agentBalances.paystack.available} />
                             </div>
                         </Card>
                         <Card className="bg-white dark:bg-surface border border-slate-200 dark:border-border">
-                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Pending)</div>
+                            <div className="text-xs font-medium text-slate-500 dark:text-foreground-muted mb-1.5">Paystack (Settlement Pending)</div>
                             <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
                                 <FormatCurrency amount={agentBalances.paystack.pending} />
                             </div>
@@ -1295,6 +1295,7 @@ export const AdminTransactionsPage = () => {
     const [limit] = useState(25);
     const [status, setStatus] = useState<'all' | AdminTxStatus>('all');
     const [type, setType] = useState<AdminTxType>('all');
+    const [provider, setProvider] = useState<'all' | 'paystack' | 'vtpass' | 'dataverify' | 'system'>('all');
     const [q, setQ] = useState('');
     const [range, setRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
@@ -1313,7 +1314,9 @@ export const AdminTransactionsPage = () => {
                 page,
                 limit,
                 status,
+
                 type,
+                provider,
                 q: q.trim() || undefined,
                 start: range.start || undefined,
                 end: range.end || undefined
@@ -1348,7 +1351,7 @@ export const AdminTransactionsPage = () => {
     useEffect(() => {
         fetchList();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, status, type]);
+    }, [page, status, type, provider]);
 
     const handleSearch = () => {
         setPage(1);
@@ -1441,6 +1444,21 @@ export const AdminTransactionsPage = () => {
                             <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-muted uppercase tracking-wider">Provider</label>
+                        <select
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value as any)}
+                            className="mt-1 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white"
+                        >
+                            <option value="all">All Providers</option>
+                            <option value="paystack">Paystack</option>
+                            <option value="vtpass">VTPass</option>
+                            <option value="dataverify">DataVerify</option>
+                            <option value="system">System</option>
+                        </select>
+                    </div>
                     <div>
                         <label className="text-xs font-bold text-muted uppercase tracking-wider">Type</label>
                         <select
@@ -1460,7 +1478,7 @@ export const AdminTransactionsPage = () => {
                     <div className="flex items-end gap-2">
                         <Button onClick={handleSearch} className="w-full">Search</Button>
                     </div>
-                </div>
+                </div >
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                     <Input
@@ -1476,60 +1494,63 @@ export const AdminTransactionsPage = () => {
                         onChange={(e) => setRange({ ...range, end: e.target.value })}
                     />
                 </div>
-            </Card>
+            </Card >
 
-            {loading ? (
-                <div className="flex items-center justify-center h-64"><Spinner /></div>
-            ) : data.length === 0 ? (
-                <Card className="text-center py-12">
-                    <p className="text-slate-500">No transactions found.</p>
-                </Card>
-            ) : (
-                <Card className="p-0 overflow-hidden">
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {data.map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => openDetails(t.id)}
-                                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-slate-900 dark:text-white">{t.type}</span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status === 'SUCCESS' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : t.status === 'FAILED' ? 'bg-red-500/15 text-red-700 dark:text-red-400' : t.status === 'REJECTED' ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'}`}>
-                                                {t.status}
-                                            </span>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                {t.user.name || t.user.username || t.user.email}
-                                            </span>
+            {
+                loading ? (
+                    <div className="flex items-center justify-center h-64" > <Spinner /></div>
+                ) : data.length === 0 ? (
+                    <Card className="text-center py-12">
+                        <p className="text-slate-500">No transactions found.</p>
+                    </Card>
+                ) : (
+                    <Card className="p-0 overflow-hidden">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {data.map((t) => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => openDetails(t.id)}
+                                    className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-bold text-slate-900 dark:text-white">{t.type}</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status === 'SUCCESS' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : t.status === 'FAILED' ? 'bg-red-500/15 text-red-700 dark:text-red-400' : t.status === 'REJECTED' ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'}`}>
+                                                    {t.status}
+                                                </span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                    {t.user.name || t.user.username || t.user.email}
+                                                </span>
+                                            </div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                                {t.id} • {new Date(t.createdAt).toLocaleString()}
+                                            </div>
                                         </div>
-                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                                            {t.id} • {new Date(t.createdAt).toLocaleString()}
+                                        <div className="text-right shrink-0">
+                                            <div className="font-bold text-slate-900 dark:text-white">
+                                                <FormatCurrency amount={t.amount} />
+                                            </div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.description}</div>
                                         </div>
                                     </div>
-                                    <div className="text-right shrink-0">
-                                        <div className="font-bold text-slate-900 dark:text-white">
-                                            <FormatCurrency amount={t.amount} />
-                                        </div>
-                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.description}</div>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+
+            {
+                meta && meta.totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                        <Button variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                            Page {meta.page} of {meta.totalPages} • {meta.total} total
+                        </span>
+                        <Button variant="ghost" disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
                     </div>
-                </Card>
-            )}
-
-            {meta && meta.totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                    <Button variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                        Page {meta.page} of {meta.totalPages} • {meta.total} total
-                    </span>
-                    <Button variant="ghost" disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
-                </div>
-            )}
+                )
+            }
 
             <Modal isOpen={!!selectedId} onClose={() => setSelectedId(null)} title="Transaction Details">
                 {detailLoading ? (
@@ -1637,7 +1658,7 @@ export const AdminTransactionsPage = () => {
                     </div>
                 )}
             </Modal>
-        </div>
+        </div >
     );
 };
 

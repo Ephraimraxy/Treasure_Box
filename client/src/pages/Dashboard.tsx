@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Clock, DollarSign, Eye, EyeOff, RefreshCw, Plus, Copy, Flag, Info, ChevronRight, Send } from 'lucide-react';
+import { TrendingUp, Clock, DollarSign, Eye, EyeOff, RefreshCw, Plus, Copy, Flag, Info, ChevronRight, Send, Volume2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi, investmentApi, paymentApi, userApi } from '../api';
@@ -79,25 +79,28 @@ export const DashboardPage = () => {
                     : 'Payment received in Treasure Box.';
 
                 const u = new SpeechSynthesisUtterance(text);
-
-                // Attempt to select a female voice
-                const voices = window.speechSynthesis.getVoices();
-                const femaleVoice = voices.find(v =>
-                    v.name.includes('Female') ||
-                    v.name.includes('Zira') ||
-                    v.name.includes('Google US English') ||
-                    v.lang.includes('en-US') // Fallback to US English which is often clearer
-                );
-
-                if (femaleVoice) {
-                    u.voice = femaleVoice;
-                }
-
                 u.rate = 1.0;
                 u.pitch = 1.0;
                 u.volume = 1.0;
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(u);
+
+                const speak = () => {
+                    const voices = window.speechSynthesis.getVoices();
+                    const femaleVoice = voices.find(v =>
+                        v.name.includes('Female') ||
+                        v.name.includes('Zira') ||
+                        v.name.includes('Google US English') ||
+                        v.lang.includes('en-US')
+                    );
+                    if (femaleVoice) u.voice = femaleVoice;
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(u);
+                };
+
+                if (window.speechSynthesis.getVoices().length === 0) {
+                    window.speechSynthesis.onvoiceschanged = speak;
+                } else {
+                    speak();
+                }
             }
         } catch { }
     };
@@ -315,6 +318,9 @@ export const DashboardPage = () => {
                                 <button onClick={() => setShowBalance(!showBalance)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                                     {showBalance ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
+                                <button onClick={() => playPaymentReceived(5000)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors" title="Test Notification">
+                                    <Volume2 size={18} />
+                                </button>
                                 <button onClick={handleRefresh} className={`p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors ${refreshing ? 'animate-spin' : ''}`} disabled={refreshing}>
                                     <RefreshCw size={18} />
                                 </button>
@@ -424,13 +430,13 @@ export const DashboardPage = () => {
                         </div>
                     </button>
                 </div>
-            </div>
+            </div >
 
             {/* Featured Carousel */}
-            <FeaturedCarousel />
+            < FeaturedCarousel />
 
             {/* Recent Transactions */}
-            <div className="max-w-3xl mx-auto w-full">
+            < div className="max-w-3xl mx-auto w-full" >
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-foreground flex items-center gap-2">
@@ -466,10 +472,10 @@ export const DashboardPage = () => {
                         )}
                     </div>
                 </Card>
-            </div>
+            </div >
 
             {/* Deposit Modal */}
-            <Modal
+            < Modal
                 isOpen={activeAction === 'deposit'}
                 onClose={() => setActiveAction(null)}
                 title="Deposit"
@@ -497,10 +503,10 @@ export const DashboardPage = () => {
                         {actionLoading ? 'Processing...' : 'Confirm Deposit'}
                     </Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* PIN Management Modal */}
-            <Modal isOpen={pinModal.open} onClose={() => setPinModal({ ...pinModal, open: false })} title={pinModal.mode === 'create' ? 'Set PIN' : 'Reset PIN'}>
+            < Modal isOpen={pinModal.open} onClose={() => setPinModal({ ...pinModal, open: false })} title={pinModal.mode === 'create' ? 'Set PIN' : 'Reset PIN'} >
                 <div className="space-y-4">
                     {pinStep === 1 && (
                         <>
@@ -530,10 +536,10 @@ export const DashboardPage = () => {
                         </>
                     )}
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Appeal Modal */}
-            <Modal isOpen={appealModal} onClose={() => setAppealModal(false)} title="Appeal Suspension">
+            < Modal isOpen={appealModal} onClose={() => setAppealModal(false)} title="Appeal Suspension" >
                 <div className="space-y-4">
                     <p className="text-sm text-muted">Explain why your suspension should be lifted.</p>
                     <textarea
@@ -548,10 +554,10 @@ export const DashboardPage = () => {
                         <Button onClick={handleAppealSubmit} disabled={appealLoading || !appealMessage.trim()} className="flex-1">{appealLoading ? 'Sending...' : 'Send Appeal'}</Button>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Ads Popup */}
-            <AdsPopup />
-        </div>
+            < AdsPopup />
+        </div >
     );
 };

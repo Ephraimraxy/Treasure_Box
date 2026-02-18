@@ -335,13 +335,43 @@ router.get('/transactions', async (req: AuthRequest, res, next) => {
 
         const status = (req.query.status as string) || 'all'; // PENDING|SUCCESS|FAILED|REJECTED|all
         const type = (req.query.type as string) || 'all'; // DEPOSIT|WITHDRAWAL|...|all
+        const provider = (req.query.provider as string) || 'all'; // paystack|vtpass|system|dataverify|all
         const q = (req.query.q as string) || '';
         const start = req.query.start ? new Date(req.query.start as string) : null;
         const end = req.query.end ? new Date(req.query.end as string) : null;
 
         const where: any = {};
+
+        // Status Filter
         if (status !== 'all') where.status = status;
-        if (type !== 'all') where.type = type;
+
+        // Type & Provider Filter Logic
+        let allowedTypes: string[] = [];
+        if (provider !== 'all') {
+            if (provider === 'paystack') allowedTypes = ['DEPOSIT', 'WITHDRAWAL'];
+            else if (provider === 'vtpass') allowedTypes = ['UTILITY_BILL', 'AIRTIME_DEPOSIT'];
+            else if (provider === 'system') allowedTypes = ['REFERRAL_BONUS', 'QUIZ_ENTRY', 'QUIZ_WINNING', 'INVESTMENT_PAYOUT', 'INVESTMENT_DEBIT'];
+            else if (provider === 'dataverify') allowedTypes = ['VERIFICATION']; // Future proofing
+        }
+
+        if (type !== 'all') {
+            // If specific type is requested
+            if (provider !== 'all') {
+                // If both provider and type are set, ensure type belongs to provider
+                if (allowedTypes.includes(type)) {
+                    where.type = type;
+                } else {
+                    // Conflict: Type doesn't belong to provider -> Return nothing
+                    where.type = '___NONE___';
+                }
+            } else {
+                where.type = type;
+            }
+        } else if (provider !== 'all') {
+            // Only provider set, filter by allowed types
+            where.type = { in: allowedTypes };
+        }
+
         if (start || end) {
             where.createdAt = {
                 ...(start ? { gte: start } : {}),
