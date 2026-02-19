@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Gift, TrendingUp, Shield, Zap, GraduationCap, Fingerprint, BrainCircuit } from 'lucide-react';
+import { userApi } from '../api';
 
 interface Slide {
     id: string;
@@ -14,7 +15,7 @@ interface Slide {
     link?: string;
 }
 
-const FEATURED_SLIDES: Slide[] = [
+const BASE_FEATURED_SLIDES: Slide[] = [
     {
         id: '1',
         title: 'Earn Up To 15% Returns',
@@ -104,6 +105,7 @@ const FEATURED_SLIDES: Slide[] = [
 export const FeaturedCarousel = () => {
     const navigate = useNavigate();
     const [current, setCurrent] = useState(0);
+    const [slides, setSlides] = useState<Slide[]>(BASE_FEATURED_SLIDES);
     const [isPaused, setIsPaused] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,7 +115,7 @@ export const FeaturedCarousel = () => {
     // Initial Image Load Check
     useEffect(() => {
         const checkImages = async () => {
-            const loadPromises = FEATURED_SLIDES.map(slide => {
+            const loadPromises = slides.map(slide => {
                 return new Promise((resolve, reject) => {
                     const img = new Image();
                     img.src = slide.image;
@@ -141,6 +143,38 @@ export const FeaturedCarousel = () => {
         };
 
         checkImages();
+    }, [slides]);
+
+    // Load nav visibility settings to optionally hide Quiz / Box promo slides
+    useEffect(() => {
+        let mounted = true;
+        const loadSettings = async () => {
+            try {
+                const res = await userApi.getSettings();
+                if (!mounted) return;
+                const data = res.data || {};
+                const showQuiz = data.showUserQuizNav ?? true;
+                const showBox = data.showUserBoxNav ?? true;
+
+                const filtered = BASE_FEATURED_SLIDES.filter(slide => {
+                    if (!showBox && slide.id === '1') return false; // Earn Up To 15% Returns
+                    if (!showQuiz && slide.id === '8') return false; // Mendula Quiz Arena
+                    return true;
+                });
+
+                setSlides(filtered);
+                setCurrent(0);
+            } catch {
+                // If settings fail, keep default slides
+                setSlides(BASE_FEATURED_SLIDES);
+            }
+        };
+
+        loadSettings();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     // Auto-rotate
@@ -148,7 +182,7 @@ export const FeaturedCarousel = () => {
         if (isPaused) return;
 
         const nextSlide = () => {
-            setCurrent((prev) => (prev + 1) % FEATURED_SLIDES.length);
+            setCurrent((prev) => (prev + 1) % (slides.length || 1));
         };
 
         timeoutRef.current = setTimeout(nextSlide, 5000);
@@ -156,7 +190,7 @@ export const FeaturedCarousel = () => {
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    }, [current, isPaused]);
+    }, [current, isPaused, slides.length]);
 
     // Touch Handlers
     const minSwipeDistance = 50;
@@ -180,10 +214,10 @@ export const FeaturedCarousel = () => {
         const isRightSwipe = distance < -minSwipeDistance;
 
         if (isLeftSwipe) {
-            setCurrent((prev) => (prev + 1) % FEATURED_SLIDES.length);
+            setCurrent((prev) => (prev + 1) % (slides.length || 1));
         }
         if (isRightSwipe) {
-            setCurrent((prev) => (prev - 1 + FEATURED_SLIDES.length) % FEATURED_SLIDES.length);
+            setCurrent((prev) => (prev - 1 + (slides.length || 1)) % (slides.length || 1));
         }
     }
 
@@ -223,7 +257,7 @@ export const FeaturedCarousel = () => {
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                {FEATURED_SLIDES.map((slide, index) => {
+                {slides.map((slide, index) => {
                     const isActive = index === current;
 
                     return (
@@ -290,7 +324,7 @@ export const FeaturedCarousel = () => {
 
                 {/* Pagination Dots */}
                 <div className="absolute bottom-4 right-5 z-30 flex gap-1.5">
-                    {FEATURED_SLIDES.map((_, index) => (
+                    {slides.map((_, index) => (
                         <button
                             key={index}
                             onClick={() => goTo(index)}

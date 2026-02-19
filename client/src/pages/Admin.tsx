@@ -2215,7 +2215,10 @@ export const AdminSettingsPage = () => {
         kycRequiredForAccount: true,
         enableEmailLoginAlerts: true,
         enableWithdrawalApproval: true,
-        defaultTheme: 'dark'
+        defaultTheme: 'dark',
+        showUserQuizNav: true,
+        showUserBoxNav: true,
+        enableUserAdsPopup: true,
     });
 
     const [saveLoading, setSaveLoading] = useState(false);
@@ -2335,6 +2338,54 @@ export const AdminSettingsPage = () => {
                                     onChange={e => setSettings({ ...settings, isSystemPaused: e.target.checked })}
                                 />
                                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div className="font-medium text-slate-900 dark:text-white">Show Quiz in User Nav</div>
+                                <div className="text-xs text-slate-400">Toggle visibility of the Quiz tab for users</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.showUserQuizNav ?? true}
+                                    onChange={e => setSettings({ ...settings, showUserQuizNav: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div className="font-medium text-slate-900 dark:text-white">Show Box (Investments) in User Nav</div>
+                                <div className="text-xs text-slate-400">Toggle visibility of the Box tab for users</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.showUserBoxNav ?? true}
+                                    onChange={e => setSettings({ ...settings, showUserBoxNav: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div className="font-medium text-slate-900 dark:text-white">Show Advert Popup Banner</div>
+                                <div className="text-xs text-slate-400">Enable or disable the advert image popup for users</div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings.enableUserAdsPopup ?? true}
+                                    onChange={e => setSettings({ ...settings, enableUserAdsPopup: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
 

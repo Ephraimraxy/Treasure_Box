@@ -19,7 +19,10 @@ router.get('/settings', authenticate, async (req: Request, res: Response) => {
             minInvestment: 5000, // Hardcoded for now as not in schema
             isSystemPaused: settings?.isSystemPaused || false,
             kycRequiredForAccount: settings?.kycRequiredForAccount ?? true,
-            defaultTheme: settings?.defaultTheme || 'dark'
+            defaultTheme: settings?.defaultTheme || 'dark',
+            showUserQuizNav: settings?.showUserQuizNav ?? true,
+            showUserBoxNav: settings?.showUserBoxNav ?? true,
+            enableUserAdsPopup: settings?.enableUserAdsPopup ?? true,
         });
     } catch (error) {
         console.error('Settings fetch error:', error);

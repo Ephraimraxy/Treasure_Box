@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import { userApi } from '../api';
 
 // Import images from assets - we need to make sure these paths are correct
 // Assuming typical Vite/React asset handling
@@ -15,6 +16,8 @@ export const AdsPopup = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
+    const [adsEnabled, setAdsEnabled] = useState(true);
 
     // Close Handler
     const handleClose = () => {
@@ -34,10 +37,42 @@ export const AdsPopup = () => {
         return () => clearInterval(interval);
     }, [isOpen]);
 
-    // Check conditions to show ad
+    // Load server-side toggle and then decide whether to show ad
     useEffect(() => {
+        let mounted = true;
+        const loadSettings = async () => {
+            try {
+                const res = await userApi.getSettings();
+                if (!mounted) return;
+                const data = res.data || {};
+                setAdsEnabled(data.enableUserAdsPopup ?? true);
+            } catch {
+                // fail open: keep ads enabled by default
+                setAdsEnabled(true);
+            } finally {
+                if (mounted) setSettingsLoaded(true);
+            }
+        };
+
+        // Only fetch if user appears logged in
+        const token = localStorage.getItem('token');
+        if (token) {
+            loadSettings();
+        } else {
+            setSettingsLoaded(true);
+            setAdsEnabled(false);
+        }
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    // Check conditions to show ad once settings are loaded and ads are enabled
+    useEffect(() => {
+        if (!settingsLoaded || !adsEnabled) return;
+
         const checkShouldShow = async () => {
-            // Check if user is logged in (has token)
             const token = localStorage.getItem('token');
             if (!token) return; // Don't show if not logged in
 
@@ -45,15 +80,14 @@ export const AdsPopup = () => {
 
             // 1. Check if it's a new login (within 5 minutes of login)
             const lastLoginTime = localStorage.getItem('last_login_time');
-            const isNewLogin = lastLoginTime && (currentTime - parseInt(lastLoginTime)) < (5 * 60 * 1000); // Within 5 minutes of login
+            const isNewLogin = lastLoginTime && (currentTime - parseInt(lastLoginTime)) < (5 * 60 * 1000);
 
             // 2. Check if user is returning after a long time (7+ days since last visit)
             const lastVisitTime = localStorage.getItem('ads_last_visit');
-            const isLongTimeReturning = lastVisitTime ? (currentTime - parseInt(lastVisitTime)) > (7 * 24 * 60 * 60 * 1000) : true; // 7 days or never visited
+            const isLongTimeReturning = lastVisitTime ? (currentTime - parseInt(lastVisitTime)) > (7 * 24 * 60 * 60 * 1000) : true;
 
             // 3. Always show on dashboard refresh (this component mounts on dashboard)
-            // Show if: new login OR long-time returning OR dashboard refresh (always)
-            const shouldShow = isNewLogin || isLongTimeReturning || true; // Always show on dashboard refresh
+            const shouldShow = isNewLogin || isLongTimeReturning || true;
 
             if (!shouldShow) return;
 
@@ -75,18 +109,17 @@ export const AdsPopup = () => {
                 // If we get here, images loaded fast enough
                 setLoading(false);
                 setIsOpen(true);
-            } catch (error) {
+            } catch {
                 // Network too slow or images failed, don't show popup
                 console.log('Ads skipped due to network/loading issues');
             }
         };
 
-        // Run check after a short delay to let app load first
         const timer = setTimeout(checkShouldShow, 2000);
         return () => clearTimeout(timer);
-    }, []);
+    }, [settingsLoaded, adsEnabled]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !adsEnabled) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">

@@ -391,7 +391,7 @@ export const DashboardPage = () => {
                 </Card>
 
                 {/* Quick Actions */}
-                <div className="grid grid-rows-3 gap-2">
+                <div className="grid grid-rows-2 gap-2">
                     <button
                         onClick={() => { setActiveAction('deposit'); setAmount(''); }}
                         className="flex items-center gap-3 p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all group text-left"
@@ -418,18 +418,6 @@ export const DashboardPage = () => {
                         </div>
                     </button>
 
-                    <button
-                        onClick={() => navigate('/investments')}
-                        className="flex items-center gap-3 p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all group text-left"
-                    >
-                        <div className="p-2 bg-amber-500 text-white rounded-lg group-hover:scale-110 transition-transform">
-                            <TrendingUp size={20} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <div className="font-bold text-foreground">Invest</div>
-                            <div className="text-xs text-amber-500">Earn Returns</div>
-                        </div>
-                    </button>
                 </div>
             </div >
 

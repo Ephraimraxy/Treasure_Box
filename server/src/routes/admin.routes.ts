@@ -1255,7 +1255,10 @@ router.get('/settings', async (req: AuthRequest, res, next) => {
             minWithdrawal: 1000,
             minInvestment: 5000,
             isSystemPaused: false,
-            enableWithdrawalApproval: true
+            enableWithdrawalApproval: true,
+            showUserQuizNav: true,
+            showUserBoxNav: true,
+            enableUserAdsPopup: true,
         });
     } catch (error) {
         next(error);

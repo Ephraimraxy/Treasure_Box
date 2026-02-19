@@ -161,6 +161,9 @@ model Settings {
   enableWithdrawalApproval Boolean @default(true)
   kycRequiredForAccount     Boolean @default(true)
   defaultTheme              String  @default("dark") // system, light, dark
+  showUserQuizNav           Boolean @default(true)
+  showUserBoxNav            Boolean @default(true)
+  enableUserAdsPopup        Boolean @default(true)
 }
 
 // ── Financial Control Center Models ────────────────────────

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, BarChart3, Brain, LayoutGrid, Users, History, User, Settings, FileClock, ArrowUpDown, LogOut, Bell, Box, Search, AlertCircle, ReceiptText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { userApi } from '../api';
 import { Button } from './ui';
 
 const userNavItems = [
@@ -35,7 +36,43 @@ import { NetworkStatus } from './NetworkStatus';
 export const Layout = ({ children }: LayoutProps) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const navItems = user?.role === 'ADMIN' ? adminNavItems : userNavItems;
+    const [navSettings, setNavSettings] = useState<{ showUserQuizNav: boolean; showUserBoxNav: boolean }>({
+        showUserQuizNav: true,
+        showUserBoxNav: true,
+    });
+
+    useEffect(() => {
+        let mounted = true;
+        const fetchSettings = async () => {
+            try {
+                const res = await userApi.getSettings();
+                if (!mounted) return;
+                const data = res.data || {};
+                setNavSettings({
+                    showUserQuizNav: data.showUserQuizNav ?? true,
+                    showUserBoxNav: data.showUserBoxNav ?? true,
+                });
+            } catch {
+                // fail open: keep defaults
+            }
+        };
+
+        if (user?.role !== 'ADMIN') {
+            fetchSettings();
+        }
+
+        return () => {
+            mounted = false;
+        };
+    }, [user?.role]);
+
+    const filteredUserNavItems = userNavItems.filter(item => {
+        if (item.label === 'Quiz' && !navSettings.showUserQuizNav) return false;
+        if (item.label === 'Box' && !navSettings.showUserBoxNav) return false;
+        return true;
+    });
+
+    const navItems = user?.role === 'ADMIN' ? adminNavItems : filteredUserNavItems;
 
     // Theme is handled globally by ThemeProvider
 
