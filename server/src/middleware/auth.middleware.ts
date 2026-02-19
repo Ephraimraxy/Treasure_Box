@@ -6,10 +6,17 @@ const prisma = new PrismaClient();
 
 // Keep TEST_USER_ID in sync with auth.routes.ts
 const TEST_USER_ID = 'test-user';
+const envBool = (value: string | undefined | null, defaultValue = false) => {
+    if (!value) return defaultValue;
+    const v = value.toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+};
 const isTestLoginEnabled = () =>
-    (process.env.ENABLE_TEST_LOGIN || '').toLowerCase() === 'true' &&
+    envBool(process.env.ENABLE_TEST_LOGIN) &&
     !!process.env.TEST_USER_EMAIL &&
     !!process.env.TEST_USER_PASSWORD;
+const getTestUserRole = () =>
+    (process.env.TEST_USER_ROLE || '').toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER';
 
 export interface AuthRequest extends Request {
     user?: {
@@ -36,7 +43,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
                 id: TEST_USER_ID,
                 email: process.env.TEST_USER_EMAIL!,
                 name: process.env.TEST_USER_NAME || 'Test User',
-                role: 'USER'
+                role: getTestUserRole()
             };
             return next();
         }

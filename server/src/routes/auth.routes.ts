@@ -11,13 +11,24 @@ const prisma = new PrismaClient();
 // Admin email - will be assigned ADMIN role on registration
 const ADMIN_EMAIL = 'burstbrainconcept@gmail.com';
 
+// Helpers for env-based flags
+const envBool = (value: string | undefined | null, defaultValue = false) => {
+    if (!value) return defaultValue;
+    const v = value.toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+};
+
 // Test login configuration (for temporary, env-based dashboard access)
 const isTestLoginEnabled = () =>
-    (process.env.ENABLE_TEST_LOGIN || '').toLowerCase() === 'true' &&
+    envBool(process.env.ENABLE_TEST_LOGIN) &&
     !!process.env.TEST_USER_EMAIL &&
     !!process.env.TEST_USER_PASSWORD;
 
 const TEST_USER_ID = 'test-user';
+const getTestUserRole = () =>
+    (process.env.TEST_USER_ROLE || '').toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER';
+const isTestUserEmailVerified = () =>
+    envBool(process.env.TEST_USER_EMAIL_VERIFIED, true);
 
 // Schemas
 const registerSchema = z.object({
@@ -279,8 +290,8 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
                         id: TEST_USER_ID,
                         email: testEmail,
                         name: testName,
-                        role: 'USER',
-                        emailVerified: true
+                        role: getTestUserRole(),
+                        emailVerified: isTestUserEmailVerified()
                     }
                 });
             }

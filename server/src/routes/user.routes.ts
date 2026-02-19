@@ -10,6 +10,15 @@ const prisma = new PrismaClient();
 
 // Keep TEST_USER_ID in sync with auth and auth.middleware
 const TEST_USER_ID = 'test-user';
+const envBool = (value: string | undefined | null, defaultValue = false) => {
+    if (!value) return defaultValue;
+    const v = value.toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+};
+const getTestUserRole = () =>
+    (process.env.TEST_USER_ROLE || '').toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER';
+const isTestUserKycVerified = () =>
+    envBool(process.env.TEST_USER_KYC_VERIFIED, true);
 
 // Public Settings - for any authenticated user to get system limits
 router.get('/settings', authenticate, async (req: Request, res: Response) => {
@@ -55,6 +64,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
 
         // Return a mock profile for env-based test login user (no DB record)
         if (userId === TEST_USER_ID) {
+            const kycVerified = isTestUserKycVerified();
             return res.json({
                 id: TEST_USER_ID,
                 email: process.env.TEST_USER_EMAIL || 'test@example.com',
@@ -62,11 +72,11 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
                 username: 'test-user',
                 phone: undefined,
                 address: undefined,
-                kycStatus: 'VERIFIED',
-                kycVerified: true,
+                kycStatus: kycVerified ? 'VERIFIED' : 'PENDING',
+                kycVerified,
                 kycPhotoUrl: 'https://placehold.co/600x400/png',
                 photoUrl: undefined,
-                role: 'USER',
+                role: getTestUserRole(),
                 referralCode: 'TEST01',
                 balance: 0,
                 referralEarnings: 0,
