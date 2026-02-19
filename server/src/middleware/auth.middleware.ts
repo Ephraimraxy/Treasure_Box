@@ -4,6 +4,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Keep TEST_USER_ID in sync with auth.routes.ts
+const TEST_USER_ID = 'test-user';
+const isTestLoginEnabled = () =>
+    (process.env.ENABLE_TEST_LOGIN || '').toLowerCase() === 'true' &&
+    !!process.env.TEST_USER_EMAIL &&
+    !!process.env.TEST_USER_PASSWORD;
+
 export interface AuthRequest extends Request {
     user?: {
         id: string;
@@ -22,6 +29,17 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+
+        // Special handling for env-based test login user (no DB record required)
+        if (isTestLoginEnabled() && decoded.userId === TEST_USER_ID) {
+            req.user = {
+                id: TEST_USER_ID,
+                email: process.env.TEST_USER_EMAIL!,
+                name: process.env.TEST_USER_NAME || 'Test User',
+                role: 'USER'
+            };
+            return next();
+        }
 
         const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
         if (!user) {

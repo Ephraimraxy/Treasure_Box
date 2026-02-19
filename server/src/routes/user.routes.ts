@@ -8,6 +8,9 @@ import { verifyIdentityNumber } from '../services/identity.service';
 const router = Router();
 const prisma = new PrismaClient();
 
+// Keep TEST_USER_ID in sync with auth and auth.middleware
+const TEST_USER_ID = 'test-user';
+
 // Public Settings - for any authenticated user to get system limits
 router.get('/settings', authenticate, async (req: Request, res: Response) => {
     try {
@@ -49,6 +52,39 @@ router.get('/public-settings', async (req: Request, res: Response) => {
 router.get('/me', authenticate, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.id;
+
+        // Return a mock profile for env-based test login user (no DB record)
+        if (userId === TEST_USER_ID) {
+            return res.json({
+                id: TEST_USER_ID,
+                email: process.env.TEST_USER_EMAIL || 'test@example.com',
+                name: process.env.TEST_USER_NAME || 'Test User',
+                username: 'test-user',
+                phone: undefined,
+                address: undefined,
+                kycStatus: 'VERIFIED',
+                kycVerified: true,
+                kycPhotoUrl: 'https://placehold.co/600x400/png',
+                photoUrl: undefined,
+                role: 'USER',
+                referralCode: 'TEST01',
+                balance: 0,
+                referralEarnings: 0,
+                bankDetails: [],
+                virtualAccount: null,
+                transactionPin: false,
+                notificationSettings: {
+                    fund: true,
+                    game: true,
+                    investment: true,
+                    login: true,
+                    push: true
+                },
+                _count: {
+                    referrals: 0
+                }
+            });
+        }
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {

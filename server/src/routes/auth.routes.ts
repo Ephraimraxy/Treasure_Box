@@ -11,6 +11,14 @@ const prisma = new PrismaClient();
 // Admin email - will be assigned ADMIN role on registration
 const ADMIN_EMAIL = 'burstbrainconcept@gmail.com';
 
+// Test login configuration (for temporary, env-based dashboard access)
+const isTestLoginEnabled = () =>
+    (process.env.ENABLE_TEST_LOGIN || '').toLowerCase() === 'true' &&
+    !!process.env.TEST_USER_EMAIL &&
+    !!process.env.TEST_USER_PASSWORD;
+
+const TEST_USER_ID = 'test-user';
+
 // Schemas
 const registerSchema = z.object({
     email: z.string().email(),
@@ -250,6 +258,33 @@ router.post('/resend-otp', async (req: Request, res: Response, next: NextFunctio
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = loginSchema.parse(req.body);
+
+        // Optional Test Login: bypass database when explicitly enabled via env
+        if (isTestLoginEnabled()) {
+            const testEmail = process.env.TEST_USER_EMAIL!;
+            const testPassword = process.env.TEST_USER_PASSWORD!;
+            const testName = process.env.TEST_USER_NAME || 'Test User';
+
+            if (email === testEmail && password === testPassword) {
+                const token = jwt.sign(
+                    { userId: TEST_USER_ID },
+                    process.env.JWT_SECRET || 'default-secret',
+                    { expiresIn: '1d' } // Shorter expiry for test logins
+                );
+
+                return res.json({
+                    message: 'Test login successful',
+                    token,
+                    user: {
+                        id: TEST_USER_ID,
+                        email: testEmail,
+                        name: testName,
+                        role: 'USER',
+                        emailVerified: true
+                    }
+                });
+            }
+        }
 
         const user = await prisma.user.findUnique({
             where: { email },
