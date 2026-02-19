@@ -48,7 +48,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 Treasure
                 <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"> Box</span>
             </h1>
-            <p className="relative z-10 text-slate-400 mb-8">Secure Investment Platform</p>
+            <p className="relative z-10 text-slate-400 mb-8">Secured Platform</p>
 
             {/* Progress Bar */}
             <div className="relative z-10 w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
