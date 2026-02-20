@@ -196,10 +196,11 @@ export const purchaseAirtime = async (
             serviceID,
             amount,
             phone,
+            billersCode: phone, // Explicitly include billersCode for airtime
         });
 
         const data: VTPassResponse = response.data;
-        console.log(`[VTPass] Airtime response: ${data.code} - ${data.response_description}`);
+        console.log(`[VTPass] Airtime response: code=${data.code}, description="${data.response_description}", requestId=${data.requestId || 'N/A'}`);
 
         return data;
     } catch (error: any) {
@@ -226,7 +227,7 @@ export const purchaseData = async (
             request_id,
             serviceID,
             phone,
-            billersCode: variationCode,
+            billersCode: phone, // FIX: billersCode for data must be the recipient phone number
             variation_code: variationCode,
         };
         if (amount) payload.amount = amount;
@@ -234,7 +235,7 @@ export const purchaseData = async (
         const response = await vtpassPost.post('/api/pay', payload);
         const data: VTPassResponse = response.data;
 
-        console.log(`[VTPass] Data response: ${data.code} - ${data.response_description}`);
+        console.log(`[VTPass] Data response: code=${data.code}, description="${data.response_description}", requestId=${data.requestId || 'N/A'}`);
         return data;
     } catch (error: any) {
         console.error('[VTPass] Data purchase error:', error.response?.data || error.message);

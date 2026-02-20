@@ -354,8 +354,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         const serviceID = meta.serviceID || providerMap[meta.provider] || meta.network || 'mtn';
                         const result = await purchaseAirtime(meta.identifier || meta.phone, amount, serviceID);
                         if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Airtime purchase failed';
+                            console.error(`[VTPass Error] Airtime failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
-                                error: result.response_description || 'Airtime purchase failed. Please try again.',
+                                error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
                             });
                         }
@@ -365,8 +367,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         const serviceID = meta.serviceID || providerMap[meta.provider] || 'mtn-data';
                         const result = await purchaseData(meta.identifier || meta.phone, serviceID, meta.variationCode || meta.plan, amount);
                         if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Data purchase failed';
+                            console.error(`[VTPass Error] Data failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
-                                error: result.response_description || 'Data purchase failed. Please try again.',
+                                error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
                             });
                         }
@@ -382,8 +386,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                             meta.phone || user.phone || ''
                         );
                         if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Electricity purchase failed';
+                            console.error(`[VTPass Error] Power failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
-                                error: result.response_description || 'Electricity purchase failed. Please try again.',
+                                error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
                             });
                         }
@@ -398,8 +404,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                             meta.phone || user.phone || ''
                         );
                         if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Cable subscription failed';
+                            console.error(`[VTPass Error] Cable failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
-                                error: result.response_description || 'Cable subscription failed. Please try again.',
+                                error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
                             });
                         }
@@ -416,8 +424,10 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                             rest // Spread remaining fields (Engine No, Chassis, etc.)
                         );
                         if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Insurance purchase failed';
+                            console.error(`[VTPass Error] Insurance failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
-                                error: result.response_description || 'Insurance purchase failed. Please try again.',
+                                error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
                             });
                         }
