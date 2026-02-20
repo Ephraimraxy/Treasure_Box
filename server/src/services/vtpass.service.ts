@@ -202,6 +202,15 @@ export const purchaseAirtime = async (
         const data: VTPassResponse = response.data;
         console.log(`[VTPass] Airtime response: code=${data.code}, description="${data.response_description}", requestId=${data.requestId || 'N/A'}`);
 
+        if (data.code !== '000') {
+            try {
+                const bal = await getBalance();
+                console.log(`[VTPass Debug] Current Wallet Balance: ₦${bal.balance}`);
+            } catch (balError) {
+                console.warn('[VTPass Debug] Could not fetch balance for error report');
+            }
+        }
+
         return data;
     } catch (error: any) {
         console.error('[VTPass] Airtime purchase error:', error.response?.data || error.message);
@@ -236,6 +245,16 @@ export const purchaseData = async (
         const data: VTPassResponse = response.data;
 
         console.log(`[VTPass] Data response: code=${data.code}, description="${data.response_description}", requestId=${data.requestId || 'N/A'}`);
+
+        if (data.code !== '000') {
+            try {
+                const bal = await getBalance();
+                console.log(`[VTPass Debug] Current Wallet Balance: ₦${bal.balance}`);
+            } catch (balError) {
+                console.warn('[VTPass Debug] Could not fetch balance for error report');
+            }
+        }
+
         return data;
     } catch (error: any) {
         console.error('[VTPass] Data purchase error:', error.response?.data || error.message);
