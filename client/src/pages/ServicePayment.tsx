@@ -143,21 +143,21 @@ export const ServicePaymentPage = () => {
         if (type === 'airtime' || type === 'data') {
             const network = detectNetwork(phone);
             setDetectedNetwork(network);
-            // Reset variations when network changes
-            if (type === 'data') {
-                setVariations([]);
-                setSelectedVariation(null);
-                setAmount('');
-            }
         }
     }, [phone, type]);
 
-    // ─── Fetch data plans when network is detected ───
+    // ─── Fetch data plans when network is detected (or changes) ───
     useEffect(() => {
-        if (type === 'data' && detectedNetwork) {
-            const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-data`];
-            if (serviceID) {
-                fetchVariations(serviceID);
+        if (type === 'data') {
+            // Reset variations and fetch new plans when network changes
+            setVariations([]);
+            setSelectedVariation(null);
+            setAmount('');
+            if (detectedNetwork) {
+                const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-data`];
+                if (serviceID) {
+                    fetchVariations(serviceID);
+                }
             }
         }
     }, [detectedNetwork, type]);
