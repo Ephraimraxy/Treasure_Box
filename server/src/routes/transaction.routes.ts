@@ -255,15 +255,55 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
     }
 });
 
-// Utility payment — VTPass Integration + Identity Verification
+// ── VTPass Proxy Routes ──────────────────────────────────
+
+// Get service variations (data plans, cable bouquets, etc.)
+router.get('/vtpass/variations/:serviceID', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { isVTPassConfigured, getVariations } = await import('../services/vtpass.service');
+        if (!isVTPassConfigured()) {
+            return res.status(503).json({ error: 'VTPass not configured' });
+        }
+        const data = await getVariations(req.params.serviceID);
+        res.json(data);
+    } catch (error: any) {
+        console.error('[VTPass Proxy] Variations error:', error.message);
+        res.status(500).json({ error: 'Failed to fetch service options' });
+    }
+});
+
+// Verify meter number or smart card
+router.post('/vtpass/verify', authenticate, async (req: AuthRequest, res, next) => {
+    try {
+        const { billersCode, serviceID, type } = req.body;
+        const { isVTPassConfigured, verifyMeter } = await import('../services/vtpass.service');
+        if (!isVTPassConfigured()) {
+            return res.status(503).json({ error: 'VTPass not configured' });
+        }
+        const data = await verifyMeter(billersCode, serviceID, type);
+        res.json(data);
+    } catch (error: any) {
+        console.error('[VTPass Proxy] Verify error:', error.message);
+        res.status(500).json({ error: 'Verification failed' });
+    }
+});
+
+// ── Utility payment — VTPass Integration + Identity Verification ──
+const VTU_SERVICE_CHARGE = 4; // ₦4 service charge per VTU transaction
+
 router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
     try {
         const { type, amount, meta, pin } = req.body;
 
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
 
-        if (!user || user.balance < amount) {
-            return res.status(400).json({ error: 'Insufficient balance' });
+        // VTU types get a ₦4 service charge
+        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE'];
+        const serviceCharge = vtuTypes.includes(type) ? VTU_SERVICE_CHARGE : 0;
+        const totalCost = amount + serviceCharge;
+
+        if (!user || user.balance < totalCost) {
+            return res.status(400).json({ error: `Insufficient balance. You need ₦${totalCost.toLocaleString()} (₦${amount.toLocaleString()} + ₦${serviceCharge} charge)` });
         }
 
         if (user.isSuspended) {
@@ -299,7 +339,6 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         }
 
         // ── VTU Services (VTPass Integration) ──
-        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE'];
 
         if (vtuTypes.includes(type)) {
             const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable } = await import('../services/vtpass.service');
@@ -311,8 +350,9 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
             } else {
                 try {
                     if (type === 'AIRTIME') {
-                        const serviceID = meta.serviceID || meta.network || 'mtn';
-                        const result = await purchaseAirtime(meta.phone, amount, serviceID);
+                        const providerMap: Record<string, string> = { 'MTN': 'mtn', 'AIRTEL': 'airtel', 'GLO': 'glo', '9MOBILE': 'etisalat' };
+                        const serviceID = meta.serviceID || providerMap[meta.provider] || meta.network || 'mtn';
+                        const result = await purchaseAirtime(meta.identifier || meta.phone, amount, serviceID);
                         if (result.code !== '000') {
                             return res.status(400).json({
                                 error: result.response_description || 'Airtime purchase failed. Please try again.',
@@ -321,8 +361,9 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         }
                         vtpassResponse = result;
                     } else if (type === 'DATA') {
-                        const serviceID = meta.serviceID || 'mtn-data';
-                        const result = await purchaseData(meta.phone, serviceID, meta.variationCode, amount);
+                        const providerMap: Record<string, string> = { 'MTN': 'mtn-data', 'AIRTEL': 'airtel-data', 'GLO': 'glo-data', '9MOBILE': 'etisalat-data' };
+                        const serviceID = meta.serviceID || providerMap[meta.provider] || 'mtn-data';
+                        const result = await purchaseData(meta.identifier || meta.phone, serviceID, meta.variationCode || meta.plan, amount);
                         if (result.code !== '000') {
                             return res.status(400).json({
                                 error: result.response_description || 'Data purchase failed. Please try again.',
@@ -375,18 +416,23 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
 
         await prisma.user.update({
             where: { id: req.user!.id },
-            data: { balance: { decrement: amount } }
+            data: { balance: { decrement: totalCost } }
         });
 
         const transaction = await prisma.transaction.create({
             data: {
                 userId: req.user!.id,
                 type: 'UTILITY_BILL',
-                amount,
+                amount: totalCost,
                 status: 'SUCCESS',
-                description: `${type.replace(/_/g, ' ')} Service`,
+                description: serviceCharge > 0
+                    ? `${type.replace(/_/g, ' ')} Service (₦${amount} + ₦${serviceCharge} charge)`
+                    : `${type.replace(/_/g, ' ')} Service`,
                 meta: {
                     ...meta,
+                    serviceAmount: amount,
+                    serviceCharge,
+                    totalCost,
                     verificationData,
                     vtpassResponse: vtpassResponse ? {
                         code: vtpassResponse.code,
@@ -404,7 +450,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
             data: {
                 userId: req.user!.id,
                 title: 'Service Successful',
-                message: `Your ${type.replace(/_/g, ' ')} service of ₦${amount.toLocaleString()} was successful.`,
+                message: `Your ${type.replace(/_/g, ' ')} service of ₦${totalCost.toLocaleString()} was successful.${serviceCharge > 0 ? ` (incl. ₦${serviceCharge} charge)` : ''}`,
                 type: 'SUCCESS'
             }
         });

@@ -83,6 +83,8 @@ export const transactionApi = {
     deposit: (amount: number) => api.post('/transactions/deposit', { amount }),
     withdraw: (amount: number, pin: string, bankDetailId?: string) => api.post('/transactions/withdraw', { amount, pin, bankDetailId }),
     payUtility: (data: any) => api.post('/transactions/utility', data),
+    getVariations: (serviceID: string) => api.get(`/transactions/vtpass/variations/${serviceID}`),
+    verifyMeter: (data: { billersCode: string; serviceID: string; type: string }) => api.post('/transactions/vtpass/verify', data),
 };
 
 // Investment API

@@ -15,7 +15,7 @@ const VTPASS_SECRET_KEY = (process.env.VTPASS_SECRET_KEY || '').trim();
 const VTPASS_BASE_URL = (process.env.VTPASS_BASE_URL || 'https://sandbox.vtpass.com').trim();
 
 // Debug logs to verify keys (masked)
-console.log(`[VTPass] Config: API_KEY=${VTPASS_API_KEY ? 'Yes' : 'No'}(${VTPASS_API_KEY.length}), SECRET_KEY=${VTPASS_SECRET_KEY ? 'Yes' : 'No'}(${VTPASS_SECRET_KEY.length})`);
+console.log(`[VTPass] Config: BASE_URL=${VTPASS_BASE_URL}, API_KEY=${VTPASS_API_KEY ? 'Yes' : 'No'}(${VTPASS_API_KEY.length}), SECRET_KEY=${VTPASS_SECRET_KEY ? 'Yes' : 'No'}(${VTPASS_SECRET_KEY.length})`);
 
 // ── Axios Instances ──────────────────────────────────────
 

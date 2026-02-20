@@ -1,10 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet, AlertCircle, Info } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
 import { useAuth } from '../contexts/AuthContext';
+
+// ─── Constants ───
+const SERVICE_CHARGE = 4; // ₦4 per VTU transaction
+
+// ─── Network Detection ───
+const NETWORK_PREFIXES: Record<string, string[]> = {
+    MTN: ['0803', '0806', '0703', '0706', '0813', '0816', '0810', '0814', '0903', '0906', '0913', '0916'],
+    GLO: ['0805', '0807', '0705', '0815', '0905', '0907', '0915'],
+    AIRTEL: ['0802', '0808', '0708', '0812', '0701', '0901', '0902', '0904', '0912'],
+    '9MOBILE': ['0809', '0817', '0818', '0909', '0908'],
+};
+
+const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
+    MTN: { text: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+    GLO: { text: 'text-green-400', bg: 'bg-green-500/20' },
+    AIRTEL: { text: 'text-red-400', bg: 'bg-red-500/20' },
+    '9MOBILE': { text: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+};
+
+const VTPASS_SERVICE_MAP: Record<string, string> = {
+    'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat',
+    'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
+};
+
+const detectNetwork = (phone: string): string | null => {
+    const cleaned = phone.replace(/\s/g, '');
+    if (cleaned.length < 4) return null;
+    const prefix = cleaned.substring(0, 4);
+    for (const [network, prefixes] of Object.entries(NETWORK_PREFIXES)) {
+        if (prefixes.includes(prefix)) return network;
+    }
+    return null;
+};
+
+// ─── Electricity Discos (VTPass serviceIDs) ───
+const ELECTRICITY_DISCOS = [
+    { id: 'ikeja-electric', name: 'Ikeja Electric (IKEDC)' },
+    { id: 'eko-electric', name: 'Eko Electric (EKEDC)' },
+    { id: 'abuja-electric', name: 'Abuja Electric (AEDC)' },
+    { id: 'ibadan-electric', name: 'Ibadan Electric (IBEDC)' },
+    { id: 'kano-electric', name: 'Kano Electric (KEDCO)' },
+    { id: 'portharcourt-electric', name: 'Port Harcourt Electric (PHED)' },
+    { id: 'jos-electric', name: 'Jos Electric (JED)' },
+    { id: 'kaduna-electric', name: 'Kaduna Electric (KAEDCO)' },
+    { id: 'enugu-electric', name: 'Enugu Electric (EEDC)' },
+    { id: 'benin-electric', name: 'Benin Electric (BEDC)' },
+];
+
+// ─── Cable TV Providers (VTPass serviceIDs) ───
+const CABLE_PROVIDERS = [
+    { id: 'dstv', name: 'DStv' },
+    { id: 'gotv', name: 'GOtv' },
+    { id: 'startimes', name: 'StarTimes' },
+];
 
 // ─── Service Definitions ───
 const SERVICE_MAP: Record<string, { name: string; icon: any; color: string; bg: string; description: string }> = {
@@ -21,21 +75,6 @@ const SERVICE_MAP: Record<string, { name: string; icon: any; color: string; bg: 
     bvn_retrieval: { name: 'BVN Retrieval', icon: Search, color: 'text-teal-400', bg: 'bg-teal-500/10', description: 'Retrieve your BVN using your registered phone number.' },
 };
 
-const dataPlans: Record<string, { id: string; name: string; price: number }[]> = {
-    MTN: [{ id: 'MTN_500MB', name: '500MB (30 Days)', price: 500 }, { id: 'MTN_1GB', name: '1GB (30 Days)', price: 1000 }, { id: 'MTN_2GB', name: '2GB (30 Days)', price: 2000 }, { id: 'MTN_5GB', name: '5GB (30 Days)', price: 3500 }, { id: 'MTN_10GB', name: '10GB (30 Days)', price: 6000 }],
-    AIRTEL: [{ id: 'AIRTEL_750MB', name: '750MB (14 Days)', price: 500 }, { id: 'AIRTEL_1.5GB', name: '1.5GB (30 Days)', price: 1000 }, { id: 'AIRTEL_3GB', name: '3GB (30 Days)', price: 1500 }, { id: 'AIRTEL_4.5GB', name: '4.5GB (30 Days)', price: 2000 }],
-    GLO: [{ id: 'GLO_1GB', name: '1GB (5 Days)', price: 300 }, { id: 'GLO_2.5GB', name: '2.5GB (2 Days)', price: 500 }, { id: 'GLO_5.8GB', name: '5.8GB (30 Days)', price: 2000 }, { id: 'GLO_7.7GB', name: '7.7GB (30 Days)', price: 2500 }],
-    '9MOBILE': [{ id: '9MOBILE_500MB', name: '500MB (30 Days)', price: 500 }, { id: '9MOBILE_1.5GB', name: '1.5GB (30 Days)', price: 1000 }, { id: '9MOBILE_2GB', name: '2GB (30 Days)', price: 1200 }, { id: '9MOBILE_4.5GB', name: '4.5GB (30 Days)', price: 2000 }],
-};
-
-const electricityProviders = [
-    { id: 'IKEDC', name: 'Ikeja Electric (IKEDC)' }, { id: 'EKEDC', name: 'Eko Electric (EKEDC)' },
-    { id: 'AEDC', name: 'Abuja Electric (AEDC)' }, { id: 'IBEDC', name: 'Ibadan Electric (IBEDC)' },
-    { id: 'KEDCO', name: 'Kano Electric (KEDCO)' }, { id: 'PHED', name: 'Port Harcourt Electric (PHED)' },
-    { id: 'JED', name: 'Jos Electric (JED)' }, { id: 'KAEDCO', name: 'Kaduna Electric (KAEDCO)' },
-    { id: 'EEDC', name: 'Enugu Electric (EEDC)' }, { id: 'BEDC', name: 'Benin Electric (BEDC)' },
-];
-
 // ─── Component ───
 export const ServicePaymentPage = () => {
     const { type } = useParams<{ type: string }>();
@@ -45,18 +84,209 @@ export const ServicePaymentPage = () => {
 
     const service = type ? SERVICE_MAP[type] : null;
 
-    // Form state
+    // Common state
+    const [phone, setPhone] = useState('');
     const [amount, setAmount] = useState('');
     const [identifier, setIdentifier] = useState('');
     const [details, setDetails] = useState('');
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
-    const [selectedProvider, setSelectedProvider] = useState('');
-    const [selectedPlan, setSelectedPlan] = useState<any>(null);
-
-    // Success state
     const [success, setSuccess] = useState(false);
     const [verificationResult, setVerificationResult] = useState<any>(null);
+
+    // Network detection
+    const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
+
+    // Data plans / Cable bouquets
+    const [variations, setVariations] = useState<any[]>([]);
+    const [selectedVariation, setSelectedVariation] = useState<any>(null);
+    const [loadingVariations, setLoadingVariations] = useState(false);
+
+    // Electricity / Cable
+    const [selectedProvider, setSelectedProvider] = useState('');
+    const [meterType, setMeterType] = useState<'prepaid' | 'postpaid'>('prepaid');
+    const [meterInfo, setMeterInfo] = useState<any>(null);
+    const [verifying, setVerifying] = useState(false);
+
+    const isVTU = type && ['airtime', 'data', 'power', 'cable'].includes(type);
+    const isIdentityService = type && ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'].includes(type);
+    const requiresDetails = type && ['nin_modification', 'nin_personalization', 'bvn_modification'].includes(type);
+
+    const numericAmount = parseFloat(amount) || 0;
+    const totalCost = isVTU ? numericAmount + SERVICE_CHARGE : numericAmount;
+
+    // ─── Auto-detect network from phone number ───
+    useEffect(() => {
+        if (type === 'airtime' || type === 'data') {
+            const network = detectNetwork(phone);
+            setDetectedNetwork(network);
+            // Reset variations when network changes
+            if (type === 'data') {
+                setVariations([]);
+                setSelectedVariation(null);
+                setAmount('');
+            }
+        }
+    }, [phone, type]);
+
+    // ─── Fetch data plans when network is detected ───
+    useEffect(() => {
+        if (type === 'data' && detectedNetwork) {
+            const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-data`];
+            if (serviceID) {
+                fetchVariations(serviceID);
+            }
+        }
+    }, [detectedNetwork, type]);
+
+    // ─── Fetch cable bouquets when provider is selected ───
+    useEffect(() => {
+        if (type === 'cable' && selectedProvider) {
+            fetchVariations(selectedProvider);
+        }
+    }, [selectedProvider, type]);
+
+    const fetchVariations = async (serviceID: string) => {
+        setLoadingVariations(true);
+        setVariations([]);
+        try {
+            const res = await transactionApi.getVariations(serviceID);
+            const content = res.data?.content;
+            if (content?.varations) {
+                setVariations(content.varations); // VTPass typo: "varations"
+            } else if (content?.variations) {
+                setVariations(content.variations);
+            } else if (Array.isArray(content)) {
+                setVariations(content);
+            }
+        } catch (err: any) {
+            console.error('Failed to fetch variations:', err);
+            addToast('error', 'Failed to load available plans. Please try again.');
+        } finally {
+            setLoadingVariations(false);
+        }
+    };
+
+    // ─── Verify meter / smart card ───
+    const handleVerify = async () => {
+        if (!identifier || !selectedProvider) return;
+        setVerifying(true);
+        setMeterInfo(null);
+        try {
+            const res = await transactionApi.verifyMeter({
+                billersCode: identifier,
+                serviceID: selectedProvider,
+                type: type === 'power' ? meterType : 'prepaid',
+            });
+            const content = res.data?.content;
+            if (content?.Customer_Name || content?.customerName) {
+                setMeterInfo({
+                    customerName: content.Customer_Name || content.customerName || content.Customer_name,
+                    meterNumber: content.MeterNumber || content.meter_number || identifier,
+                    address: content.Address || content.address || '',
+                    type: content.type || meterType,
+                });
+                addToast('success', `Verified: ${content.Customer_Name || content.customerName}`);
+            } else {
+                addToast('error', 'Could not verify. Please check the number and try again.');
+            }
+        } catch (err: any) {
+            addToast('error', err.response?.data?.error || 'Verification failed. Please try again.');
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    // ─── Handle Payment ───
+    const handlePayment = async () => {
+        if (!pin || pin.length !== 4) { addToast('error', 'Please enter your 4-digit PIN'); return; }
+        if (totalCost > (user?.balance || 0)) { addToast('error', 'Insufficient balance'); return; }
+
+        // Validation per type
+        if (type === 'airtime') {
+            if (!phone || phone.length < 11) { addToast('error', 'Please enter a valid phone number'); return; }
+            if (!numericAmount || numericAmount < 50) { addToast('error', 'Minimum airtime is ₦50'); return; }
+            if (!detectedNetwork) { addToast('error', 'Could not detect network. Please check the phone number.'); return; }
+        } else if (type === 'data') {
+            if (!phone || phone.length < 11) { addToast('error', 'Please enter a valid phone number'); return; }
+            if (!selectedVariation) { addToast('error', 'Please select a data plan'); return; }
+        } else if (type === 'power') {
+            if (!selectedProvider) { addToast('error', 'Please select an electricity provider'); return; }
+            if (!identifier) { addToast('error', 'Please enter your meter number'); return; }
+            if (!meterInfo) { addToast('error', 'Please verify your meter number first'); return; }
+            if (!numericAmount || numericAmount < 500) { addToast('error', 'Minimum electricity purchase is ₦500'); return; }
+        } else if (type === 'cable') {
+            if (!selectedProvider) { addToast('error', 'Please select a cable TV provider'); return; }
+            if (!identifier) { addToast('error', 'Please enter your smart card number'); return; }
+            if (!selectedVariation) { addToast('error', 'Please select a bouquet'); return; }
+        } else if (isIdentityService) {
+            if (!identifier) { addToast('error', `Please enter the ${type?.includes('nin') ? 'NIN' : 'BVN'} number`); return; }
+            if (!numericAmount) { addToast('error', 'Please enter amount'); return; }
+            if (requiresDetails && !details) { addToast('error', 'Please provide request details'); return; }
+        }
+
+        setLoading(true);
+        try {
+            // Build meta per type
+            let meta: any = {};
+            let payAmount = numericAmount;
+
+            if (type === 'airtime') {
+                const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-airtime`] || 'mtn';
+                meta = { identifier: phone, phone, network: detectedNetwork, serviceID, serviceName: service?.name };
+                payAmount = numericAmount;
+            } else if (type === 'data') {
+                const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-data`] || 'mtn-data';
+                meta = {
+                    identifier: phone, phone, network: detectedNetwork, serviceID,
+                    variationCode: selectedVariation.variation_code,
+                    planName: selectedVariation.name,
+                    serviceName: service?.name,
+                };
+                payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
+            } else if (type === 'power') {
+                meta = {
+                    identifier, meterNumber: identifier, serviceID: selectedProvider,
+                    variationCode: meterType, meterType, phone: user?.phone || '',
+                    provider: selectedProvider, customerName: meterInfo?.customerName,
+                    serviceName: service?.name,
+                };
+                payAmount = numericAmount;
+            } else if (type === 'cable') {
+                meta = {
+                    identifier, smartCardNumber: identifier, serviceID: selectedProvider,
+                    variationCode: selectedVariation.variation_code,
+                    bouquetName: selectedVariation.name,
+                    provider: selectedProvider, phone: user?.phone || '',
+                    serviceName: service?.name,
+                };
+                payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
+            } else {
+                // Identity services
+                meta = { identifier, details, serviceName: service?.name };
+                payAmount = numericAmount;
+            }
+
+            const response = await transactionApi.payUtility({
+                type: type!.toUpperCase(),
+                amount: payAmount,
+                meta,
+                pin,
+            });
+
+            await refreshUser();
+
+            if (response.data.verificationData) {
+                setVerificationResult(response.data.verificationData);
+            }
+            setSuccess(true);
+            addToast('success', `${service?.name} successful!`);
+        } catch (error: any) {
+            addToast('error', error.response?.data?.error || 'Transaction failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (!service || !type) {
         return (
@@ -72,56 +302,6 @@ export const ServicePaymentPage = () => {
     }
 
     const ServiceIcon = service.icon;
-
-    const isIdentityService = ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'].includes(type);
-    const requiresDetails = ['nin_modification', 'nin_personalization', 'bvn_modification'].includes(type);
-
-    const getLabel = () => {
-        if (type.includes('airtime') || type.includes('data') || type === 'bvn_retrieval') return "Phone Number";
-        if (type.includes('nin')) return "NIN Number";
-        if (type.includes('bvn')) return "BVN Number";
-        if (type === 'power') return "Meter Number";
-        return "Smart Card / IUC Number";
-    };
-
-    const handlePlanSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const planId = e.target.value;
-        if (!selectedProvider) return;
-        const plans = dataPlans[selectedProvider];
-        const plan = plans?.find(p => p.id === planId);
-        setSelectedPlan(plan || null);
-        if (plan) setAmount(plan.price.toString());
-    };
-
-    const handlePayment = async () => {
-        if (!identifier || !pin) { addToast('error', 'Please fill all required fields'); return; }
-        if (type === 'data' && (!selectedProvider || !selectedPlan)) { addToast('error', 'Please select a provider and plan'); return; }
-        if (type === 'power' && !selectedProvider) { addToast('error', 'Please select an electricity provider'); return; }
-        if (!amount && !selectedPlan) { addToast('error', 'Please enter amount'); return; }
-        if (requiresDetails && !details) { addToast('error', 'Please provide details for the request'); return; }
-        if (parseFloat(amount) > (user?.balance || 0)) { addToast('error', 'Insufficient balance'); return; }
-
-        setLoading(true);
-        try {
-            const response = await transactionApi.payUtility({
-                type: type.toUpperCase(),
-                amount: parseFloat(amount),
-                meta: { identifier, details, serviceName: service.name, provider: selectedProvider, plan: selectedPlan?.id },
-                pin
-            });
-            await refreshUser();
-
-            if (response.data.verificationData) {
-                setVerificationResult(response.data.verificationData);
-            }
-            setSuccess(true);
-            addToast('success', `${service.name} successful!`);
-        } catch (error: any) {
-            addToast('error', error.response?.data?.error || 'Transaction failed');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // ─── Success View ───
     if (success) {
@@ -157,18 +337,6 @@ export const ServicePaymentPage = () => {
                                     <span className="font-bold text-emerald-500">{verificationResult.valid ? 'Yes' : 'No'}</span>
                                 </div>
                             )}
-                            {verificationResult.bvn && (
-                                <div className="flex justify-between border-b border-border pb-2">
-                                    <span className="text-muted">BVN</span>
-                                    <span className="font-bold text-foreground">{verificationResult.bvn}</span>
-                                </div>
-                            )}
-                            {verificationResult.status && (
-                                <div className="flex justify-between border-b border-border pb-2">
-                                    <span className="text-muted">Status</span>
-                                    <span className="font-bold text-foreground">{verificationResult.status}</span>
-                                </div>
-                            )}
                             {verificationResult.reference && (
                                 <div className="flex justify-between">
                                     <span className="text-muted">Ref ID</span>
@@ -191,14 +359,23 @@ export const ServicePaymentPage = () => {
         );
     }
 
-    // ─── Payment Form View ───
+    // ─── Network Badge ───
+    const NetworkBadge = () => {
+        if (!detectedNetwork) return null;
+        const colors = NETWORK_COLORS[detectedNetwork];
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20`}>
+                <span className="w-2 h-2 rounded-full bg-current" />
+                {detectedNetwork}
+            </span>
+        );
+    };
+
+    // ─── Payment Form ───
     return (
         <div className="max-w-lg mx-auto animate-fade-in space-y-6">
             {/* Back Button */}
-            <button
-                onClick={() => navigate('/services')}
-                className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group"
-            >
+            <button onClick={() => navigate('/services')} className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group">
                 <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-sm font-medium">Back to Services</span>
             </button>
@@ -220,8 +397,6 @@ export const ServicePaymentPage = () => {
                             <p className="text-sm text-muted">{service.description}</p>
                         </div>
                     </div>
-
-                    {/* Wallet Balance */}
                     <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border border-border/50 rounded-xl">
                         <Wallet size={16} className="text-primary" />
                         <span className="text-sm text-muted">Wallet Balance:</span>
@@ -233,102 +408,316 @@ export const ServicePaymentPage = () => {
             {/* Payment Form */}
             <Card>
                 <div className="space-y-5">
-                    {/* Network Provider (Airtime / Data) */}
-                    {(type === 'data' || type === 'airtime') && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">Select Network</label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {['MTN', 'AIRTEL', 'GLO', '9MOBILE'].map(net => (
-                                    <button
-                                        key={net}
-                                        onClick={() => { setSelectedProvider(net); setSelectedPlan(null); setAmount(''); }}
-                                        className={`py-3 rounded-xl text-sm font-bold transition-all border ${selectedProvider === net
-                                            ? 'bg-primary/20 border-primary/50 text-primary'
-                                            : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
-                                            }`}
-                                    >
-                                        {net}
-                                    </button>
-                                ))}
+
+                    {/* ═══════ AIRTIME FLOW ═══════ */}
+                    {type === 'airtime' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Phone Number</label>
+                                <div className="relative">
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                        placeholder="0803 XXX XXXX"
+                                        maxLength={11}
+                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors pr-24"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {phone.length >= 4 && <NetworkBadge />}
+                                    </div>
+                                </div>
+                                {phone.length >= 4 && !detectedNetwork && (
+                                    <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> Unrecognized network prefix</p>
+                                )}
                             </div>
-                        </div>
-                    )}
 
-                    {/* Electricity Provider */}
-                    {type === 'power' && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">Select Provider</label>
-                            <select
-                                value={selectedProvider}
-                                onChange={(e) => setSelectedProvider(e.target.value)}
-                                className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary appearance-none"
-                            >
-                                <option value="">Select Disco</option>
-                                {electricityProviders.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-
-                    {/* Data Plan */}
-                    {type === 'data' && selectedProvider && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">Select Data Plan</label>
-                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                {dataPlans[selectedProvider]?.map(plan => (
-                                    <button
-                                        key={plan.id}
-                                        onClick={() => { setSelectedPlan(plan); setAmount(plan.price.toString()); }}
-                                        className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedPlan?.id === plan.id
-                                            ? 'bg-primary/10 border-primary/40 text-foreground'
-                                            : 'bg-card border-border text-muted hover:border-primary/40 hover:text-foreground'
-                                            }`}
-                                    >
-                                        <span className="text-sm font-medium">{plan.name}</span>
-                                        <span className={`text-sm font-bold ${selectedPlan?.id === plan.id ? 'text-primary' : 'text-muted'}`}>₦{plan.price.toLocaleString()}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Amount */}
-                    <Input
-                        label={type === 'data' ? "Amount (Auto)" : "Amount (₦)"}
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        icon={<span className="text-muted font-bold">₦</span>}
-                        placeholder="0.00"
-                        readOnly={!!selectedPlan}
-                        className={selectedPlan ? "opacity-70 cursor-not-allowed" : ""}
-                    />
-
-                    {/* Identifier (Phone / Meter / NIN / BVN) */}
-                    <Input
-                        label={getLabel()}
-                        type="text"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder={`Enter ${getLabel().toLowerCase()}`}
-                        maxLength={isIdentityService && type !== 'bvn_retrieval' ? 11 : undefined}
-                    />
-
-                    {/* Details for modifications */}
-                    {requiresDetails && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">Request Details</label>
-                            <textarea
-                                value={details}
-                                onChange={(e) => setDetails(e.target.value)}
-                                className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors h-24 resize-none"
-                                placeholder="Describe the changes required..."
+                            <Input
+                                label="Amount (₦)"
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                icon={<span className="text-muted font-bold">₦</span>}
+                                placeholder="100"
                             />
-                        </div>
+                        </>
                     )}
 
-                    {/* Transaction PIN */}
+                    {/* ═══════ DATA FLOW ═══════ */}
+                    {type === 'data' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Phone Number</label>
+                                <div className="relative">
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                        placeholder="0803 XXX XXXX"
+                                        maxLength={11}
+                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors pr-24"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {phone.length >= 4 && <NetworkBadge />}
+                                    </div>
+                                </div>
+                                {phone.length >= 4 && !detectedNetwork && (
+                                    <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> Unrecognized network prefix</p>
+                                )}
+                            </div>
+
+                            {/* Data Plans */}
+                            {detectedNetwork && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted">
+                                        Select Data Plan {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}
+                                    </label>
+                                    {loadingVariations ? (
+                                        <div className="flex items-center justify-center py-8 text-muted">
+                                            <Loader2 size={24} className="animate-spin mr-2" /> Loading plans...
+                                        </div>
+                                    ) : variations.length === 0 ? (
+                                        <div className="text-center py-6 text-muted text-sm">
+                                            <Info size={20} className="mx-auto mb-2 opacity-50" />
+                                            No plans available. Try again later.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                            {variations.map((v: any, i: number) => (
+                                                <button
+                                                    key={v.variation_code || i}
+                                                    onClick={() => {
+                                                        setSelectedVariation(v);
+                                                        setAmount(v.variation_amount?.toString() || '0');
+                                                    }}
+                                                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code
+                                                        ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30'
+                                                        : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
+                                                    <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>
+                                                        ₦{parseFloat(v.variation_amount || 0).toLocaleString()}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ═══════ ELECTRICITY FLOW ═══════ */}
+                    {type === 'power' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Select Provider (DisCo)</label>
+                                <select
+                                    value={selectedProvider}
+                                    onChange={(e) => { setSelectedProvider(e.target.value); setMeterInfo(null); setIdentifier(''); }}
+                                    className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary appearance-none"
+                                >
+                                    <option value="">Select DisCo</option>
+                                    {ELECTRICITY_DISCOS.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {selectedProvider && (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-muted">Meter Type</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(['prepaid', 'postpaid'] as const).map(mt => (
+                                                <button
+                                                    key={mt}
+                                                    onClick={() => { setMeterType(mt); setMeterInfo(null); }}
+                                                    className={`py-3 rounded-xl text-sm font-bold transition-all border capitalize ${meterType === mt
+                                                        ? 'bg-primary/20 border-primary/50 text-primary'
+                                                        : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    {mt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-muted">Meter Number</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={identifier}
+                                                onChange={(e) => { setIdentifier(e.target.value); setMeterInfo(null); }}
+                                                placeholder="Enter meter number"
+                                                className="flex-1 bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors"
+                                            />
+                                            <Button
+                                                onClick={handleVerify}
+                                                disabled={verifying || !identifier}
+                                                variant="secondary"
+                                                className="shrink-0"
+                                            >
+                                                {verifying ? <Loader2 size={16} className="animate-spin" /> : 'Verify'}
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Meter Verification Result */}
+                                    {meterInfo && (
+                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                                                <CheckCircle size={16} /> Meter Verified
+                                            </div>
+                                            <div className="text-sm space-y-1">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted">Customer</span>
+                                                    <span className="font-bold text-foreground">{meterInfo.customerName}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted">Type</span>
+                                                    <span className="font-medium text-foreground capitalize">{meterInfo.type}</span>
+                                                </div>
+                                                {meterInfo.address && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">Address</span>
+                                                        <span className="font-medium text-foreground text-right max-w-[60%]">{meterInfo.address}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {meterInfo && (
+                                        <Input
+                                            label="Amount (₦)"
+                                            type="number"
+                                            value={amount}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                            icon={<span className="text-muted font-bold">₦</span>}
+                                            placeholder="1000"
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {/* ═══════ CABLE TV FLOW ═══════ */}
+                    {type === 'cable' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Select Provider</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {CABLE_PROVIDERS.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => { setSelectedProvider(p.id); setSelectedVariation(null); setAmount(''); setIdentifier(''); }}
+                                            className={`py-3 rounded-xl text-sm font-bold transition-all border ${selectedProvider === p.id
+                                                ? 'bg-primary/20 border-primary/50 text-primary'
+                                                : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
+                                                }`}
+                                        >
+                                            {p.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {selectedProvider && (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-muted">Smart Card / IUC Number</label>
+                                        <input
+                                            type="text"
+                                            value={identifier}
+                                            onChange={(e) => setIdentifier(e.target.value)}
+                                            placeholder="Enter smart card number"
+                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors"
+                                        />
+                                    </div>
+
+                                    {/* Cable Bouquets */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted">
+                                            Select Bouquet {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}
+                                        </label>
+                                        {loadingVariations ? (
+                                            <div className="flex items-center justify-center py-8 text-muted">
+                                                <Loader2 size={24} className="animate-spin mr-2" /> Loading bouquets...
+                                            </div>
+                                        ) : variations.length === 0 ? (
+                                            <div className="text-center py-6 text-muted text-sm">
+                                                <Info size={20} className="mx-auto mb-2 opacity-50" />
+                                                No bouquets available.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                                {variations.map((v: any, i: number) => (
+                                                    <button
+                                                        key={v.variation_code || i}
+                                                        onClick={() => {
+                                                            setSelectedVariation(v);
+                                                            setAmount(v.variation_amount?.toString() || '0');
+                                                        }}
+                                                        className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code
+                                                            ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30'
+                                                            : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'
+                                                            }`}
+                                                    >
+                                                        <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
+                                                        <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>
+                                                            ₦{parseFloat(v.variation_amount || 0).toLocaleString()}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {/* ═══════ IDENTITY SERVICES FLOW ═══════ */}
+                    {isIdentityService && (
+                        <>
+                            <Input
+                                label="Amount (₦)"
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                icon={<span className="text-muted font-bold">₦</span>}
+                                placeholder="0.00"
+                            />
+
+                            <Input
+                                label={type?.includes('nin') ? 'NIN Number' : type === 'bvn_retrieval' ? 'Phone Number' : 'BVN Number'}
+                                type="text"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                placeholder={`Enter ${type?.includes('nin') ? 'NIN' : type === 'bvn_retrieval' ? 'phone number' : 'BVN'}`}
+                                maxLength={type === 'bvn_retrieval' ? undefined : 11}
+                            />
+
+                            {requiresDetails && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-muted">Request Details</label>
+                                    <textarea
+                                        value={details}
+                                        onChange={(e) => setDetails(e.target.value)}
+                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors h-24 resize-none"
+                                        placeholder="Describe the changes required..."
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ═══════ TRANSACTION PIN (all flows) ═══════ */}
                     <Input
                         label="Transaction PIN"
                         type="password"
@@ -338,27 +727,49 @@ export const ServicePaymentPage = () => {
                         placeholder="****"
                     />
 
-                    {/* Summary */}
-                    {amount && (
+                    {/* ═══════ COST SUMMARY ═══════ */}
+                    {numericAmount > 0 && (
                         <div className="bg-muted/50 border border-border/50 rounded-xl p-4 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted">Service</span>
                                 <span className="text-foreground font-medium">{service.name}</span>
                             </div>
-                            {selectedProvider && (
+                            {(type === 'data' && selectedVariation) && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-muted">Provider</span>
-                                    <span className="text-foreground font-medium">{selectedProvider}</span>
+                                    <span className="text-muted">Plan</span>
+                                    <span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span>
+                                </div>
+                            )}
+                            {(type === 'cable' && selectedVariation) && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted">Bouquet</span>
+                                    <span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span>
+                                </div>
+                            )}
+                            {detectedNetwork && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted">Network</span>
+                                    <span className="text-foreground font-medium">{detectedNetwork}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted">Amount</span>
+                                <span className="text-foreground font-medium">₦{numericAmount.toLocaleString()}</span>
+                            </div>
+                            {isVTU && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted">Service Charge</span>
+                                    <span className="text-foreground font-medium">₦{SERVICE_CHARGE}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
-                                <span className="text-muted">Total</span>
-                                <span className="text-primary font-bold text-lg">₦{parseFloat(amount || '0').toLocaleString()}</span>
+                                <span className="text-muted font-bold">Total</span>
+                                <span className="text-primary font-bold text-lg">₦{totalCost.toLocaleString()}</span>
                             </div>
                         </div>
                     )}
 
-                    {/* Submit */}
+                    {/* ═══════ SUBMIT BUTTON ═══════ */}
                     <Button onClick={handlePayment} disabled={loading} className="w-full">
                         {loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService ? 'Request' : 'Payment'}`}
                     </Button>
