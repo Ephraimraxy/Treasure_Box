@@ -63,6 +63,13 @@ const CABLE_PROVIDERS = [
     { id: 'startimes', name: 'StarTimes' },
 ];
 
+// ─── Education Providers ───
+const EDUCATION_PROVIDERS = [
+    { id: 'jamb', name: 'JAMB PIN VENDING (UTME & Direct Entry)' },
+    { id: 'waec', name: 'WAEC Result Checker PIN' },
+    { id: 'waec-registration', name: 'WAEC Registration PIN' },
+];
+
 // ─── Insurance Types ───
 const INSURANCE_TYPES = [
     { id: 'third-party-motor-insurance', name: 'Third Party Motor', icon: Car },
@@ -93,6 +100,7 @@ const SERVICE_MAP: Record<string, { name: string; icon: any; color: string; bg: 
     bvn_validation: { name: 'BVN Validation', icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10', description: 'Verify a Bank Verification Number for authenticity.' },
     bvn_modification: { name: 'BVN Modification', icon: Edit, color: 'text-teal-400', bg: 'bg-teal-500/10', description: 'Apply corrections to your BVN details.' },
     bvn_retrieval: { name: 'BVN Retrieval', icon: Search, color: 'text-teal-400', bg: 'bg-teal-500/10', description: 'Retrieve your BVN using your registered phone number.' },
+    education: { name: 'Education', icon: Edit, color: 'text-amber-400', bg: 'bg-amber-500/10', description: 'Purchase JAMB PINs and WAEC Result Checker pins safely.' },
 };
 
 // ─── Component ───
@@ -132,7 +140,7 @@ export const ServicePaymentPage = () => {
     // Insurance Form State
     const [insuranceFormData, setInsuranceFormData] = useState<Record<string, string>>({});
 
-    const isVTU = type && ['airtime', 'data', 'power', 'cable', 'insurance'].includes(type);
+    const isVTU = type && ['airtime', 'data', 'power', 'cable', 'insurance', 'education'].includes(type);
     const isIdentityService = type && ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'].includes(type);
     const requiresDetails = type && ['nin_modification', 'nin_personalization', 'bvn_modification'].includes(type);
 
@@ -164,9 +172,9 @@ export const ServicePaymentPage = () => {
         }
     }, [detectedNetwork, type]);
 
-    // ─── Fetch cable bouquets / Insurance Variations ───
+    // ─── Fetch cable bouquets / Insurance Variations / Education Variations ───
     useEffect(() => {
-        if ((type === 'cable' || type === 'insurance') && selectedProvider) {
+        if ((type === 'cable' || type === 'insurance' || type === 'education') && selectedProvider) {
             fetchVariations(selectedProvider);
         }
     }, [selectedProvider, type]);
@@ -254,6 +262,10 @@ export const ServicePaymentPage = () => {
                     return;
                 }
             }
+        } else if (type === 'education') {
+            if (!selectedProvider) { addToast('error', 'Please select an education service'); return; }
+            if (!identifier) { addToast('error', `Please enter your ${selectedProvider === 'jamb' ? 'Profile ID' : 'Registration Number'}`); return; }
+            if (!selectedVariation) { addToast('error', 'Please select a package'); return; }
         } else if (isIdentityService) {
             if (!identifier) { addToast('error', `Please enter the ${type?.includes('nin') ? 'NIN' : 'BVN'} number`); return; }
             if (!numericAmount) { addToast('error', 'Please enter amount'); return; }
@@ -304,6 +316,17 @@ export const ServicePaymentPage = () => {
                     phone: user?.phone || '',
                     billersCode: insuranceFormData['Plate_Number'] || identifier, // Use plate number as identifier if available
                     ...insuranceFormData // Spread dynamic fields
+                };
+                payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
+            } else if (type === 'education') {
+                meta = {
+                    serviceID: selectedProvider,
+                    variationCode: selectedVariation.variation_code,
+                    planName: selectedVariation.name,
+                    serviceName: service?.name,
+                    phone: user?.phone || '',
+                    identifier,
+                    billersCode: identifier,
                 };
                 payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
             } else {
@@ -655,16 +678,81 @@ export const ServicePaymentPage = () => {
                         </>
                     )}
 
+                    {/* ═══════ EDUCATION FLOW ═══════ */}
+                    {type === 'education' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Select Service</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {EDUCATION_PROVIDERS.map(p => (
+                                        <button key={p.id} onClick={() => { setSelectedProvider(p.id); setSelectedVariation(null); setAmount(''); setIdentifier(''); }} className={`py-3.5 px-4 rounded-xl text-sm font-bold transition-all border text-left flex items-center justify-between ${selectedProvider === p.id ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'}`}>
+                                            {p.name}
+                                            {selectedProvider === p.id && <CheckCircle size={16} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            {selectedProvider && (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-muted">
+                                            {selectedProvider === 'jamb' ? 'JAMB Profile ID' : 'WAEC Registration Number / Exam Number'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={identifier}
+                                            onChange={(e) => setIdentifier(e.target.value)}
+                                            placeholder={selectedProvider === 'jamb' ? 'Enter Profile ID' : 'Enter Registration Number'}
+                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted">Select Package {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
+                                        {variations.length > 0 ? (selectedVariation && !showVariationsList ? (
+                                            <button
+                                                onClick={() => setShowVariationsList(true)}
+                                                className="w-full flex items-center justify-between p-3.5 rounded-xl border bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30 text-left transition-all hover:bg-primary/15"
+                                            >
+                                                <span className="text-sm font-medium flex-1 pr-3">{selectedVariation.name}</span>
+                                                <span className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-primary">₦{parseFloat(selectedVariation.variation_amount || 0).toLocaleString()}</span>
+                                                    <ChevronDown size={16} className="text-muted" />
+                                                </span>
+                                            </button>
+                                        ) : (
+                                            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                                {variations.map((v: any, i: number) => (
+                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); setShowVariationsList(false); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
+                                                        <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
+                                                        <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )) : !loadingVariations && (
+                                            <div className="text-center py-4 text-muted text-sm">No packages found for this service.</div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
                     {/* ═══════ SERVICE INFO SUMMARY (Common) ═══════ */}
                     {numericAmount > 0 && (
                         <div className="bg-muted/50 border border-border/50 rounded-xl p-4 space-y-2">
                             <div className="flex justify-between text-sm"><span className="text-muted">Service</span><span className="text-foreground font-medium">{service.name}</span></div>
-                            {(type === 'data' || type === 'cable' || type === 'insurance') && selectedVariation && (
+                            {(type === 'data' || type === 'cable' || type === 'insurance' || type === 'education') && selectedVariation && (
                                 <div className="flex justify-between text-sm"><span className="text-muted">Plan/Package</span><span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span></div>
                             )}
                             <div className="flex justify-between text-sm"><span className="text-muted">Amount</span><span className="text-foreground font-medium">₦{numericAmount.toLocaleString()}</span></div>
                             {isVTU && <div className="flex justify-between text-sm"><span className="text-muted">Service Charge</span><span className="text-foreground font-medium">₦{SERVICE_CHARGE}</span></div>}
-                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2"><span className="text-muted font-bold">Total</span><span className="text-primary font-bold text-lg">₦{totalCost.toLocaleString()}</span></div>
+                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2 font-bold"><span className="text-muted font-bold">Total</span><span className="text-primary font-bold text-lg">₦{totalCost.toLocaleString()}</span></div>
+                        </div>
+                    )}
+
+                    {type === 'education' && selectedVariation && selectedVariation.variation_code.includes('jamb') && (
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-xs text-amber-200/80 italic">
+                            Note: For JAMB PIN vending, ensure your Profile ID is correct. Your PIN will be displayed after a successful transaction.
                         </div>
                     )}
 

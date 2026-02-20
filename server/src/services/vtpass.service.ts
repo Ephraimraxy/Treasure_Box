@@ -124,6 +124,10 @@ export const SERVICE_ID_MAP: Record<string, string> = {
     'dstv': 'dstv',
     'gotv': 'gotv',
     'startimes': 'startimes',
+    // Education
+    'waec': 'waec',
+    'waec-registration': 'waec-registration',
+    'jamb': 'jamb',
 };
 
 // ── API Functions ────────────────────────────────────────
@@ -364,6 +368,43 @@ export const purchaseInsurance = async (
         return data;
     } catch (error: any) {
         console.error('[VTPass] Insurance purchase error:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Purchase Education services (WAEC, JAMB)
+ */
+export const purchaseEducation = async (
+    serviceID: string,
+    variationCode: string,
+    amount: number,
+    phone: string,
+    billersCode: string, // e.g. JAMB Profile ID or registration number
+    metadata: any = {}
+): Promise<VTPassResponse> => {
+    const request_id = generateRequestId();
+
+    try {
+        console.log(`[VTPass] Purchasing education: ${serviceID}/${variationCode} → ${billersCode}`);
+
+        const payload = {
+            request_id,
+            serviceID,
+            billersCode,
+            variation_code: variationCode,
+            amount,
+            phone,
+            ...metadata
+        };
+
+        const response = await vtpassPost.post('/api/pay', payload);
+        const data: VTPassResponse = response.data;
+        console.log(`[VTPass] Education response: ${data.code} - ${data.response_description}`);
+
+        return data;
+    } catch (error: any) {
+        console.error('[VTPass] Education purchase error:', error.response?.data || error.message);
         throw error;
     }
 };

@@ -298,7 +298,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
 
         // VTU types get a ₦4 service charge
-        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE', 'INSURANCE'];
+        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE', 'INSURANCE', 'EDUCATION'];
         const serviceCharge = vtuTypes.includes(type) ? VTU_SERVICE_CHARGE : 0;
         const totalCost = amount + serviceCharge;
 
@@ -341,7 +341,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         // ── VTU Services (VTPass Integration) ──
 
         if (vtuTypes.includes(type)) {
-            const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable, purchaseInsurance } = await import('../services/vtpass.service');
+            const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable, purchaseInsurance, purchaseEducation } = await import('../services/vtpass.service');
 
             if (!isVTPassConfigured()) {
                 // Fallback to simulated success if VTPass not configured
@@ -426,6 +426,25 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         if (result.code !== '000') {
                             const errorMsg = result.response_description || 'Insurance purchase failed';
                             console.error(`[VTPass Error] Insurance failed: ${errorMsg} (Code: ${result.code})`);
+                            return res.status(400).json({
+                                error: 'Service temporarily unavailable. Please try again shortly.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    } else if (type === 'EDUCATION') {
+                        const { serviceID, variationCode, amount, phone, billersCode, ...rest } = meta;
+                        const result = await purchaseEducation(
+                            serviceID,
+                            variationCode,
+                            amount,
+                            phone || user.phone || '',
+                            billersCode || meta.identifier,
+                            rest
+                        );
+                        if (result.code !== '000') {
+                            const errorMsg = result.response_description || 'Education service failed';
+                            console.error(`[VTPass Error] Education failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
                                 error: 'Service temporarily unavailable. Please try again shortly.',
                                 vtpassCode: result.code
