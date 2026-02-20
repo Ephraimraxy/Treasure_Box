@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet, AlertCircle, Info, Shield, Car, Heart, Home, Ambulance } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet, AlertCircle, Info, Shield, Car, Heart, Home, Ambulance, ChevronDown } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
@@ -121,6 +121,7 @@ export const ServicePaymentPage = () => {
     const [variations, setVariations] = useState<any[]>([]);
     const [selectedVariation, setSelectedVariation] = useState<any>(null);
     const [loadingVariations, setLoadingVariations] = useState(false);
+    const [showVariationsList, setShowVariationsList] = useState(true);
 
     // Electricity / Cable / Insurance
     const [selectedProvider, setSelectedProvider] = useState('');
@@ -153,6 +154,7 @@ export const ServicePaymentPage = () => {
             setVariations([]);
             setSelectedVariation(null);
             setAmount('');
+            setShowVariationsList(true);
             if (detectedNetwork) {
                 const serviceID = VTPASS_SERVICE_MAP[`${detectedNetwork}-data`];
                 if (serviceID) {
@@ -469,12 +471,23 @@ export const ServicePaymentPage = () => {
                                         <div className="flex items-center justify-center py-8 text-muted"><Loader2 size={24} className="animate-spin mr-2" /> Loading plans...</div>
                                     ) : variations.length === 0 ? (
                                         <div className="text-center py-6 text-muted text-sm">No plans available.</div>
+                                    ) : selectedVariation && !showVariationsList ? (
+                                        <button
+                                            onClick={() => setShowVariationsList(true)}
+                                            className="w-full flex items-center justify-between p-3.5 rounded-xl border bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30 text-left transition-all hover:bg-primary/15"
+                                        >
+                                            <span className="text-sm font-medium flex-1 pr-3">{selectedVariation.name}</span>
+                                            <span className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-primary">₦{parseFloat(selectedVariation.variation_amount || 0).toLocaleString()}</span>
+                                                <ChevronDown size={16} className="text-muted" />
+                                            </span>
+                                        </button>
                                     ) : (
                                         <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                             {variations.map((v: any, i: number) => (
                                                 <button
                                                     key={v.variation_code || i}
-                                                    onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }}
+                                                    onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); setShowVariationsList(false); }}
                                                     className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}
                                                 >
                                                     <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
@@ -548,16 +561,27 @@ export const ServicePaymentPage = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted">Select Bouquet {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
-                                        {variations.length > 0 && (
+                                        {variations.length > 0 && (selectedVariation && !showVariationsList ? (
+                                            <button
+                                                onClick={() => setShowVariationsList(true)}
+                                                className="w-full flex items-center justify-between p-3.5 rounded-xl border bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30 text-left transition-all hover:bg-primary/15"
+                                            >
+                                                <span className="text-sm font-medium flex-1 pr-3">{selectedVariation.name}</span>
+                                                <span className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-primary">₦{parseFloat(selectedVariation.variation_amount || 0).toLocaleString()}</span>
+                                                    <ChevronDown size={16} className="text-muted" />
+                                                </span>
+                                            </button>
+                                        ) : (
                                             <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                                 {variations.map((v: any, i: number) => (
-                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
+                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); setShowVariationsList(false); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
                                                         <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
                                                         <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
                                                     </button>
                                                 ))}
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
                                 </>
                             )}
@@ -581,16 +605,27 @@ export const ServicePaymentPage = () => {
                                 <>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted">Select Policy {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
-                                        {variations.length > 0 ? (
+                                        {variations.length > 0 ? (selectedVariation && !showVariationsList ? (
+                                            <button
+                                                onClick={() => setShowVariationsList(true)}
+                                                className="w-full flex items-center justify-between p-3.5 rounded-xl border bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30 text-left transition-all hover:bg-primary/15"
+                                            >
+                                                <span className="text-sm font-medium flex-1 pr-3">{selectedVariation.name}</span>
+                                                <span className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-primary">₦{parseFloat(selectedVariation.variation_amount || 0).toLocaleString()}</span>
+                                                    <ChevronDown size={16} className="text-muted" />
+                                                </span>
+                                            </button>
+                                        ) : (
                                             <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                                 {variations.map((v: any, i: number) => (
-                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
+                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); setShowVariationsList(false); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
                                                         <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
                                                         <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
                                                     </button>
                                                 ))}
                                             </div>
-                                        ) : !loadingVariations && (
+                                        )) : !loadingVariations && (
                                             <div className="text-center py-4 text-muted text-sm">No specific plans found. Proceed with custom amount if applicable.</div>
                                         )}
                                     </div>
