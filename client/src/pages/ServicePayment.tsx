@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet, AlertCircle, Info } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, ArrowLeft, Loader2, UserCheck, ShieldCheck, CheckCircle, UserCog, Search, Edit, Wallet, AlertCircle, Info, Shield, Car, Heart, Home, Ambulance } from 'lucide-react';
 import { Card, Button, Input } from '../components/ui';
 import { useToast } from '../contexts/ToastContext';
 import { transactionApi } from '../api';
@@ -15,6 +15,7 @@ const NETWORK_PREFIXES: Record<string, string[]> = {
     GLO: ['0805', '0807', '0705', '0815', '0905', '0907', '0915'],
     AIRTEL: ['0802', '0808', '0708', '0812', '0701', '0901', '0902', '0904', '0912'],
     '9MOBILE': ['0809', '0817', '0818', '0909', '0908'],
+    'SMILE': ['0702'],
 };
 
 const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
@@ -22,11 +23,13 @@ const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
     GLO: { text: 'text-green-400', bg: 'bg-green-500/20' },
     AIRTEL: { text: 'text-red-400', bg: 'bg-red-500/20' },
     '9MOBILE': { text: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+    'SMILE': { text: 'text-pink-400', bg: 'bg-pink-500/20' },
 };
 
 const VTPASS_SERVICE_MAP: Record<string, string> = {
     'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat',
     'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
+    'SMILE-data': 'smile-direct',
 };
 
 const detectNetwork = (phone: string): string | null => {
@@ -60,12 +63,29 @@ const CABLE_PROVIDERS = [
     { id: 'startimes', name: 'StarTimes' },
 ];
 
+// ─── Insurance Types ───
+const INSURANCE_TYPES = [
+    { id: 'third-party-motor-insurance', name: 'Third Party Motor', icon: Car },
+    { id: 'health-insurance', name: 'Health Insurance (HMO)', icon: Heart },
+    { id: 'home-cover', name: 'Home Cover', icon: Home },
+    { id: 'personal-accident-insurance', name: 'Personal Accident', icon: Ambulance },
+];
+
+const INSURANCE_FORM_FIELDS: Record<string, string[]> = {
+    'third-party-motor-insurance': ['Insured_Name', 'Engine_Number', 'Chassis_Number', 'Plate_Number', 'Vehicle_Make', 'Vehicle_Color', 'Vehicle_Model', 'Year_of_Make', 'Contact_Address'],
+    'health-insurance': ['Insured_Name', 'Contact_Address', 'Date_of_Birth'], // Hypothetical fields
+    'home-cover': ['Insured_Name', 'Contact_Address'],
+    'personal-accident-insurance': ['Insured_Name', 'Contact_Address'],
+};
+
+
 // ─── Service Definitions ───
 const SERVICE_MAP: Record<string, { name: string; icon: any; color: string; bg: string; description: string }> = {
     airtime: { name: 'Buy Airtime', icon: Smartphone, color: 'text-blue-400', bg: 'bg-blue-500/10', description: 'Top up airtime on any Nigerian mobile network instantly.' },
     data: { name: 'Buy Data', icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10', description: 'Purchase affordable data bundles for all networks.' },
     power: { name: 'Electricity', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10', description: 'Pay your electricity bills — prepaid or postpaid meters.' },
     cable: { name: 'Cable TV', icon: Tv, color: 'text-purple-400', bg: 'bg-purple-500/10', description: 'Subscribe or renew your DStv, GOtv, or StarTimes plan.' },
+    insurance: { name: 'Insurance', icon: Shield, color: 'text-red-400', bg: 'bg-red-500/10', description: 'Buy Third Party Motor, Health, Home, or Accident insurance.' },
     airtime_cash: { name: 'Airtime to Cash', icon: ArrowRightLeft, color: 'text-pink-400', bg: 'bg-pink-500/10', description: 'Convert your excess airtime back to wallet balance.' },
     nin_validation: { name: 'NIN Validation', icon: UserCheck, color: 'text-orange-400', bg: 'bg-orange-500/10', description: 'Verify the authenticity of a National Identification Number.' },
     nin_modification: { name: 'NIN Modification', icon: Edit, color: 'text-orange-400', bg: 'bg-orange-500/10', description: 'Request updates/corrections to your NIN record.' },
@@ -97,18 +117,21 @@ export const ServicePaymentPage = () => {
     // Network detection
     const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
 
-    // Data plans / Cable bouquets
+    // Data plans / Cable bouquets / Insurance types
     const [variations, setVariations] = useState<any[]>([]);
     const [selectedVariation, setSelectedVariation] = useState<any>(null);
     const [loadingVariations, setLoadingVariations] = useState(false);
 
-    // Electricity / Cable
+    // Electricity / Cable / Insurance
     const [selectedProvider, setSelectedProvider] = useState('');
     const [meterType, setMeterType] = useState<'prepaid' | 'postpaid'>('prepaid');
     const [meterInfo, setMeterInfo] = useState<any>(null);
     const [verifying, setVerifying] = useState(false);
 
-    const isVTU = type && ['airtime', 'data', 'power', 'cable'].includes(type);
+    // Insurance Form State
+    const [insuranceFormData, setInsuranceFormData] = useState<Record<string, string>>({});
+
+    const isVTU = type && ['airtime', 'data', 'power', 'cable', 'insurance'].includes(type);
     const isIdentityService = type && ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'].includes(type);
     const requiresDetails = type && ['nin_modification', 'nin_personalization', 'bvn_modification'].includes(type);
 
@@ -139,9 +162,9 @@ export const ServicePaymentPage = () => {
         }
     }, [detectedNetwork, type]);
 
-    // ─── Fetch cable bouquets when provider is selected ───
+    // ─── Fetch cable bouquets / Insurance Variations ───
     useEffect(() => {
-        if (type === 'cable' && selectedProvider) {
+        if ((type === 'cable' || type === 'insurance') && selectedProvider) {
             fetchVariations(selectedProvider);
         }
     }, [selectedProvider, type]);
@@ -214,15 +237,24 @@ export const ServicePaymentPage = () => {
             if (!selectedProvider) { addToast('error', 'Please select an electricity provider'); return; }
             if (!identifier) { addToast('error', 'Please enter your meter number'); return; }
             if (!meterInfo) { addToast('error', 'Please verify your meter number first'); return; }
-            if (!numericAmount || numericAmount < 500) { addToast('error', 'Minimum electricity purchase is ₦500'); return; }
         } else if (type === 'cable') {
             if (!selectedProvider) { addToast('error', 'Please select a cable TV provider'); return; }
             if (!identifier) { addToast('error', 'Please enter your smart card number'); return; }
             if (!selectedVariation) { addToast('error', 'Please select a bouquet'); return; }
+        } else if (type === 'insurance') {
+            if (!selectedProvider) { addToast('error', 'Please select an insurance type'); return; }
+            if (!selectedVariation) { addToast('error', 'Please select a plan'); return; }
+            // Validate dynamic fields
+            const requiredFields = INSURANCE_FORM_FIELDS[selectedProvider] || [];
+            for (const field of requiredFields) {
+                if (!insuranceFormData[field]) {
+                    addToast('error', `Please enter ${field.replace(/_/g, ' ')}`);
+                    return;
+                }
+            }
         } else if (isIdentityService) {
             if (!identifier) { addToast('error', `Please enter the ${type?.includes('nin') ? 'NIN' : 'BVN'} number`); return; }
             if (!numericAmount) { addToast('error', 'Please enter amount'); return; }
-            if (requiresDetails && !details) { addToast('error', 'Please provide request details'); return; }
         }
 
         setLoading(true);
@@ -261,8 +293,18 @@ export const ServicePaymentPage = () => {
                     serviceName: service?.name,
                 };
                 payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
+            } else if (type === 'insurance') {
+                meta = {
+                    serviceID: selectedProvider,
+                    variationCode: selectedVariation.variation_code,
+                    planName: selectedVariation.name,
+                    serviceName: service?.name,
+                    phone: user?.phone || '',
+                    billersCode: insuranceFormData['Plate_Number'] || identifier, // Use plate number as identifier if available
+                    ...insuranceFormData // Spread dynamic fields
+                };
+                payAmount = parseFloat(selectedVariation.variation_amount) || numericAmount;
             } else {
-                // Identity services
                 meta = { identifier, details, serviceName: service?.name };
                 payAmount = numericAmount;
             }
@@ -314,39 +356,6 @@ export const ServicePaymentPage = () => {
                     <h2 className="text-2xl font-bold text-foreground mb-1">Transaction Successful</h2>
                     <p className="text-muted">{service.name} completed successfully</p>
                 </div>
-
-                {verificationResult && (
-                    <Card>
-                        <h3 className="font-bold text-foreground mb-4">Verification Details</h3>
-                        <div className="space-y-3">
-                            {verificationResult.firstName && (
-                                <div className="flex justify-between border-b border-border pb-2">
-                                    <span className="text-muted">First Name</span>
-                                    <span className="font-bold text-foreground">{verificationResult.firstName}</span>
-                                </div>
-                            )}
-                            {verificationResult.lastName && (
-                                <div className="flex justify-between border-b border-border pb-2">
-                                    <span className="text-muted">Last Name</span>
-                                    <span className="font-bold text-foreground">{verificationResult.lastName}</span>
-                                </div>
-                            )}
-                            {verificationResult.valid !== undefined && (
-                                <div className="flex justify-between border-b border-border pb-2">
-                                    <span className="text-muted">Valid</span>
-                                    <span className="font-bold text-emerald-500">{verificationResult.valid ? 'Yes' : 'No'}</span>
-                                </div>
-                            )}
-                            {verificationResult.reference && (
-                                <div className="flex justify-between">
-                                    <span className="text-muted">Ref ID</span>
-                                    <span className="font-bold text-primary font-mono">{verificationResult.reference}</span>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-                )}
-
                 <div className="flex gap-3">
                     <Button variant="secondary" className="flex-1" onClick={() => navigate('/services')}>
                         <ArrowLeft size={16} className="mr-2" /> Back to Services
@@ -374,7 +383,7 @@ export const ServicePaymentPage = () => {
     // ─── Payment Form ───
     return (
         <div className="max-w-lg mx-auto animate-fade-in space-y-6">
-            {/* Back Button */}
+            {/* Back Button / Header (Keep generic) */}
             <button onClick={() => navigate('/services')} className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group">
                 <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-sm font-medium">Back to Services</span>
@@ -382,11 +391,7 @@ export const ServicePaymentPage = () => {
 
             {/* Service Header */}
             <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-                <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${type.includes('nin') || type.includes('bvn') ? 'from-orange-500 to-teal-500'
-                    : type === 'power' ? 'from-yellow-500 to-amber-500'
-                        : type === 'cable' ? 'from-purple-500 to-indigo-500'
-                            : 'from-blue-500 to-emerald-500'
-                    }`} />
+                <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${service.bg.replace('/10', '')}`} />
                 <div className="p-6">
                     <div className="flex items-center gap-4 mb-4">
                         <div className={`p-4 rounded-2xl ${service.bg} ${service.color}`}>
@@ -431,15 +436,7 @@ export const ServicePaymentPage = () => {
                                     <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> Unrecognized network prefix</p>
                                 )}
                             </div>
-
-                            <Input
-                                label="Amount (₦)"
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                icon={<span className="text-muted font-bold">₦</span>}
-                                placeholder="100"
-                            />
+                            <Input label="Amount (₦)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} icon={<span className="text-muted font-bold">₦</span>} placeholder="100" />
                         </>
                     )}
 
@@ -447,13 +444,13 @@ export const ServicePaymentPage = () => {
                     {type === 'data' && (
                         <>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted">Phone Number</label>
+                                <label className="text-sm font-medium text-muted">Phone Number (MTN, Glo, Airtel, 9Mobile, Smile)</label>
                                 <div className="relative">
                                     <input
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                        placeholder="0803 XXX XXXX"
+                                        placeholder="0803 XXX XXXX or 0702..."
                                         maxLength={11}
                                         className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors pr-24"
                                     />
@@ -461,44 +458,27 @@ export const ServicePaymentPage = () => {
                                         {phone.length >= 4 && <NetworkBadge />}
                                     </div>
                                 </div>
-                                {phone.length >= 4 && !detectedNetwork && (
-                                    <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> Unrecognized network prefix</p>
-                                )}
                             </div>
 
-                            {/* Data Plans */}
                             {detectedNetwork && (
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-muted">
                                         Select Data Plan {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}
                                     </label>
                                     {loadingVariations ? (
-                                        <div className="flex items-center justify-center py-8 text-muted">
-                                            <Loader2 size={24} className="animate-spin mr-2" /> Loading plans...
-                                        </div>
+                                        <div className="flex items-center justify-center py-8 text-muted"><Loader2 size={24} className="animate-spin mr-2" /> Loading plans...</div>
                                     ) : variations.length === 0 ? (
-                                        <div className="text-center py-6 text-muted text-sm">
-                                            <Info size={20} className="mx-auto mb-2 opacity-50" />
-                                            No plans available. Try again later.
-                                        </div>
+                                        <div className="text-center py-6 text-muted text-sm">No plans available.</div>
                                     ) : (
                                         <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                             {variations.map((v: any, i: number) => (
                                                 <button
                                                     key={v.variation_code || i}
-                                                    onClick={() => {
-                                                        setSelectedVariation(v);
-                                                        setAmount(v.variation_amount?.toString() || '0');
-                                                    }}
-                                                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code
-                                                        ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30'
-                                                        : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'
-                                                        }`}
+                                                    onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }}
+                                                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}
                                                 >
                                                     <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
-                                                    <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>
-                                                        ₦{parseFloat(v.variation_amount || 0).toLocaleString()}
-                                                    </span>
+                                                    <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -513,94 +493,37 @@ export const ServicePaymentPage = () => {
                         <>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted">Select Provider (DisCo)</label>
-                                <select
-                                    value={selectedProvider}
-                                    onChange={(e) => { setSelectedProvider(e.target.value); setMeterInfo(null); setIdentifier(''); }}
-                                    className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary appearance-none"
-                                >
+                                <select value={selectedProvider} onChange={(e) => { setSelectedProvider(e.target.value); setMeterInfo(null); setIdentifier(''); }} className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary appearance-none">
                                     <option value="">Select DisCo</option>
-                                    {ELECTRICITY_DISCOS.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
-                                    ))}
+                                    {ELECTRICITY_DISCOS.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
                                 </select>
                             </div>
-
                             {selectedProvider && (
                                 <>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">Meter Type</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {(['prepaid', 'postpaid'] as const).map(mt => (
-                                                <button
-                                                    key={mt}
-                                                    onClick={() => { setMeterType(mt); setMeterInfo(null); }}
-                                                    className={`py-3 rounded-xl text-sm font-bold transition-all border capitalize ${meterType === mt
-                                                        ? 'bg-primary/20 border-primary/50 text-primary'
-                                                        : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    {mt}
-                                                </button>
+                                                <button key={mt} onClick={() => { setMeterType(mt); setMeterInfo(null); }} className={`py-3 rounded-xl text-sm font-bold transition-all border capitalize ${meterType === mt ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'}`}>{mt}</button>
                                             ))}
                                         </div>
                                     </div>
-
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">Meter Number</label>
                                         <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={identifier}
-                                                onChange={(e) => { setIdentifier(e.target.value); setMeterInfo(null); }}
-                                                placeholder="Enter meter number"
-                                                className="flex-1 bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors"
-                                            />
-                                            <Button
-                                                onClick={handleVerify}
-                                                disabled={verifying || !identifier}
-                                                variant="secondary"
-                                                className="shrink-0"
-                                            >
-                                                {verifying ? <Loader2 size={16} className="animate-spin" /> : 'Verify'}
-                                            </Button>
+                                            <input type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setMeterInfo(null); }} placeholder="Enter meter number" className="flex-1 bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors" />
+                                            <Button onClick={handleVerify} disabled={verifying || !identifier} variant="secondary" className="shrink-0">{verifying ? <Loader2 size={16} className="animate-spin" /> : 'Verify'}</Button>
                                         </div>
                                     </div>
-
-                                    {/* Meter Verification Result */}
                                     {meterInfo && (
                                         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-2">
-                                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                                                <CheckCircle size={16} /> Meter Verified
-                                            </div>
+                                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm"><CheckCircle size={16} /> Meter Verified</div>
                                             <div className="text-sm space-y-1">
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted">Customer</span>
-                                                    <span className="font-bold text-foreground">{meterInfo.customerName}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted">Type</span>
-                                                    <span className="font-medium text-foreground capitalize">{meterInfo.type}</span>
-                                                </div>
-                                                {meterInfo.address && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted">Address</span>
-                                                        <span className="font-medium text-foreground text-right max-w-[60%]">{meterInfo.address}</span>
-                                                    </div>
-                                                )}
+                                                <div className="flex justify-between"><span className="text-muted">Customer</span><span className="font-bold text-foreground">{meterInfo.customerName}</span></div>
                                             </div>
                                         </div>
                                     )}
-
-                                    {meterInfo && (
-                                        <Input
-                                            label="Amount (₦)"
-                                            type="number"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                            icon={<span className="text-muted font-bold">₦</span>}
-                                            placeholder="1000"
-                                        />
-                                    )}
+                                    {meterInfo && (<Input label="Amount (₦)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} icon={<span className="text-muted font-bold">₦</span>} placeholder="1000" />)}
                                 </>
                             )}
                         </>
@@ -613,65 +536,24 @@ export const ServicePaymentPage = () => {
                                 <label className="text-sm font-medium text-muted">Select Provider</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {CABLE_PROVIDERS.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => { setSelectedProvider(p.id); setSelectedVariation(null); setAmount(''); setIdentifier(''); }}
-                                            className={`py-3 rounded-xl text-sm font-bold transition-all border ${selectedProvider === p.id
-                                                ? 'bg-primary/20 border-primary/50 text-primary'
-                                                : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'
-                                                }`}
-                                        >
-                                            {p.name}
-                                        </button>
+                                        <button key={p.id} onClick={() => { setSelectedProvider(p.id); setSelectedVariation(null); setAmount(''); setIdentifier(''); }} className={`py-3 rounded-xl text-sm font-bold transition-all border ${selectedProvider === p.id ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'}`}>{p.name}</button>
                                     ))}
                                 </div>
                             </div>
-
                             {selectedProvider && (
                                 <>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">Smart Card / IUC Number</label>
-                                        <input
-                                            type="text"
-                                            value={identifier}
-                                            onChange={(e) => setIdentifier(e.target.value)}
-                                            placeholder="Enter smart card number"
-                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors"
-                                        />
+                                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Enter smart card number" className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors" />
                                     </div>
-
-                                    {/* Cable Bouquets */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-muted">
-                                            Select Bouquet {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}
-                                        </label>
-                                        {loadingVariations ? (
-                                            <div className="flex items-center justify-center py-8 text-muted">
-                                                <Loader2 size={24} className="animate-spin mr-2" /> Loading bouquets...
-                                            </div>
-                                        ) : variations.length === 0 ? (
-                                            <div className="text-center py-6 text-muted text-sm">
-                                                <Info size={20} className="mx-auto mb-2 opacity-50" />
-                                                No bouquets available.
-                                            </div>
-                                        ) : (
+                                        <label className="text-sm font-medium text-muted">Select Bouquet {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
+                                        {variations.length > 0 && (
                                             <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                                 {variations.map((v: any, i: number) => (
-                                                    <button
-                                                        key={v.variation_code || i}
-                                                        onClick={() => {
-                                                            setSelectedVariation(v);
-                                                            setAmount(v.variation_amount?.toString() || '0');
-                                                        }}
-                                                        className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code
-                                                            ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30'
-                                                            : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'
-                                                            }`}
-                                                    >
+                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
                                                         <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
-                                                        <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>
-                                                            ₦{parseFloat(v.variation_amount || 0).toLocaleString()}
-                                                        </span>
+                                                        <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -682,97 +564,77 @@ export const ServicePaymentPage = () => {
                         </>
                     )}
 
-                    {/* ═══════ IDENTITY SERVICES FLOW ═══════ */}
-                    {isIdentityService && (
+                    {/* ═══════ INSURANCE FLOW ═══════ */}
+                    {type === 'insurance' && (
                         <>
-                            <Input
-                                label="Amount (₦)"
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                icon={<span className="text-muted font-bold">₦</span>}
-                                placeholder="0.00"
-                            />
-
-                            <Input
-                                label={type?.includes('nin') ? 'NIN Number' : type === 'bvn_retrieval' ? 'Phone Number' : 'BVN Number'}
-                                type="text"
-                                value={identifier}
-                                onChange={(e) => setIdentifier(e.target.value)}
-                                placeholder={`Enter ${type?.includes('nin') ? 'NIN' : type === 'bvn_retrieval' ? 'phone number' : 'BVN'}`}
-                                maxLength={type === 'bvn_retrieval' ? undefined : 11}
-                            />
-
-                            {requiresDetails && (
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-muted">Request Details</label>
-                                    <textarea
-                                        value={details}
-                                        onChange={(e) => setDetails(e.target.value)}
-                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors h-24 resize-none"
-                                        placeholder="Describe the changes required..."
-                                    />
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted">Insurance Type</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {INSURANCE_TYPES.map(p => (
+                                        <button key={p.id} onClick={() => { setSelectedProvider(p.id); setSelectedVariation(null); setAmount(''); setInsuranceFormData({}); }} className={`py-3 rounded-xl text-sm font-bold transition-all border flex items-center justify-center gap-2 ${selectedProvider === p.id ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-input border-input text-muted hover:border-ring hover:text-foreground'}`}>
+                                            <p.icon size={16} /> {p.name}
+                                        </button>
+                                    ))}
                                 </div>
+                            </div>
+                            {selectedProvider && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted">Select Policy {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
+                                        {variations.length > 0 ? (
+                                            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                                {variations.map((v: any, i: number) => (
+                                                    <button key={v.variation_code || i} onClick={() => { setSelectedVariation(v); setAmount(v.variation_amount?.toString() || '0'); }} className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all ${selectedVariation?.variation_code === v.variation_code ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30' : 'bg-card border-border text-muted hover:border-primary/30 hover:text-foreground'}`}>
+                                                        <span className="text-sm font-medium flex-1 pr-3">{v.name}</span>
+                                                        <span className={`text-sm font-bold whitespace-nowrap ${selectedVariation?.variation_code === v.variation_code ? 'text-primary' : 'text-muted'}`}>₦{parseFloat(v.variation_amount || 0).toLocaleString()}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : !loadingVariations && (
+                                            <div className="text-center py-4 text-muted text-sm">No specific plans found. Proceed with custom amount if applicable.</div>
+                                        )}
+                                    </div>
+
+                                    {/* Dynamic Form Fields */}
+                                    {selectedVariation && (
+                                        <div className="space-y-3 pt-2">
+                                            <h3 className="text-sm font-bold text-foreground">Required Details</h3>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {(INSURANCE_FORM_FIELDS[selectedProvider] || []).map((field) => (
+                                                    <div key={field} className="space-y-1">
+                                                        <label className="text-xs font-medium text-muted uppercase">{field.replace(/_/g, ' ')}</label>
+                                                        <input
+                                                            type="text"
+                                                            value={insuranceFormData[field] || ''}
+                                                            onChange={(e) => setInsuranceFormData({ ...insuranceFormData, [field]: e.target.value })}
+                                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors text-sm"
+                                                            placeholder={`Enter ${field.replace(/_/g, ' ')}`}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </>
                     )}
 
-                    {/* ═══════ TRANSACTION PIN (all flows) ═══════ */}
-                    <Input
-                        label="Transaction PIN"
-                        type="password"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        maxLength={4}
-                        placeholder="****"
-                    />
-
-                    {/* ═══════ COST SUMMARY ═══════ */}
+                    {/* ═══════ SERVICE INFO SUMMARY (Common) ═══════ */}
                     {numericAmount > 0 && (
                         <div className="bg-muted/50 border border-border/50 rounded-xl p-4 space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted">Service</span>
-                                <span className="text-foreground font-medium">{service.name}</span>
-                            </div>
-                            {(type === 'data' && selectedVariation) && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted">Plan</span>
-                                    <span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span>
-                                </div>
+                            <div className="flex justify-between text-sm"><span className="text-muted">Service</span><span className="text-foreground font-medium">{service.name}</span></div>
+                            {(type === 'data' || type === 'cable' || type === 'insurance') && selectedVariation && (
+                                <div className="flex justify-between text-sm"><span className="text-muted">Plan/Package</span><span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span></div>
                             )}
-                            {(type === 'cable' && selectedVariation) && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted">Bouquet</span>
-                                    <span className="text-foreground font-medium text-right max-w-[60%]">{selectedVariation.name}</span>
-                                </div>
-                            )}
-                            {detectedNetwork && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted">Network</span>
-                                    <span className="text-foreground font-medium">{detectedNetwork}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted">Amount</span>
-                                <span className="text-foreground font-medium">₦{numericAmount.toLocaleString()}</span>
-                            </div>
-                            {isVTU && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted">Service Charge</span>
-                                    <span className="text-foreground font-medium">₦{SERVICE_CHARGE}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
-                                <span className="text-muted font-bold">Total</span>
-                                <span className="text-primary font-bold text-lg">₦{totalCost.toLocaleString()}</span>
-                            </div>
+                            <div className="flex justify-between text-sm"><span className="text-muted">Amount</span><span className="text-foreground font-medium">₦{numericAmount.toLocaleString()}</span></div>
+                            {isVTU && <div className="flex justify-between text-sm"><span className="text-muted">Service Charge</span><span className="text-foreground font-medium">₦{SERVICE_CHARGE}</span></div>}
+                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2"><span className="text-muted font-bold">Total</span><span className="text-primary font-bold text-lg">₦{totalCost.toLocaleString()}</span></div>
                         </div>
                     )}
 
-                    {/* ═══════ SUBMIT BUTTON ═══════ */}
-                    <Button onClick={handlePayment} disabled={loading} className="w-full">
-                        {loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService ? 'Request' : 'Payment'}`}
-                    </Button>
+                    <Input label="Transaction PIN" type="password" value={pin} onChange={(e) => setPin(e.target.value)} maxLength={4} placeholder="****" />
+                    <Button onClick={handlePayment} disabled={loading} className="w-full">{loading ? <Loader2 className="animate-spin" /> : `Confirm ${isIdentityService ? 'Request' : 'Payment'}`}</Button>
                 </div>
             </Card>
         </div>

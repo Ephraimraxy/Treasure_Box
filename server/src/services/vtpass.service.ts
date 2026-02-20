@@ -103,6 +103,12 @@ export const SERVICE_ID_MAP: Record<string, string> = {
     'data-glo': 'glo-data',
     'data-airtel': 'airtel-data',
     'data-9mobile': 'etisalat-data',
+    'data-smile': 'smile-direct',
+    // Insurance
+    'insurance-motor': 'third-party-motor-insurance',
+    'insurance-accident': 'personal-accident-insurance',
+    'insurance-health': 'health-insurance',
+    'insurance-home': 'home-cover',
     // Electricity
     'ikeja-electric': 'ikeja-electric',
     'eko-electric': 'eko-electric',
@@ -300,6 +306,44 @@ export const purchaseCable = async (
         return data;
     } catch (error: any) {
         console.error('[VTPass] Cable purchase error:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Purchase Insurance (Motor, Home, Accident, Health)
+ */
+export const purchaseInsurance = async (
+    serviceID: string,
+    variationCode: string,
+    amount: number,
+    phone: string,
+    billersCode: string, // e.g. Plate Number for Motor, or Phone for others
+    metadata: any = {}
+): Promise<VTPassResponse> => {
+    const request_id = generateRequestId();
+
+    try {
+        console.log(`[VTPass] Purchasing insurance: ${serviceID}/${variationCode} → ${billersCode}`);
+
+        // Construct payload with required fields for different insurance types
+        const payload = {
+            request_id,
+            serviceID,
+            billersCode,
+            variation_code: variationCode,
+            amount,
+            phone,
+            ...metadata // Spread additional fields (Engine No, Chassis No, Insured Name, etc.)
+        };
+
+        const response = await vtpassPost.post('/api/pay', payload);
+        const data: VTPassResponse = response.data;
+        console.log(`[VTPass] Insurance response: ${data.code} - ${data.response_description}`);
+
+        return data;
+    } catch (error: any) {
+        console.error('[VTPass] Insurance purchase error:', error.response?.data || error.message);
         throw error;
     }
 };

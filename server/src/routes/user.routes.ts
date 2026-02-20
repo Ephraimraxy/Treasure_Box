@@ -35,6 +35,7 @@ router.get('/settings', authenticate, async (req: Request, res: Response) => {
             showUserQuizNav: settings?.showUserQuizNav ?? true,
             showUserBoxNav: settings?.showUserBoxNav ?? true,
             enableUserAdsPopup: settings?.enableUserAdsPopup ?? true,
+            enableAirtimeToCash: settings?.enableAirtimeToCash ?? true,
         });
     } catch (error) {
         console.error('Settings fetch error:', error);

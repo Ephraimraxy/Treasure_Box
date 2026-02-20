@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, UserCheck, ShieldCheck, UserCog, Search, Edit, GraduationCap, BookOpen, ExternalLink, ChevronRight } from 'lucide-react';
+import { Smartphone, Wifi, Zap, Tv, ArrowRightLeft, UserCheck, ShieldCheck, UserCog, Search, Edit, GraduationCap, BookOpen, ExternalLink, ChevronRight, Shield } from 'lucide-react';
+import { userApi } from '../api';
 
 const services = [
     { id: 'airtime', name: 'Buy Airtime', icon: Smartphone, color: 'text-blue-400', bg: 'bg-blue-500/10', desc: 'Instant top-up' },
-    { id: 'data', name: 'Buy Data', icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10', desc: 'All networks' },
+    { id: 'data', name: 'Buy Data', icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10', desc: 'All networks + Smile' },
     { id: 'airtime_cash', name: 'Airtime to Cash', icon: ArrowRightLeft, color: 'text-pink-400', bg: 'bg-pink-500/10', desc: 'Convert airtime' },
     { id: 'power', name: 'Electricity', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10', desc: 'Prepaid & postpaid' },
     { id: 'cable', name: 'Cable TV', icon: Tv, color: 'text-purple-400', bg: 'bg-purple-500/10', desc: 'DStv, GOtv, Star' },
+    { id: 'insurance', name: 'Insurance', icon: Shield, color: 'text-red-400', bg: 'bg-red-500/10', desc: 'Motor, Health, Home' },
     { id: 'nin_validation', name: 'NIN Validation', icon: UserCheck, color: 'text-orange-400', bg: 'bg-orange-500/10', desc: 'Verify NIN' },
     { id: 'nin_modification', name: 'NIN Modification', icon: Edit, color: 'text-orange-400', bg: 'bg-orange-500/10', desc: 'Update NIN' },
     { id: 'nin_personalization', name: 'NIN Personalization', icon: UserCog, color: 'text-orange-400', bg: 'bg-orange-500/10', desc: 'Biometric update' },
@@ -21,11 +23,19 @@ type CategoryDef = { title: string; icon: any; iconColor: string; ids: string[] 
 const categories: CategoryDef[] = [
     { title: 'Telecommunication', icon: Smartphone, iconColor: 'text-blue-400', ids: ['airtime', 'data', 'airtime_cash'] },
     { title: 'Utilities', icon: Zap, iconColor: 'text-yellow-400', ids: ['power', 'cable'] },
+    { title: 'Insurance & Protection', icon: Shield, iconColor: 'text-red-400', ids: ['insurance'] },
     { title: 'Identity Management', icon: ShieldCheck, iconColor: 'text-emerald-400', ids: ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'] },
 ];
 
 export const ServicesPage = () => {
     const navigate = useNavigate();
+    const [enableAirtimeToCash, setEnableAirtimeToCash] = useState(true);
+
+    useEffect(() => {
+        userApi.getSettings().then(res => {
+            setEnableAirtimeToCash(res.data.enableAirtimeToCash ?? true);
+        }).catch(() => { });
+    }, []);
 
     return (
         <div className="space-y-8 animate-fade-in relative pb-10">
@@ -63,7 +73,7 @@ export const ServicesPage = () => {
             {/* ─── Service Categories ─── */}
             {categories.map(cat => {
                 const CatIcon = cat.icon;
-                const catServices = services.filter(s => cat.ids.includes(s.id));
+                const catServices = services.filter(s => cat.ids.includes(s.id)).filter(s => s.id !== 'airtime_cash' || enableAirtimeToCash);
                 return (
                     <div key={cat.title} className="space-y-4">
                         <h3 className="text-lg font-bold text-muted flex items-center gap-2">

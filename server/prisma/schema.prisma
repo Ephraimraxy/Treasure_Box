@@ -164,6 +164,7 @@ model Settings {
   showUserQuizNav           Boolean @default(true)
   showUserBoxNav            Boolean @default(true)
   enableUserAdsPopup        Boolean @default(true)
+  enableAirtimeToCash       Boolean @default(true)
 }
 
 // ── Financial Control Center Models ────────────────────────

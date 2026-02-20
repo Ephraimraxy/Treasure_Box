@@ -298,7 +298,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
 
         // VTU types get a ₦4 service charge
-        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE'];
+        const vtuTypes = ['AIRTIME', 'DATA', 'POWER', 'CABLE', 'INSURANCE'];
         const serviceCharge = vtuTypes.includes(type) ? VTU_SERVICE_CHARGE : 0;
         const totalCost = amount + serviceCharge;
 
@@ -341,7 +341,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
         // ── VTU Services (VTPass Integration) ──
 
         if (vtuTypes.includes(type)) {
-            const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable } = await import('../services/vtpass.service');
+            const { isVTPassConfigured, purchaseAirtime, purchaseData, purchaseElectricity, purchaseCable, purchaseInsurance } = await import('../services/vtpass.service');
 
             if (!isVTPassConfigured()) {
                 // Fallback to simulated success if VTPass not configured
@@ -400,6 +400,24 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         if (result.code !== '000') {
                             return res.status(400).json({
                                 error: result.response_description || 'Cable subscription failed. Please try again.',
+                                vtpassCode: result.code
+                            });
+                        }
+                        vtpassResponse = result;
+                    } else if (type === 'INSURANCE') {
+                        // Extract standard fields, everything else goes to metadata
+                        const { serviceID, variationCode, amount, phone, identifier, billersCode, ...rest } = meta;
+                        const result = await purchaseInsurance(
+                            serviceID,
+                            variationCode,
+                            amount,
+                            phone || user.phone || '',
+                            billersCode || identifier, // Policy holder ID or Plate Number
+                            rest // Spread remaining fields (Engine No, Chassis, etc.)
+                        );
+                        if (result.code !== '000') {
+                            return res.status(400).json({
+                                error: result.response_description || 'Insurance purchase failed. Please try again.',
                                 vtpassCode: result.code
                             });
                         }

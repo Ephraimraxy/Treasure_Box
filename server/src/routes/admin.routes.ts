@@ -1259,6 +1259,7 @@ router.get('/settings', async (req: AuthRequest, res, next) => {
             showUserQuizNav: true,
             showUserBoxNav: true,
             enableUserAdsPopup: true,
+            enableAirtimeToCash: true,
         });
     } catch (error) {
         next(error);
