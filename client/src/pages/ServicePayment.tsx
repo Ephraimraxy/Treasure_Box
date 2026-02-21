@@ -25,12 +25,13 @@ const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
     AIRTEL: { text: 'text-red-400', bg: 'bg-red-500/20' },
     '9MOBILE': { text: 'text-emerald-400', bg: 'bg-emerald-500/20' },
     'SMILE': { text: 'text-pink-400', bg: 'bg-pink-500/20' },
+    'GLO SME': { text: 'text-green-500', bg: 'bg-green-600/20' },
     'FOREIGN': { text: 'text-indigo-400', bg: 'bg-indigo-500/20' },
 };
 
 const VTPASS_SERVICE_MAP: Record<string, string> = {
     'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat', 'SMILE-airtime': 'smile-direct', 'FOREIGN-airtime': 'foreign-airtime',
-    'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
+    'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'GLO SME-data': 'glo-sme-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
     'SMILE-data': 'smile-direct',
 };
 
@@ -396,7 +397,7 @@ export const ServicePaymentPage = () => {
                     onChange={(e) => setDetectedNetwork(e.target.value)}
                     className={`appearance-none cursor-pointer inline-flex items-center gap-1.5 pl-3 pr-6 py-1 pr-6 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20 focus:outline-none`}
                 >
-                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', 'SMILE', ...(currentType === 'airtime' ? ['FOREIGN'] : [])].map((net) => (
+                    {['MTN', 'AIRTEL', 'GLO', 'GLO SME', '9MOBILE', 'SMILE', ...(currentType === 'airtime' ? ['FOREIGN'] : [])].map((net) => (
                         <option key={net} value={net} className="bg-background text-foreground uppercase">{net}</option>
                     ))}
                 </select>
