@@ -63,6 +63,7 @@ const CABLE_PROVIDERS = [
     { id: 'dstv', name: 'DStv' },
     { id: 'gotv', name: 'GOtv' },
     { id: 'startimes', name: 'StarTimes' },
+    { id: 'showmax', name: 'Showmax' },
 ];
 
 // ─── Insurance Types ───

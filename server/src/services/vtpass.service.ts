@@ -124,6 +124,7 @@ export const SERVICE_ID_MAP: Record<string, string> = {
     'dstv': 'dstv',
     'gotv': 'gotv',
     'startimes': 'startimes',
+    'showmax': 'showmax',
     // Education
     'education-jamb': 'jamb',
     'education-waec': 'waec',
