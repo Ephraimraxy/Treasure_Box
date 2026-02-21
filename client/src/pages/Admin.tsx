@@ -1593,12 +1593,22 @@ export const AdminTransactionsPage = () => {
                             </Card>
 
                             <Card className="p-4">
-                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Paystack refs</div>
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Gateway References</div>
                                 <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                    <div><span className="text-slate-500 dark:text-slate-400">reference:</span> {detail.transaction.meta?.reference || '-'}</div>
-                                    <div><span className="text-slate-500 dark:text-slate-400">paystackReference:</span> {detail.transaction.meta?.paystackReference || '-'}</div>
-                                    <div><span className="text-slate-500 dark:text-slate-400">transferCode:</span> {detail.transaction.meta?.transferCode || '-'}</div>
-                                    <div><span className="text-slate-500 dark:text-slate-400">transferFinalEvent:</span> {detail.transaction.meta?.transferFinalEvent || '-'}</div>
+                                    {detail.transaction.type === 'UTILITY_BILL' ? (
+                                        <>
+                                            <div><span className="text-slate-500 dark:text-slate-400">VTPass Request ID:</span> <span className="font-mono text-amber-600 dark:text-amber-400">{detail.transaction.meta?.vtpassResponse?.requestId || '-'}</span></div>
+                                            <div><span className="text-slate-500 dark:text-slate-400">VTPass Code:</span> {detail.transaction.meta?.vtpassResponse?.code || '-'}</div>
+                                            <div><span className="text-slate-500 dark:text-slate-400">VTPass Message:</span> {detail.transaction.meta?.vtpassResponse?.response_description || '-'}</div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div><span className="text-slate-500 dark:text-slate-400">reference:</span> {detail.transaction.meta?.reference || '-'}</div>
+                                            <div><span className="text-slate-500 dark:text-slate-400">paystackReference:</span> {detail.transaction.meta?.paystackReference || '-'}</div>
+                                            <div><span className="text-slate-500 dark:text-slate-400">transferCode:</span> {detail.transaction.meta?.transferCode || '-'}</div>
+                                            <div><span className="text-slate-500 dark:text-slate-400">transferFinalEvent:</span> {detail.transaction.meta?.transferFinalEvent || '-'}</div>
+                                        </>
+                                    )}
                                 </div>
                             </Card>
                         </div>
