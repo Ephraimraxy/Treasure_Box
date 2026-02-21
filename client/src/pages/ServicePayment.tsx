@@ -383,7 +383,7 @@ export const ServicePaymentPage = () => {
     }
 
     // ─── Network Badge / Override Dropdown ───
-    const NetworkBadge = () => {
+    const NetworkBadge = ({ currentType }: { currentType?: string }) => {
         if (!detectedNetwork) return null;
         const colors = NETWORK_COLORS[detectedNetwork.toUpperCase()] || NETWORK_COLORS['MTN'];
         return (
@@ -393,7 +393,7 @@ export const ServicePaymentPage = () => {
                     onChange={(e) => setDetectedNetwork(e.target.value)}
                     className={`appearance-none cursor-pointer inline-flex items-center gap-1.5 pl-3 pr-6 py-1 pr-6 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20 focus:outline-none`}
                 >
-                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', ...(type === 'data' ? ['SMILE'] : [])].map((net) => (
+                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', ...(currentType === 'data' ? ['SMILE'] : [])].map((net) => (
                         <option key={net} value={net} className="bg-background text-foreground uppercase">{net}</option>
                     ))}
                 </select>
@@ -451,7 +451,7 @@ export const ServicePaymentPage = () => {
                                         className="w-full bg-surface dark:bg-surface-highlight border border-border dark:border-border rounded-xl px-4 py-3 text-foreground dark:text-foreground placeholder:text-muted focus:outline-none focus:border-primary dark:focus:border-primary transition-colors pr-24"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        {phone.length >= 4 && <NetworkBadge />}
+                                        {phone.length >= 4 && <NetworkBadge currentType={type} />}
                                     </div>
                                 </div>
                                 {phone.length >= 4 && !detectedNetwork && (
@@ -477,7 +477,7 @@ export const ServicePaymentPage = () => {
                                         className="w-full bg-surface dark:bg-surface-highlight border border-border dark:border-border rounded-xl px-4 py-3 text-foreground dark:text-foreground placeholder:text-muted focus:outline-none focus:border-primary dark:focus:border-primary transition-colors pr-24"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        {phone.length >= 4 && <NetworkBadge />}
+                                        {phone.length >= 4 && <NetworkBadge currentType={type} />}
                                     </div>
                                 </div>
                             </div>
