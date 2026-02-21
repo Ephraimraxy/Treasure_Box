@@ -382,15 +382,23 @@ export const ServicePaymentPage = () => {
         );
     }
 
-    // ─── Network Badge ───
+    // ─── Network Badge / Override Dropdown ───
     const NetworkBadge = () => {
         if (!detectedNetwork) return null;
         const colors = NETWORK_COLORS[detectedNetwork];
         return (
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20`}>
-                <span className="w-2 h-2 rounded-full bg-current" />
-                {detectedNetwork}
-            </span>
+            <div className="relative group">
+                <select
+                    value={detectedNetwork}
+                    onChange={(e) => setDetectedNetwork(e.target.value)}
+                    className={`appearance-none cursor-pointer inline-flex items-center gap-1.5 pl-3 pr-6 py-1 pr-6 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20 focus:outline-none`}
+                >
+                    {['mtn', 'airtel', 'glo', '9mobile', 'smile'].map((net) => (
+                        <option key={net} value={net} className="bg-background text-foreground uppercase">{net}</option>
+                    ))}
+                </select>
+                <ChevronDown size={12} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${colors?.text || 'text-muted'}`} />
+            </div>
         );
     };
 
