@@ -16,6 +16,7 @@ const NETWORK_PREFIXES: Record<string, string[]> = {
     AIRTEL: ['0802', '0808', '0708', '0812', '0701', '0901', '0902', '0904', '0912'],
     '9MOBILE': ['0809', '0817', '0818', '0909', '0908'],
     'SMILE': ['0702'],
+    'FOREIGN': [], // Handled manually for international airtime
 };
 
 const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
@@ -24,10 +25,11 @@ const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
     AIRTEL: { text: 'text-red-400', bg: 'bg-red-500/20' },
     '9MOBILE': { text: 'text-emerald-400', bg: 'bg-emerald-500/20' },
     'SMILE': { text: 'text-pink-400', bg: 'bg-pink-500/20' },
+    'FOREIGN': { text: 'text-indigo-400', bg: 'bg-indigo-500/20' },
 };
 
 const VTPASS_SERVICE_MAP: Record<string, string> = {
-    'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat', 'SMILE-airtime': 'smile-recharge',
+    'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat', 'SMILE-airtime': 'smile-direct', 'FOREIGN-airtime': 'foreign-airtime',
     'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
     'SMILE-data': 'smile-direct',
 };
@@ -393,7 +395,7 @@ export const ServicePaymentPage = () => {
                     onChange={(e) => setDetectedNetwork(e.target.value)}
                     className={`appearance-none cursor-pointer inline-flex items-center gap-1.5 pl-3 pr-6 py-1 pr-6 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20 focus:outline-none`}
                 >
-                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', ...(currentType === 'data' ? ['SMILE'] : [])].map((net) => (
+                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', 'SMILE', ...(currentType === 'airtime' ? ['FOREIGN'] : [])].map((net) => (
                         <option key={net} value={net} className="bg-background text-foreground uppercase">{net}</option>
                     ))}
                 </select>
