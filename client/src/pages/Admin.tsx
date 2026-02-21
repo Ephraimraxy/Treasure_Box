@@ -1597,6 +1597,9 @@ export const AdminTransactionsPage = () => {
                                 <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                                     {detail.transaction.type === 'UTILITY_BILL' ? (
                                         <>
+                                            <div>
+                                                <span className="text-slate-500 dark:text-slate-400">Tested For:</span> <span className="font-bold text-amber-600 dark:text-amber-400 uppercase">{detail.transaction.meta?.serviceID || detail.transaction.meta?.provider || detail.transaction.meta?.network || '-'}</span>
+                                            </div>
                                             <div><span className="text-slate-500 dark:text-slate-400">VTPass Request ID:</span> <span className="font-mono text-amber-600 dark:text-amber-400">{detail.transaction.meta?.vtpassResponse?.requestId || '-'}</span></div>
                                             <div><span className="text-slate-500 dark:text-slate-400">VTPass Code:</span> {detail.transaction.meta?.vtpassResponse?.code || '-'}</div>
                                             <div><span className="text-slate-500 dark:text-slate-400">VTPass Message:</span> {detail.transaction.meta?.vtpassResponse?.response_description || '-'}</div>
