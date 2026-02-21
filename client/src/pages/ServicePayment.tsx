@@ -27,7 +27,7 @@ const NETWORK_COLORS: Record<string, { text: string; bg: string }> = {
 };
 
 const VTPASS_SERVICE_MAP: Record<string, string> = {
-    'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat',
+    'MTN-airtime': 'mtn', 'GLO-airtime': 'glo', 'AIRTEL-airtime': 'airtel', '9MOBILE-airtime': 'etisalat', 'SMILE-airtime': 'smile-recharge',
     'MTN-data': 'mtn-data', 'GLO-data': 'glo-data', 'AIRTEL-data': 'airtel-data', '9MOBILE-data': 'etisalat-data',
     'SMILE-data': 'smile-direct',
 };
@@ -448,7 +448,7 @@ export const ServicePaymentPage = () => {
                                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                                         placeholder="0803 XXX XXXX"
                                         maxLength={11}
-                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors pr-24"
+                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors pr-24"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                         {phone.length >= 4 && <NetworkBadge />}
@@ -474,7 +474,7 @@ export const ServicePaymentPage = () => {
                                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                                         placeholder="0803 XXX XXXX or 0702..."
                                         maxLength={11}
-                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors pr-24"
+                                        className="w-full bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors pr-24"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                         {phone.length >= 4 && <NetworkBadge />}
@@ -544,7 +544,7 @@ export const ServicePaymentPage = () => {
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">Meter Number</label>
                                         <div className="flex gap-2">
-                                            <input type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setMeterInfo(null); }} placeholder="Enter meter number" className="flex-1 bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors" />
+                                            <input type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setMeterInfo(null); }} placeholder="Enter meter number" className="flex-1 bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors" />
                                             <Button onClick={handleVerify} disabled={verifying || !identifier} variant="secondary" className="shrink-0">{verifying ? <Loader2 size={16} className="animate-spin" /> : 'Verify'}</Button>
                                         </div>
                                     </div>
@@ -577,7 +577,7 @@ export const ServicePaymentPage = () => {
                                 <>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">Smart Card / IUC Number</label>
-                                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Enter smart card number" className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors" />
+                                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Enter smart card number" className="w-full bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted">Select Bouquet {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
@@ -623,7 +623,7 @@ export const ServicePaymentPage = () => {
                                 <>
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-muted">{selectedProvider === 'jamb' ? 'JAMB Profile ID' : 'Phone Number'}</label>
-                                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder={selectedProvider === 'jamb' ? 'Enter 10-digit Profile ID' : 'Enter phone number'} className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors" />
+                                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder={selectedProvider === 'jamb' ? 'Enter 10-digit Profile ID' : 'Enter phone number'} className="w-full bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted">Select PIN Type {loadingVariations && <Loader2 size={14} className="inline animate-spin ml-1" />}</label>
@@ -708,7 +708,7 @@ export const ServicePaymentPage = () => {
                                                             type="text"
                                                             value={insuranceFormData[field] || ''}
                                                             onChange={(e) => setInsuranceFormData({ ...insuranceFormData, [field]: e.target.value })}
-                                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors text-sm"
+                                                            className="w-full bg-input border border-input rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors text-sm"
                                                             placeholder={`Enter ${field.replace(/_/g, ' ')}`}
                                                         />
                                                     </div>
