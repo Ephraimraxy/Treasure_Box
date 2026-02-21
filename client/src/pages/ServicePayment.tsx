@@ -385,7 +385,7 @@ export const ServicePaymentPage = () => {
     // ─── Network Badge / Override Dropdown ───
     const NetworkBadge = () => {
         if (!detectedNetwork) return null;
-        const colors = NETWORK_COLORS[detectedNetwork];
+        const colors = NETWORK_COLORS[detectedNetwork.toUpperCase()] || NETWORK_COLORS['MTN'];
         return (
             <div className="relative group">
                 <select
@@ -393,7 +393,7 @@ export const ServicePaymentPage = () => {
                     onChange={(e) => setDetectedNetwork(e.target.value)}
                     className={`appearance-none cursor-pointer inline-flex items-center gap-1.5 pl-3 pr-6 py-1 pr-6 rounded-full text-xs font-bold ${colors?.bg || 'bg-muted/50'} ${colors?.text || 'text-muted'} border border-current/20 focus:outline-none`}
                 >
-                    {['mtn', 'airtel', 'glo', '9mobile', 'smile'].map((net) => (
+                    {['MTN', 'AIRTEL', 'GLO', '9MOBILE', 'SMILE'].map((net) => (
                         <option key={net} value={net} className="bg-background text-foreground uppercase">{net}</option>
                     ))}
                 </select>
