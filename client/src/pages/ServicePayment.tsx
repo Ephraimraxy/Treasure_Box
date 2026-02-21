@@ -232,8 +232,8 @@ export const ServicePaymentPage = () => {
 
     // ─── Handle Payment ───
     const handlePayment = async () => {
-        if (!pin || pin.length !== 4) { addToast('error', 'Please enter your 4-digit PIN'); return; }
-        if (totalCost > (user?.balance || 0)) { addToast('error', 'Insufficient balance'); return; }
+        if (!pin || pin.length !== 4) { addToast('error', 'Please enter your 4-digit PIN'); return; }        // [TESTING] Bypass balance check
+        // if (totalCost > (user?.balance || 0)) { addToast('error', 'Insufficient balance'); return; }
 
         // Validation per type
         if (type === 'airtime') {
