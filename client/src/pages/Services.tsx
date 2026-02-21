@@ -16,6 +16,7 @@ const services = [
     { id: 'bvn_validation', name: 'BVN Validation', icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10', desc: 'Verify BVN' },
     { id: 'bvn_modification', name: 'BVN Modification', icon: Edit, color: 'text-teal-400', bg: 'bg-teal-500/10', desc: 'Modify BVN' },
     { id: 'bvn_retrieval', name: 'BVN Retrieval', icon: Search, color: 'text-teal-400', bg: 'bg-teal-500/10', desc: 'Find your BVN' },
+    { id: 'education', name: 'Education & Exams', icon: GraduationCap, color: 'text-indigo-400', bg: 'bg-indigo-500/10', desc: 'JAMB & WAEC PINs' },
 ];
 
 type CategoryDef = { title: string; icon: any; iconColor: string; ids: string[] };
@@ -24,6 +25,7 @@ const categories: CategoryDef[] = [
     { title: 'Telecommunication', icon: Smartphone, iconColor: 'text-blue-400', ids: ['airtime', 'data', 'airtime_cash'] },
     { title: 'Utilities', icon: Zap, iconColor: 'text-yellow-400', ids: ['power', 'cable'] },
     { title: 'Insurance & Protection', icon: Shield, iconColor: 'text-red-400', ids: ['insurance'] },
+    { title: 'Education', icon: GraduationCap, iconColor: 'text-indigo-400', ids: ['education'] },
     { title: 'Identity Management', icon: ShieldCheck, iconColor: 'text-emerald-400', ids: ['nin_validation', 'nin_modification', 'nin_personalization', 'bvn_validation', 'bvn_modification', 'bvn_retrieval'] },
 ];
 

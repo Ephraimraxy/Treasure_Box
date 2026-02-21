@@ -414,7 +414,7 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         vtpassResponse = result;
                     } else if (type === 'INSURANCE') {
                         // Extract standard fields, everything else goes to metadata
-                        const { serviceID, variationCode, amount, phone, identifier, billersCode, ...rest } = meta;
+                        const { serviceID, variationCode, amount: _a, phone, identifier, billersCode, ...rest } = meta;
                         const result = await purchaseInsurance(
                             serviceID,
                             variationCode,
@@ -433,17 +433,16 @@ router.post('/utility', authenticate, async (req: AuthRequest, res, next) => {
                         }
                         vtpassResponse = result;
                     } else if (type === 'EDUCATION') {
-                        const { serviceID, variationCode, amount, phone, billersCode, ...rest } = meta;
+                        const { serviceID, variationCode, phone, identifier, billersCode } = meta;
                         const result = await purchaseEducation(
                             serviceID,
                             variationCode,
                             amount,
                             phone || user.phone || '',
-                            billersCode || meta.identifier,
-                            rest
+                            billersCode || identifier // JAMB Profile ID or WAEC Phone Number
                         );
                         if (result.code !== '000') {
-                            const errorMsg = result.response_description || 'Education service failed';
+                            const errorMsg = result.response_description || 'Education PIN purchase failed';
                             console.error(`[VTPass Error] Education failed: ${errorMsg} (Code: ${result.code})`);
                             return res.status(400).json({
                                 error: 'Service temporarily unavailable. Please try again shortly.',

@@ -125,9 +125,9 @@ export const SERVICE_ID_MAP: Record<string, string> = {
     'gotv': 'gotv',
     'startimes': 'startimes',
     // Education
-    'waec': 'waec',
-    'waec-registration': 'waec-registration',
-    'jamb': 'jamb',
+    'education-jamb': 'jamb',
+    'education-waec': 'waec',
+    'education-waec-registration': 'waec-registration',
 };
 
 // ── API Functions ────────────────────────────────────────
@@ -373,20 +373,19 @@ export const purchaseInsurance = async (
 };
 
 /**
- * Purchase Education services (WAEC, JAMB)
+ * Purchase Education Pins (JAMB, WAEC)
  */
 export const purchaseEducation = async (
     serviceID: string,
     variationCode: string,
     amount: number,
     phone: string,
-    billersCode: string, // e.g. JAMB Profile ID or registration number
-    metadata: any = {}
+    billersCode: string, // JAMB Profile ID or Phone Number for WAEC
 ): Promise<VTPassResponse> => {
     const request_id = generateRequestId();
 
     try {
-        console.log(`[VTPass] Purchasing education: ${serviceID}/${variationCode} → ${billersCode}`);
+        console.log(`[VTPass] Purchasing education pin: ${serviceID}/${variationCode} → ${billersCode}`);
 
         const payload = {
             request_id,
@@ -395,12 +394,20 @@ export const purchaseEducation = async (
             variation_code: variationCode,
             amount,
             phone,
-            ...metadata
         };
 
         const response = await vtpassPost.post('/api/pay', payload);
         const data: VTPassResponse = response.data;
         console.log(`[VTPass] Education response: ${data.code} - ${data.response_description}`);
+
+        if (data.code !== '000') {
+            try {
+                const bal = await getBalance();
+                console.log(`[VTPass Debug] Current Wallet Balance: ₦${bal.balance}`);
+            } catch (balError) {
+                console.warn('[VTPass Debug] Could not fetch balance for error report');
+            }
+        }
 
         return data;
     } catch (error: any) {
